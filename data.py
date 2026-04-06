@@ -1,0 +1,191 @@
+from __future__ import annotations
+
+import logging
+import os
+import random
+from collections import defaultdict
+from typing import Dict, List, Set, Tuple
+
+import numpy as np
+import pandas as pd
+import scipy.sparse as sp
+import torch
+from sklearn.preprocessing import LabelEncoder
+from torch.utils.data import Dataset
+
+log = logging.getLogger(__name__)
+
+
+# ---------------------------------------------------------------------------
+# Interactions
+# ---------------------------------------------------------------------------
+
+def load_interactions(
+    path: str,
+) -> Tuple[pd.DataFrame, LabelEncoder, LabelEncoder, Dict, int, int]:
+    """Load, clean, and label-encode the interaction DataFrame."""
+    log.info("Loading interaction data from %s", path)
+    df = pd.read_pickle(path)
+
+    if df["like"].dtype == "object":
+        df["like"] = df["like"].map(
+            {"True": True, "False": False, True: True, False: False}
+        )
+
+    original_len = len(df)
+    df = df[df["like"] == True].copy()
+    log.info("Filtered to positive interactions: %d → %d rows", original_len, len(df))
+
+    if len(df) == 0:
+        raise ValueError("No positive interactions found after filtering 'like' column.")
+
+    user_enc = LabelEncoder()
+    item_enc = LabelEncoder()
+    df["user_idx"] = user_enc.fit_transform(df["user_id"])
+    df["item_idx"] = item_enc.fit_transform(df["asin"])
+
+    n_users = int(df["user_idx"].max()) + 1
+    n_items = int(df["item_idx"].max()) + 1
+    asin_to_idx = dict(zip(df["asin"], df["item_idx"]))
+
+    log.info("Users: %d  |  Items: %d", n_users, n_items)
+    return df, user_enc, item_enc, asin_to_idx, n_users, n_items
+
+
+# ---------------------------------------------------------------------------
+# Knowledge Graph
+# ---------------------------------------------------------------------------
+
+def build_kg_index(
+    kg_path: str,
+    asin_to_idx: Dict,
+    stopwords: Set[str],
+    top_freq_pct: float,
+) -> Tuple[Dict[int, List], Dict[str, List], Set[str]]:
+    """Build KG adjacency (item→aspects, aspect→items) with graph pruning."""
+    if not os.path.exists(kg_path):
+        log.warning("KG file not found at %s — KG features disabled.", kg_path)
+        return defaultdict(list), defaultdict(list), set()
+
+    log.info("Building KG index from %s", kg_path)
+    df_kg = pd.read_csv(kg_path) if kg_path.endswith(".csv") else pd.read_pickle(kg_path)
+    log.info("Raw KG edges: %d", len(df_kg))
+
+    aspect_counts = df_kg["node_2"].value_counts()
+    cutoff = max(1, int(len(aspect_counts) * top_freq_pct))
+    high_freq = set(aspect_counts.head(cutoff).index)
+    bad_aspects = high_freq | stopwords
+    log.info(
+        "Pruning %d noisy aspect nodes (top %.0f%% freq + stopwords)",
+        len(bad_aspects), top_freq_pct * 100,
+    )
+
+    mask = df_kg["node_1"].isin(asin_to_idx) & ~df_kg["node_2"].isin(bad_aspects)
+    df_valid = df_kg[mask].copy()
+    df_valid["item_idx"] = df_valid["node_1"].map(asin_to_idx)
+    log.info("Valid edges: %d (skipped %d)", len(df_valid), len(df_kg) - len(df_valid))
+
+    kg_adj: Dict[int, List] = defaultdict(list)
+    kg_rev_adj: Dict[str, List] = defaultdict(list)
+    for item_idx, aspect in zip(df_valid["item_idx"].values, df_valid["node_2"].values):
+        kg_adj[item_idx].append(aspect)
+        kg_rev_adj[aspect].append(item_idx)
+
+    aspect_set = set(df_valid["node_2"].unique())
+    log.info(
+        "Unique aspects: %d  |  Items with KG info: %d", len(aspect_set), len(kg_adj)
+    )
+    return kg_adj, kg_rev_adj, aspect_set
+
+
+# ---------------------------------------------------------------------------
+# Sampler & Dataset
+# ---------------------------------------------------------------------------
+
+class KnowledgeAwareSampler:
+    """Random negative sampling + KG-based semantic neighbor lookup."""
+
+    def __init__(
+        self,
+        num_items: int,
+        kg_adj: Dict[int, List],
+        kg_rev_adj: Dict[str, List],
+    ) -> None:
+        self.num_items = num_items
+        self.kg_adj = kg_adj
+        self.kg_rev_adj = kg_rev_adj
+
+    def get_kg_neighbor(self, item_idx: int) -> Tuple[int, bool]:
+        aspects = self.kg_adj.get(item_idx, [])
+        if not aspects:
+            return item_idx, False
+        candidates = self.kg_rev_adj.get(random.choice(aspects), [])
+        if not candidates:
+            return item_idx, False
+        for _ in range(5):
+            neighbor = random.choice(candidates)
+            if neighbor != item_idx:
+                return neighbor, True
+        return item_idx, False
+
+    def random_negative(self) -> int:
+        return int(np.random.randint(0, self.num_items))
+
+
+class RecDataset(Dataset):
+    def __init__(
+        self,
+        user_idx: np.ndarray,
+        item_idx: np.ndarray,
+        sampler: KnowledgeAwareSampler,
+    ) -> None:
+        self.users = torch.LongTensor(
+            user_idx.values if hasattr(user_idx, "values") else user_idx
+        )
+        self.items = torch.LongTensor(
+            item_idx.values if hasattr(item_idx, "values") else item_idx
+        )
+        self.sampler = sampler
+
+    def __len__(self) -> int:
+        return len(self.users)
+
+    def __getitem__(self, idx: int):
+        user = self.users[idx]
+        pos_item = self.items[idx]
+        neg_item = self.sampler.random_negative()
+        neighbor, _ = self.sampler.get_kg_neighbor(pos_item.item())
+        return user, pos_item, torch.tensor(neg_item), torch.tensor(neighbor)
+
+
+# ---------------------------------------------------------------------------
+# LightGCN adjacency matrix
+# ---------------------------------------------------------------------------
+
+def build_lightgcn_adj(
+    train_df: pd.DataFrame,
+    n_users: int,
+    n_items: int,
+    device: torch.device,
+) -> torch.Tensor:
+    """Build the symmetric normalised bipartite adjacency matrix for LightGCN."""
+    log.info("Building LightGCN sparse adjacency matrix...")
+    users = train_df["user_idx"].values
+    items = train_df["item_idx"].values
+
+    R = sp.coo_matrix(
+        (np.ones(len(users)), (users, items)), shape=(n_users, n_items)
+    )
+    A = sp.bmat([[None, R], [R.T, None]], format="coo")
+
+    rowsum = np.asarray(A.sum(axis=1)).flatten()
+    with np.errstate(divide="ignore"):
+        d_inv_sqrt = np.where(rowsum == 0, 0.0, np.power(rowsum, -0.5))
+    D_inv_sqrt = sp.diags(d_inv_sqrt)
+    A_tilde = D_inv_sqrt.dot(A).dot(D_inv_sqrt).tocoo()
+
+    indices = torch.LongTensor(np.stack([A_tilde.row, A_tilde.col]))
+    values = torch.FloatTensor(A_tilde.data)
+    sparse_adj = torch.sparse_coo_tensor(indices, values, A_tilde.shape)
+    log.info("Adjacency matrix shape: %s", tuple(A_tilde.shape))
+    return sparse_adj.to(device)
