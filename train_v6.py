@@ -8,7 +8,9 @@ Changes vs v5:
     semantic differences from the KG, giving the rationale-aware gating
     network a stronger learning signal.
   - User-side CL kept the same as v5 (proj + stop-grad).
-  - cl_weight = 0.005, epochs = 50.
+  - cl_weight = 0.005.
+  - KG reg: margin triplet loss, reg_weight = 0.1.
+  - epochs = 80.
 
 Run:
     python train_v6.py
@@ -37,7 +39,7 @@ from data import (
     load_interactions,
 )
 from evaluate import evaluate
-from losses import bpr_loss, infonce_loss
+from losses import bpr_loss, infonce_loss, kg_triplet_loss
 from model import RAKG_LMR
 from train_v1 import set_seed, user_stratified_split
 
@@ -130,7 +132,7 @@ def train_v6(cfg: Config, device: torch.device) -> None:
             kg_neighbors = kg_neighbors.to(device)
 
             pos_scores, u_loc, u_glo, i_pos_loc, i_pos_glo = model(users, pos_items)
-            neg_scores, *_ = model(users, neg_items)
+            neg_scores, _, _, _, i_neg_glo = model(users, neg_items)
             _, _, _, _, i_nbr_glo = model(users, kg_neighbors)
 
             # --- BPR ---
@@ -147,8 +149,8 @@ def train_v6(cfg: Config, device: torch.device) -> None:
                 model.cl_projector(u_loc), u_glo.detach(), cfg.temp
             )
 
-            # --- KG regularization ---
-            loss_reg = F.mse_loss(i_pos_glo, i_nbr_glo)
+            # --- KG regularization: triplet (neighbor closer than random neg) ---
+            loss_reg = kg_triplet_loss(i_pos_glo, i_nbr_glo, i_neg_glo)
 
             loss = (
                 loss_bpr
@@ -217,8 +219,8 @@ if __name__ == "__main__":
 
     cfg = Config()
     cfg.cl_weight = 0.005         # ~10-15% of BPR contribution
-    cfg.reg_weight = 0.973
-    cfg.epochs = 50
+    cfg.reg_weight = 0.1          # triplet loss has meaningful magnitude now
+    cfg.epochs = 80
     cfg.model_save_path = "best_model_v6.pth"
 
     train_v6(cfg, _device)
