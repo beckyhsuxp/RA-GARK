@@ -7,8 +7,6 @@ Changes vs v3:
   - Stop-gradient on the global (KG) view: local view aligns *toward*
     the global anchor, preventing representational collapse.
   - cl_weight = 0.005 (CL ≈ 10-15% of BPR contribution).
-  - KG reg changed from MSE → margin triplet loss (neighbor closer
-    than random neg, not forced identical). reg_weight = 0.1.
   - epochs = 80.
 
 Run:
@@ -38,7 +36,7 @@ from data import (
     load_interactions,
 )
 from evaluate import evaluate
-from losses import bpr_loss, infonce_loss, kg_triplet_loss
+from losses import bpr_loss, infonce_loss
 from model import RAKG_LMR
 from train_v1 import set_seed, user_stratified_split
 
@@ -83,8 +81,8 @@ def train_v5(cfg: Config, device: torch.device) -> None:
 
     best_val_ndcg, best_epoch = 0.0, 0
     header = (
-        f"{'Ep':>4} | {'Loss':>8} | {'BPR':>7} | {'CL':>7} | {'Reg':>7} | "
-        f"{'vHR':>7} | {'vRecall':>8} | {'vNDCG':>7} | Note"
+        f"{'Ep':>4} | {'Loss':>8} | {'BPR':>8} | {'CL':>8} | {'Reg':>8} |"
+        f" {'vHR':>7} | {'vRecall':>7} | {'vNDCG':>7} | Note"
     )
     sep = "-" * len(header)
     log.info("\n%s\n%s", sep, header)
@@ -100,21 +98,20 @@ def train_v5(cfg: Config, device: torch.device) -> None:
             kg_neighbors = kg_neighbors.to(device)
 
             pos_scores, u_loc, u_glo, i_pos_loc, i_pos_glo = model(users, pos_items)
-            neg_scores, _, _, _, i_neg_glo = model(users, neg_items)
+            neg_scores, *_ = model(users, neg_items)
             _, _, _, _, i_nbr_glo = model(users, kg_neighbors)
 
             # --- BPR ---
             loss_bpr = bpr_loss(pos_scores, neg_scores)
 
             # --- Cross-view CL with projection head + stop gradient ---
-            # Project local view; stop gradient on global (KG) anchor
             loss_cl = (
                 infonce_loss(model.cl_projector(i_pos_loc), i_pos_glo.detach(), cfg.temp)
                 + infonce_loss(model.cl_projector(u_loc), u_glo.detach(), cfg.temp)
             )
 
-            # --- KG regularization: triplet (neighbor closer than random neg) ---
-            loss_reg = kg_triplet_loss(i_pos_glo, i_nbr_glo, i_neg_glo)
+            # --- KG regularization ---
+            loss_reg = F.mse_loss(i_pos_glo, i_nbr_glo)
 
             loss = loss_bpr + cfg.cl_weight * loss_cl + cfg.reg_weight * loss_reg
 
@@ -148,7 +145,7 @@ def train_v5(cfg: Config, device: torch.device) -> None:
             note = "* best"
 
         log.info(
-            "%4d | %8.4f | %7.4f | %7.4f | %7.4f | %7.4f | %8.4f | %7.4f | %s",
+            "%4d | %8.4f | %8.4f | %8.4f | %8.4f | %7.4f | %7.4f | %7.4f | %s",
             epoch + 1, avg_loss, avg_bpr, avg_cl, avg_reg,
             val_res["HR"], val_res["Recall"], val_res["NDCG"], note,
         )
@@ -176,8 +173,8 @@ if __name__ == "__main__":
     log.info("Device: %s", _device)
 
     cfg = Config()
-    cfg.cl_weight = 0.005         # ~10-15% of BPR contribution
-    cfg.reg_weight = 0.1          # triplet loss has meaningful magnitude now
+    cfg.cl_weight = 0.005
+    cfg.reg_weight = 0.973
     cfg.epochs = 80
     cfg.model_save_path = "best_model_v5.pth"
 
