@@ -7,8 +7,8 @@ from typing import Set
 @dataclass
 class Config:
     # --- Paths ---
-    interaction_path: str = r"D:\HO\code\data\reviews_30_20.pkl"
-    kg_path: str = r"D:\HO\code\aspect_kg\1\aspect1\df_edges_item_aspect1.csv"
+    interaction_path: str = "data/reviews_30_20.pkl"
+    kg_path: str = "data/df_edges_item_aspect1.csv"
     model_save_path: str = "best_rakg_lmr_model.pth"
 
     # --- Model ---
