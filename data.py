@@ -102,6 +102,82 @@ def build_kg_index(
 # Sampler & Dataset
 # ---------------------------------------------------------------------------
 
+def build_kg_aspect_init(
+    kg_adj: Dict[int, List],
+    num_items: int,
+    num_aspects: int,
+    dim: int,
+) -> torch.Tensor | None:
+    """Initialise item-aspect embeddings from KG co-occurrence via TF-IDF + SVD.
+
+    Returns a [num_items, num_aspects, dim] tensor, or None if no KG data.
+    """
+    all_aspects = sorted({a for aspects in kg_adj.values() for a in aspects})
+    if not all_aspects:
+        log.warning("No KG aspects found; falling back to random init.")
+        return None
+
+    aspect_to_idx = {a: i for i, a in enumerate(all_aspects)}
+    n_kg_aspects = len(all_aspects)
+    log.info(
+        "KG SVD init: %d items with KG, %d unique aspects",
+        len(kg_adj), n_kg_aspects,
+    )
+
+    # Sparse binary co-occurrence matrix [num_items × n_kg_aspects]
+    rows, cols = [], []
+    for item_idx, aspects in kg_adj.items():
+        for asp in aspects:
+            rows.append(item_idx)
+            cols.append(aspect_to_idx[asp])
+
+    M = sp.csr_matrix(
+        (np.ones(len(rows), dtype=np.float64), (rows, cols)),
+        shape=(num_items, n_kg_aspects),
+    )
+
+    # IDF weighting — downweight aspects shared by many items
+    df = np.asarray(M.sum(axis=0)).flatten()
+    idf = np.log(num_items / (df + 1.0)) + 1.0
+    M = M.multiply(idf)
+
+    # Truncated SVD
+    target_k = num_aspects * dim                       # e.g. 4 × 128 = 512
+    max_k = min(num_items, n_kg_aspects) - 1
+    k = min(target_k, max_k)
+
+    from scipy.sparse.linalg import svds
+    U, S, _ = svds(M, k=k)
+
+    # Sort descending by singular value
+    order = np.argsort(-S)
+    U, S = U[:, order], S[order]
+
+    emb = U * np.sqrt(S)[np.newaxis, :]                # [num_items, k]
+
+    # Pad if rank < target_k
+    if emb.shape[1] < target_k:
+        rng = np.random.RandomState(42)
+        pad = rng.randn(num_items, target_k - emb.shape[1]) * 0.01
+        emb = np.concatenate([emb, pad], axis=1)
+    else:
+        emb = emb[:, :target_k]
+
+    # Rescale to xavier-normal std
+    xavier_std = float(np.sqrt(2.0 / (num_aspects + dim)))
+    cur_std = float(emb.std())
+    if cur_std > 0:
+        emb *= xavier_std / cur_std
+
+    emb = emb.reshape(num_items, num_aspects, dim)
+    log.info("KG SVD init: %d SVD components, rescaled std → %.4f", k, xavier_std)
+    return torch.FloatTensor(emb)
+
+
+# ---------------------------------------------------------------------------
+# Sampler & Dataset
+# ---------------------------------------------------------------------------
+
 class KnowledgeAwareSampler:
     """Random negative sampling + KG-based semantic neighbor lookup."""
 
