@@ -86,6 +86,13 @@ class RAKG_LMR(nn.Module):
         self.user_fusion_gate = _make_fusion_gate(dim)
         self.item_fusion_gate = _make_fusion_gate(dim)
 
+        # Projection head for contrastive learning (used by v5+)
+        self.cl_projector = nn.Sequential(
+            nn.Linear(dim, dim),
+            nn.ReLU(),
+            nn.Linear(dim, dim),
+        )
+
     def _lightgcn_embeddings(self) -> Tuple[torch.Tensor, torch.Tensor]:
         x = torch.cat([self.user_local_emb.weight, self.item_local_emb.weight])
         layers = [x]
