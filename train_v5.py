@@ -6,7 +6,8 @@ Changes vs v3:
     so CL gradients don't interfere with the fusion gate.
   - Stop-gradient on the global (KG) view: local view aligns *toward*
     the global anchor, preventing representational collapse.
-  - cl_weight raised back to a meaningful range (tunable).
+  - cl_weight = 0.005 (CL ≈ 10-15% of BPR contribution).
+  - epochs = 50 (model still improving at 30).
 
 Run:
     python train_v5.py
@@ -173,8 +174,9 @@ if __name__ == "__main__":
     log.info("Device: %s", _device)
 
     cfg = Config()
-    cfg.cl_weight = 0.05          # meaningful weight now that CL is decoupled
+    cfg.cl_weight = 0.005         # ~10-15% of BPR contribution
     cfg.reg_weight = 0.973
+    cfg.epochs = 50
     cfg.model_save_path = "best_model_v5.pth"
 
     train_v5(cfg, _device)

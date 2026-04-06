@@ -8,6 +8,7 @@ Changes vs v5:
     semantic differences from the KG, giving the rationale-aware gating
     network a stronger learning signal.
   - User-side CL kept the same as v5 (proj + stop-grad).
+  - cl_weight = 0.005, epochs = 50.
 
 Run:
     python train_v6.py
@@ -215,8 +216,9 @@ if __name__ == "__main__":
     log.info("Device: %s", _device)
 
     cfg = Config()
-    cfg.cl_weight = 0.05          # meaningful weight — CL is now decoupled
+    cfg.cl_weight = 0.005         # ~10-15% of BPR contribution
     cfg.reg_weight = 0.973
+    cfg.epochs = 50
     cfg.model_save_path = "best_model_v6.pth"
 
     train_v6(cfg, _device)
