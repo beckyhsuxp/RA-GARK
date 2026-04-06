@@ -1,7 +1,10 @@
 """
-Optuna hyperparameter search for loss weights: cl_weight and reg_weight.
-Uses val NDCG@20 at epoch 15 as the objective (fast proxy).
-After search, prints the best params for use in train_v3.py.
+Optuna hyperparameter search for v6 (aspect-level CL + proj head + stop-grad).
+
+Tunes cl_weight and temp (InfoNCE temperature).
+reg_weight is fixed — MSE reg is effectively 0 with current architecture.
+
+Uses val NDCG@20 at epoch 20 as the objective (fast proxy).
 
 Run:
     python tune_weights.py
@@ -31,6 +34,7 @@ from evaluate import evaluate
 from losses import bpr_loss, infonce_loss
 from model import RAKG_LMR
 from train_v1 import set_seed, user_stratified_split
+from train_v6 import aspect_level_cl
 
 # suppress per-trial noise; only show Optuna progress
 logging.basicConfig(
@@ -42,12 +46,12 @@ optuna.logging.set_verbosity(optuna.logging.INFO)
 log = logging.getLogger("tune")
 log.setLevel(logging.INFO)
 
-SEARCH_EPOCHS = 15   # fast proxy
-N_TRIALS      = 25
+SEARCH_EPOCHS = 20   # fast proxy
+N_TRIALS      = 30
 
 
 def run_trial(cfg: Config, device: torch.device, seed: int = 42) -> float:
-    """Train for SEARCH_EPOCHS and return best val NDCG."""
+    """Train v6 architecture for SEARCH_EPOCHS and return best val NDCG."""
     set_seed(seed)
 
     df, _, _, asin_to_idx, n_users, n_items = load_interactions(cfg.interaction_path)
@@ -88,13 +92,28 @@ def run_trial(cfg: Config, device: torch.device, seed: int = 42) -> float:
             neg_scores, *_                                  = model(users, neg_items)
             _, _, _, _, i_nbr_glo                           = model(users, kg_neighbors)
 
+            # BPR
             loss_bpr = bpr_loss(pos_scores, neg_scores)
-            loss_cl  = (
-                infonce_loss(i_pos_loc, i_pos_glo, cfg.temp)
-                + infonce_loss(u_loc, u_glo, cfg.temp)
+
+            # Aspect-level item CL (proj + stop-grad)
+            i_aspects = model.item_kg_aspects[pos_items]
+            loss_acl = aspect_level_cl(
+                model.cl_projector, i_pos_loc, i_aspects, cfg.temp
             )
+
+            # User cross-view CL (proj + stop-grad)
+            loss_ucl = infonce_loss(
+                model.cl_projector(u_loc), u_glo.detach(), cfg.temp
+            )
+
+            # KG reg (MSE, effectively ~0)
             loss_reg = F.mse_loss(i_pos_glo, i_nbr_glo)
-            loss = loss_bpr + cfg.cl_weight * loss_cl + cfg.reg_weight * loss_reg
+
+            loss = (
+                loss_bpr
+                + cfg.cl_weight * (loss_acl + loss_ucl)
+                + cfg.reg_weight * loss_reg
+            )
 
             optimizer.zero_grad()
             loss.backward()
@@ -109,16 +128,17 @@ def run_trial(cfg: Config, device: torch.device, seed: int = 42) -> float:
 
 def objective(trial: optuna.Trial, device: torch.device) -> float:
     cfg = Config()
-    cfg.cl_weight  = trial.suggest_float("cl_weight",  1e-4, 1.0, log=True)
-    cfg.reg_weight = trial.suggest_float("reg_weight", 1e-3, 1.0, log=True)
+    cfg.cl_weight = trial.suggest_float("cl_weight", 1e-4, 0.1, log=True)
+    cfg.temp      = trial.suggest_float("temp", 0.05, 0.5)
+    cfg.reg_weight = 0.973  # fixed, MSE reg is ~0 anyway
 
     t0 = time.perf_counter()
     ndcg = run_trial(cfg, device, seed=42)
     elapsed = time.perf_counter() - t0
 
     log.info(
-        "Trial %3d | cl=%.4f  reg=%.4f | val NDCG=%.4f | %.0fs",
-        trial.number, cfg.cl_weight, cfg.reg_weight, ndcg, elapsed,
+        "Trial %3d | cl=%.6f  temp=%.3f | val NDCG=%.4f | %.0fs",
+        trial.number, cfg.cl_weight, cfg.temp, ndcg, elapsed,
     )
     return ndcg
 
@@ -137,12 +157,14 @@ if __name__ == "__main__":
     best = study.best_trial
     log.info("=" * 55)
     log.info("Best trial: val NDCG = %.4f", best.value)
-    log.info("  cl_weight  = %.6f", best.params["cl_weight"])
-    log.info("  reg_weight = %.6f", best.params["reg_weight"])
+    log.info("  cl_weight = %.6f", best.params["cl_weight"])
+    log.info("  temp      = %.4f", best.params["temp"])
     log.info("=" * 55)
 
-    # Save best params to a file for train_v3.py to read
     import json, pathlib
-    out = {"cl_weight": best.params["cl_weight"], "reg_weight": best.params["reg_weight"]}
+    out = {
+        "cl_weight": best.params["cl_weight"],
+        "temp": best.params["temp"],
+    }
     pathlib.Path("best_weights.json").write_text(json.dumps(out, indent=2))
     log.info("Saved to best_weights.json")
