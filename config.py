@@ -21,6 +21,7 @@ class Config:
     learning_rate: float = 1e-3
     epochs: int = 30
     seed: int = 42
+    early_stop_patience: int = 10   # 0 disables early stopping
 
     # --- Loss weights ---
     cl_weight: float = 0.01   # InfoNCE contrastive loss

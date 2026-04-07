@@ -111,7 +111,7 @@ def train_v6(cfg: Config, device: torch.device) -> None:
     ).to(device)
     optimizer = torch.optim.Adam(model.parameters(), lr=cfg.learning_rate)
 
-    best_val_ndcg, best_epoch = 0.0, 0
+    best_val_ndcg, best_epoch, no_improve = 0.0, 0, 0
     header = (
         f"{'Ep':>4} | {'Loss':>8} | {'BPR':>8} | {'aCL':>8} | {'uCL':>8} | {'Reg':>8} |"
         f" {'vHR':>7} | {'vRecall':>7} | {'vNDCG':>7} | Note"
@@ -184,14 +184,22 @@ def train_v6(cfg: Config, device: torch.device) -> None:
         if val_res["NDCG"] > best_val_ndcg:
             best_val_ndcg = val_res["NDCG"]
             best_epoch = epoch + 1
+            no_improve = 0
             torch.save(copy.deepcopy(model.state_dict()), cfg.model_save_path)
             note = "* best"
+        else:
+            no_improve += 1
 
         log.info(
             "%4d | %8.4f | %8.4f | %8.4f | %8.4f | %8.4f | %7.4f | %7.4f | %7.4f | %s",
             epoch + 1, avg_loss, avg_bpr, avg_acl, avg_ucl, avg_reg,
             val_res["HR"], val_res["Recall"], val_res["NDCG"], note,
         )
+
+        if cfg.early_stop_patience > 0 and no_improve >= cfg.early_stop_patience:
+            log.info("Early stopping at epoch %d (no improve for %d epochs)",
+                     epoch + 1, no_improve)
+            break
 
     log.info(sep)
     log.info("Best val NDCG@%d = %.4f at epoch %d", cfg.eval_k, best_val_ndcg, best_epoch)
