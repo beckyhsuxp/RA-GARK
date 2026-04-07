@@ -84,7 +84,17 @@ def train_v7(cfg: Config, device: torch.device) -> None:
         log.info("item_kg_aspects initialised from KG SVD embeddings")
     # ───────────────────────────────────────────────────────────────────
 
-    optimizer = torch.optim.Adam(model.parameters(), lr=cfg.learning_rate)
+    # Lower lr for item_kg_aspects to preserve KG-pretrained semantics
+    kg_lr = getattr(cfg, "kg_aspect_lr", cfg.learning_rate * 0.1)
+    kg_param_id = id(model.item_kg_aspects)
+    base_params = [p for p in model.parameters() if id(p) != kg_param_id]
+    optimizer = torch.optim.Adam(
+        [
+            {"params": base_params, "lr": cfg.learning_rate},
+            {"params": [model.item_kg_aspects], "lr": kg_lr},
+        ]
+    )
+    log.info("Optimizer: base lr=%.1e, item_kg_aspects lr=%.1e", cfg.learning_rate, kg_lr)
 
     best_val_ndcg, best_epoch, no_improve = 0.0, 0, 0
     header = (
