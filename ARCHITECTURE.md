@@ -277,10 +277,13 @@ L_total = L_BPR
 
 ## 8. Final Test Results (NDCG@20)
 
+All KG-based methods are trained on the same processed aspect KG and the
+same user-stratified split (seed=42).
+
 | Model                                       | NDCG   | HR     | Recall | MAP    |
 |---------------------------------------------|--------|--------|--------|--------|
 | KGAT                                        | 0.1061 | 0.4707 | 0.1760 | 0.0482 |
-| LightGCN                                    | 0.1198 | 0.4862 | 0.1910 | 0.0575 |
+| KGRec                                       | TBD    | TBD    | TBD    | TBD    |
 | v3 (RAKG-LMR original)                      | 0.1155 | 0.4950 | 0.1908 | 0.0539 |
 | v6 (+ improved CL)                          | 0.1182 | 0.4950 | 0.1977 | 0.0547 |
 | **v7 (+ KG SVD init + per-param lr)**       | **0.1196** | 0.4884 | 0.1954 | 0.0562 |
