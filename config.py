@@ -8,7 +8,7 @@ from typing import Set
 class Config:
     # --- Paths ---
     interaction_path: str = "data/reviews_30_20.pkl"
-    kg_path: str = "data/df_edges_item_aspect2.csv"
+    kg_path: str = "data/df_edges_item_aspect1.csv"
     model_save_path: str = "best_rakg_lmr_model.pth"
 
     # --- Model ---
