@@ -29,7 +29,7 @@ from data import (
 )
 from evaluate import evaluate
 from losses import bpr_loss, infonce_loss
-from model import RAKG_LMR
+from model import RA_GARK
 from train import set_seed
 
 logging.basicConfig(
@@ -84,7 +84,7 @@ def smoke_test() -> None:
 
     # --- Model ---
     adj = build_lightgcn_adj(train_df, n_users, n_items, device)
-    model = RAKG_LMR(
+    model = RA_GARK(
         num_users=n_users,
         num_items=n_items,
         adj_matrix=adj,

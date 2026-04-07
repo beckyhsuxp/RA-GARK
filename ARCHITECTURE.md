@@ -1,8 +1,8 @@
-# RAKG-LMR Architecture
+# RA-GARK Architecture
 
 **Rationale-Aware Gating Network over Review Aspect-Specific Knowledge Graphs**
 
-This document describes the v7 (final) architecture and training procedure.
+This document describes the RA-GARK architecture and training procedure.
 
 ---
 
@@ -289,11 +289,11 @@ the user-stratified split (seed=42), and the same evaluator.
 | KGCL (SIGIR 2022)                           | 0.1073     | 0.4696     | 0.1827     | 0.0479     |
 | KGAT (KDD 2019)                             | 0.1079     | 0.4773     | 0.1807     | 0.0491     |
 | KGRec (KDD 2023)                            | 0.1095     | 0.4729     | 0.1834     | 0.0500     |
-| **v7 (RAKG-LMR final)**                     | **0.1196** | **0.4873** | **0.1954** | **0.0563** |
+| **RA-GARK (Ours)**                          | **0.1196** | **0.4873** | **0.1954** | **0.0563** |
 
-Relative improvement of v7 vs the strongest KG-based baseline (KGRec):
+Relative improvement of RA-GARK vs the strongest KG-based baseline (KGRec):
 
-| Metric | KGRec | v7 | Δ |
+| Metric | KGRec | RA-GARK | Δ |
 |---|---|---|---|
 | NDCG@20 | 0.1095 | 0.1196 | **+9.2 %** |
 | HR@20 | 0.4729 | 0.4873 | **+3.0 %** |

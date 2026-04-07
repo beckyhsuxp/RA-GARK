@@ -130,7 +130,7 @@ class KGRec(nn.Module):
         return emb_full, emb_drop
 
     # ------------------------------------------------------------------ #
-    # Inference / evaluation interface (matches RAKG_LMR)
+    # Inference / evaluation interface (matches RA_GARK)
     # ------------------------------------------------------------------ #
 
     def _lightgcn_embeddings(self) -> Tuple[torch.Tensor, torch.Tensor]:

@@ -1,13 +1,13 @@
 """
-RAKG-LMR v7 — v6 + KG-initialised aspect embeddings.
+RA-GARK — final model.
 
-Key change: item_kg_aspects is initialised from KG co-occurrence via
-TF-IDF + SVD instead of xavier random.  This gives the global view a
-meaningful KG-semantic starting point, making the dual-view architecture
-and cross-view CL genuinely useful.
+Combines:
+  - KG SVD initialisation for item_kg_aspects
+  - Aspect-level cross-view CL (proj head + stop-grad)
+  - Per-parameter learning rate (KG aspect lr < base lr)
 
 Run:
-    python train_v7.py
+    python train_ragark.py
 """
 
 from __future__ import annotations
@@ -35,7 +35,7 @@ from data import (
 )
 from evaluate import evaluate
 from losses import bpr_loss, infonce_loss
-from model import RAKG_LMR
+from model import RA_GARK
 from train_v1 import set_seed, user_stratified_split
 from train_v6 import aspect_level_cl
 
@@ -47,7 +47,7 @@ logging.basicConfig(
 log = logging.getLogger(__name__)
 
 
-def train_v7(cfg: Config, device: torch.device) -> None:
+def train_ragark(cfg: Config, device: torch.device) -> None:
     set_seed(cfg.seed)
 
     df, _, _, asin_to_idx, n_users, n_items = load_interactions(cfg.interaction_path)
@@ -68,7 +68,7 @@ def train_v7(cfg: Config, device: torch.device) -> None:
     loader = DataLoader(dataset, batch_size=cfg.batch_size, shuffle=True, num_workers=0)
 
     adj = build_lightgcn_adj(train_df, n_users, n_items, device)
-    model = RAKG_LMR(
+    model = RA_GARK(
         num_users=n_users,
         num_items=n_items,
         adj_matrix=adj,
@@ -213,6 +213,6 @@ if __name__ == "__main__":
     cfg.cl_weight = 0.005
     cfg.reg_weight = 0.973
     cfg.epochs = 80
-    cfg.model_save_path = "best_model_v7.pth"
+    cfg.model_save_path = "best_ragark_model.pth"
 
-    train_v7(cfg, _device)
+    train_ragark(cfg, _device)

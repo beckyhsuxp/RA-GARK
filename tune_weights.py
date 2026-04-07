@@ -32,7 +32,7 @@ from data import (
 )
 from evaluate import evaluate
 from losses import bpr_loss, infonce_loss
-from model import RAKG_LMR
+from model import RA_GARK
 from train_v1 import set_seed, user_stratified_split
 from train_v6 import aspect_level_cl
 
@@ -68,7 +68,7 @@ def run_trial(cfg: Config, device: torch.device, seed: int = 42) -> float:
     loader  = DataLoader(dataset, batch_size=cfg.batch_size, shuffle=True, num_workers=0)
 
     adj = build_lightgcn_adj(train_df, n_users, n_items, device)
-    model = RAKG_LMR(
+    model = RA_GARK(
         num_users=n_users,
         num_items=n_items,
         adj_matrix=adj,

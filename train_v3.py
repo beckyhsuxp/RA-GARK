@@ -1,5 +1,5 @@
 """
-RAKG-LMR v3 — Optuna-tuned loss weights.
+RA-GARK v3 — Optuna-tuned loss weights.
   cl_weight  = 0.000258  (Optuna best, was 0.01)
   reg_weight = 0.973     (Optuna best, was 0.1)
 
