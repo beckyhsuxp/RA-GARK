@@ -39,9 +39,9 @@ def _make_fusion_gate(dim: int) -> nn.Sequential:
     return gate
 
 
-class RAKG_LMR(nn.Module):
+class RA_GARK(nn.Module):
     """
-    Rationale-Aware KG Recommender with Local-Multi-view Representation.
+    RA-GARK — Rationale-Aware Gating Network over Review Aspect-Specific Knowledge Graphs.
 
     Fixes applied:
       #3  Separate user_fusion_gate and item_fusion_gate.

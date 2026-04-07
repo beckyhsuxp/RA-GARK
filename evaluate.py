@@ -6,7 +6,7 @@ from typing import Dict, List, Set
 import numpy as np
 import torch
 
-from model import RAKG_LMR
+from model import RA_GARK
 
 
 def _metrics_at_k(
@@ -36,7 +36,7 @@ def _metrics_at_k(
 
 
 def evaluate(
-    model: RAKG_LMR,
+    model: RA_GARK,
     test_ground_truth: Dict[int, List[int]],
     train_history: Dict[int, Set[int]],
     device: torch.device,

@@ -119,7 +119,7 @@ class MCCLK(nn.Module):
         return emb_local, emb_semantic, emb_global
 
     # ------------------------------------------------------------------ #
-    # Inference / evaluation interface (matches RAKG_LMR)
+    # Inference / evaluation interface (matches RA_GARK)
     # ------------------------------------------------------------------ #
 
     def _lightgcn_embeddings(self) -> Tuple[torch.Tensor, torch.Tensor]:

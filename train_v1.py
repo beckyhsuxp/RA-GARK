@@ -1,5 +1,5 @@
 """
-RAKG-LMR v1 — fixes applied:
+RA-GARK v1 — fixes applied:
   #1/#7  Per-user stratified train/val/test split; val drives early stopping,
          test is reported only once at the end.
   #3     Separate user_fusion_gate and item_fusion_gate.
@@ -32,7 +32,7 @@ from data import (
 )
 from evaluate import evaluate
 from losses import bpr_loss, infonce_loss
-from model import RAKG_LMR
+from model import RA_GARK
 
 logging.basicConfig(
     level=logging.INFO,
@@ -113,7 +113,7 @@ def train(cfg: Config, device: torch.device) -> None:
     loader  = DataLoader(dataset, batch_size=cfg.batch_size, shuffle=True, num_workers=0)
 
     adj = build_lightgcn_adj(train_df, n_users, n_items, device)
-    model = RAKG_LMR(
+    model = RA_GARK(
         num_users=n_users,
         num_items=n_items,
         adj_matrix=adj,

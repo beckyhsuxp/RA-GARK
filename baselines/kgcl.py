@@ -121,7 +121,7 @@ class KGCL(nn.Module):
         return self._propagate(self.edge_index)
 
     # ------------------------------------------------------------------ #
-    # Inference / evaluation interface (matches RAKG_LMR)
+    # Inference / evaluation interface (matches RA_GARK)
     # ------------------------------------------------------------------ #
 
     def _lightgcn_embeddings(self) -> Tuple[torch.Tensor, torch.Tensor]:
