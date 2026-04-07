@@ -280,21 +280,22 @@ L_total = L_BPR
 All KG-based methods are trained on the same processed aspect KG and the
 same user-stratified split (seed=42).
 
+All KG-based methods are trained on `data/df_edges_item_aspect2.csv`,
+the user-stratified split (seed=42), and the same evaluator.
+
 | Model                                       | NDCG       | HR         | Recall     | MAP        |
 |---------------------------------------------|------------|------------|------------|------------|
-| MCCLK (SIGIR 2022)                          | 0.1059     | 0.4586     | 0.1733     | 0.0485     |
-| KGAT (KDD 2019)                             | 0.1061     | 0.4707     | 0.1760     | 0.0482     |
-| KGCL (SIGIR 2022)                           | 0.1085     | 0.4652     | 0.1806     | 0.0497     |
-| KGRec (KDD 2023)                            | 0.1099     | 0.4762     | 0.1828     | 0.0502     |
-| v3 (RAKG-LMR original)                      | 0.1155     | **0.4950** | 0.1908     | 0.0539     |
-| v6 (+ improved CL)                          | 0.1182     | **0.4950** | **0.1977** | 0.0547     |
-| **v7 (+ KG SVD init + per-param lr)**       | **0.1196** | 0.4884     | 0.1954     | **0.0562** |
+| KGCL (SIGIR 2022)                           | 0.1042     | 0.4773     | 0.1781     | 0.0459     |
+| KGRec (KDD 2023)                            | 0.1097     | 0.4796     | 0.1831     | 0.0502     |
+| KGAT (KDD 2019)                             | 0.1135     | 0.4906     | 0.1892     | 0.0518     |
+| MCCLK (SIGIR 2022)                          | 0.1135     | 0.4630     | 0.1780     | 0.0549     |
+| **v7 (RAKG-LMR final)**                     | **0.1199** | **0.4950** | **0.1969** | **0.0566** |
 
-Relative improvement of v7 vs the strongest KG-based baseline (KGRec):
+Relative improvement of v7 vs the strongest KG-based baseline (KGAT):
 
-| Metric | KGRec | v7 | Δ |
+| Metric | KGAT | v7 | Δ |
 |---|---|---|---|
-| NDCG@20 | 0.1099 | 0.1196 | **+8.8 %** |
-| HR@20 | 0.4762 | 0.4884 | +2.6 % |
-| Recall@20 | 0.1828 | 0.1954 | **+6.9 %** |
-| MAP@20 | 0.0502 | 0.0562 | **+12.0 %** |
+| NDCG@20 | 0.1135 | 0.1199 | **+5.6 %** |
+| HR@20 | 0.4906 | 0.4950 | +0.9 % |
+| Recall@20 | 0.1892 | 0.1969 | **+4.1 %** |
+| MAP@20 | 0.0518 | 0.0566 | **+9.3 %** |
