@@ -27,6 +27,7 @@ class Config:
     # --- Loss weights ---
     cl_weight: float = 0.01   # InfoNCE contrastive loss
     reg_weight: float = 0.1   # KG consistency regularization
+    nbr_bpr_weight: float = 0.5  # KG-neighbour auxiliary BPR (v8 only)
     temp: float = 0.2         # InfoNCE temperature
 
     # --- KG pruning ---
