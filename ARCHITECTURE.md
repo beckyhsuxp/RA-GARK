@@ -280,10 +280,19 @@ L_total = L_BPR
 All KG-based methods are trained on the same processed aspect KG and the
 same user-stratified split (seed=42).
 
-| Model                                       | NDCG   | HR     | Recall | MAP    |
-|---------------------------------------------|--------|--------|--------|--------|
-| KGAT                                        | 0.1061 | 0.4707 | 0.1760 | 0.0482 |
-| KGRec                                       | TBD    | TBD    | TBD    | TBD    |
-| v3 (RAKG-LMR original)                      | 0.1155 | 0.4950 | 0.1908 | 0.0539 |
-| v6 (+ improved CL)                          | 0.1182 | 0.4950 | 0.1977 | 0.0547 |
-| **v7 (+ KG SVD init + per-param lr)**       | **0.1196** | 0.4884 | 0.1954 | 0.0562 |
+| Model                                       | NDCG       | HR         | Recall     | MAP        |
+|---------------------------------------------|------------|------------|------------|------------|
+| KGAT (KDD 2019)                             | 0.1061     | 0.4707     | 0.1760     | 0.0482     |
+| KGRec (KDD 2023)                            | 0.1099     | 0.4762     | 0.1828     | 0.0502     |
+| v3 (RAKG-LMR original)                      | 0.1155     | **0.4950** | 0.1908     | 0.0539     |
+| v6 (+ improved CL)                          | 0.1182     | **0.4950** | **0.1977** | 0.0547     |
+| **v7 (+ KG SVD init + per-param lr)**       | **0.1196** | 0.4884     | 0.1954     | **0.0562** |
+
+Relative improvement of v7 vs the strongest KG-based baseline (KGRec):
+
+| Metric | KGRec | v7 | Δ |
+|---|---|---|---|
+| NDCG@20 | 0.1099 | 0.1196 | **+8.8 %** |
+| HR@20 | 0.4762 | 0.4884 | +2.6 % |
+| Recall@20 | 0.1828 | 0.1954 | **+6.9 %** |
+| MAP@20 | 0.0502 | 0.0562 | **+12.0 %** |
