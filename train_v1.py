@@ -185,7 +185,8 @@ def train(cfg: Config, device: torch.device) -> None:
             val_res["HR"], val_res["Recall"], val_res["NDCG"], eval_ms, note,
         )
 
-        if cfg.early_stop_patience > 0 and no_improve >= cfg.early_stop_patience:
+        patience = getattr(cfg, "early_stop_patience", 0)
+        if patience > 0 and no_improve >= patience:
             log.info("Early stopping at epoch %d (no improve for %d epochs)",
                      epoch + 1, no_improve)
             break
