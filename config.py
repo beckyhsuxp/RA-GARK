@@ -25,17 +25,18 @@ class Config:
     use_global_view: bool = True   # False → skip global pipeline (pure LightGCN)
 
     # --- Rationale masking variants (when use_rationale=True) ---
-    # mlp_sigmoid: current — MLP([u; a]) → sigmoid, no cross-aspect normalisation
-    # mlp_softmax: MLP([u; a]) → softmax over aspects (weights sum to 1)
+    # mlp_sigmoid: legacy — MLP([u; a]) → sigmoid, no cross-aspect normalisation
+    #              (noisy; produced saturated unnormalised weights)
+    # mlp_softmax: MLP([u; a]) → softmax over aspects (weights sum to 1)  ← default
     # dot_softmax: (u · a) / √d → softmax over aspects (no extra params)
-    rationale_style: str = "mlp_sigmoid"
+    rationale_style: str = "mlp_softmax"
 
     # --- Fusion gate init bias ---
     # Final Linear bias in the fusion gate MLP. 0.0 → alpha ≈ 0.5 at start
     # (50/50 local/global mix from epoch 1, noisy KG pollutes LightGCN).
     # 5.0 → alpha ≈ σ(5) ≈ 0.993 at start → model behaves like LightGCN
     # initially; gate only opens up to the global view when it helps.
-    fusion_init_bias: float = 0.0
+    fusion_init_bias: float = 5.0
 
     # --- Training ---
     batch_size: int = 128
