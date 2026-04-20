@@ -1,32 +1,36 @@
 """
-Run a battery of ablations over the 5 architectural flags in RA-GARK and
-dump test metrics to CSV for easy comparison.
+Run a battery of ablations over RA-GARK's architectural flags and dump
+test metrics to CSV for easy comparison.
 
-Presets covered (all use cl_weight=0.005, epochs=80, seed=42):
+Three preset groups — pick one with --mode:
 
-    full             all flags ON (current RA-GARK)
-    no_rationale     uniform mean over aspects
-    no_svd           xavier init instead of KG SVD
-    no_acl           drop aspect-level CL
-    no_ucl           drop user cross-view CL
+    minimal  (4 presets, ~8 min)
+        winner + each of the 3 ★ novelties reverted.
+        Smallest set that still populates every row of the paper's
+        Section-4 novelty claims.
 
-Baseline config is tested once, then each "no_X" variant flips one flag off.
-Since previous runs showed `no_rationale` > full, a second pass ablates
-each component *from the no_rationale baseline* too — the winning config —
-to see what's actually carrying the lift.
+    paper    (7 presets, ~14 min)  [default]
+        minimal + old_full (pre-Fix baseline) + the CL ablations
+        (winner_no_acl, winner_no_ucl) + lightgcn_only (no-KG floor).
+        This is the ablation table that goes into the paper.
+
+    full     (10 presets, ~20 min)
+        paper + winner_no_rat + no_global_view.
 
 Run:
-    python run_ablations.py
-Output:
-    ablation_results.csv
+    python run_ablations.py                 # paper (default)
+    python run_ablations.py --mode minimal  # fastest
+    python run_ablations.py --mode full     # everything
+
+Output: ablation_results.csv
 """
 
 from __future__ import annotations
 
+import argparse
 import csv
 import logging
 import time
-from dataclasses import asdict
 
 import torch
 
@@ -59,51 +63,68 @@ def make_cfg(**overrides) -> Config:
     return cfg
 
 
-def run_presets():
-    # Defaults are now the winning config (softmax rationale, fusion bias=5).
-    # `winner` runs the defaults → should reproduce NDCG ≈ 0.1235.
-    # Each `winner_no_X` flips one component off to prove it contributes.
-    # `winner_sigmoid_rat` and `winner_fb0` revert the two Fix-1 changes
-    # to prove that both are load-bearing (removing either drops us below
-    # LightGCN at 0.1179).
-    presets = [
-        # ── WINNER (new defaults) ────────────────────────────────────
-        ("winner",                     {}),                          # target ≈ 0.1235
+# All presets are defined once; the --mode flag chooses which subset to run.
+ALL_PRESETS = {
+    "winner":             {},                                                  # ≈ 0.1231
+    "winner_sigmoid_rat": {"rationale_style": "mlp_sigmoid"},                  # proves softmax ★
+    "winner_no_svd":      {"use_svd_init": False},                             # proves KG SVD ★
+    "winner_fb0":         {"fusion_init_bias": 0.0},                           # proves fusion bias ★
+    "winner_no_acl":      {"use_acl": False},                                  # supporting
+    "winner_no_ucl":      {"use_ucl": False},                                  # supporting
+    "winner_no_rat":      {"use_rationale": False},                            # rationale off
+    "old_full":           {"rationale_style": "mlp_sigmoid",                   # ≈ 0.1064
+                           "fusion_init_bias": 0.0},
+    "no_global_view":     {"use_global_view": False},                          # ≈ 0.1218
+    "lightgcn_only":      {"use_global_view": False, "use_rationale": False,   # ≈ 0.1179
+                           "use_acl": False, "use_ucl": False},
+}
 
-        # ── Leave-one-out from the winner ────────────────────────────
-        ("winner_no_rat",              {"use_rationale": False}),
-        ("winner_no_svd",              {"use_svd_init":  False}),
-        ("winner_no_acl",              {"use_acl":       False}),
-        ("winner_no_ucl",              {"use_ucl":       False}),
+MODES = {
+    "minimal": [
+        "winner",
+        "winner_sigmoid_rat",
+        "winner_no_svd",
+        "winner_fb0",
+    ],
+    "paper": [
+        "winner",
+        "winner_sigmoid_rat",
+        "winner_no_svd",
+        "winner_fb0",
+        "winner_no_acl",
+        "winner_no_ucl",
+        "old_full",
+        "lightgcn_only",
+    ],
+    "full": list(ALL_PRESETS.keys()),
+}
 
-        # ── Revert the two Fix-1 changes to prove they matter ────────
-        ("winner_sigmoid_rat",         {"rationale_style": "mlp_sigmoid"}),
-        ("winner_fb0",                 {"fusion_init_bias": 0.0}),
-        ("old_full",                   {  # both reverted → the original broken full
-            "rationale_style": "mlp_sigmoid", "fusion_init_bias": 0.0,
-        }),                                                          # ≈ 0.1064 expected
 
-        # ── Reference floors ─────────────────────────────────────────
-        ("no_global_view",             {"use_global_view": False}),  # ≈ 0.1218
-        ("lightgcn_only",              {
-            "use_global_view": False, "use_rationale": False,
-            "use_acl": False, "use_ucl": False,
-        }),                                                          # ≈ 0.1179
-    ]
-    return presets
+def run_presets(mode: str) -> list[tuple[str, dict]]:
+    names = MODES[mode]
+    return [(n, ALL_PRESETS[n]) for n in names]
 
 
 def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--mode", choices=list(MODES.keys()), default="paper",
+        help="Which preset group to run (default: paper).",
+    )
+    args = parser.parse_args()
+
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    log.info("Device: %s", device)
+    log.info("Device: %s  |  Mode: %s  (%d presets)",
+             device, args.mode, len(MODES[args.mode]))
 
     results = []
-    presets = run_presets()
+    presets = run_presets(args.mode)
     t_total = time.perf_counter()
 
     for i, (name, overrides) in enumerate(presets, 1):
         log.info("=" * 70)
-        log.info("[%d/%d] Running preset: %s  (overrides=%s)", i, len(presets), name, overrides)
+        log.info("[%d/%d] Running preset: %s  (overrides=%s)",
+                 i, len(presets), name, overrides)
         log.info("=" * 70)
 
         cfg = make_cfg(**overrides)
@@ -125,7 +146,7 @@ def main():
 
         log.info("✓ %s done in %.0fs — NDCG=%s", name, elapsed, row["NDCG"])
 
-    out = "ablation_results.csv"
+    out = f"ablation_results_{args.mode}.csv"
     with open(out, "w", newline="") as f:
         w = csv.DictWriter(f, fieldnames=list(results[0].keys()))
         w.writeheader()
