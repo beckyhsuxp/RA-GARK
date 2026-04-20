@@ -61,32 +61,36 @@ def make_cfg(**overrides) -> Config:
 
 
 def run_presets():
-    # Best so far: no_global_view = 0.1222 (but user requires fusion-gate
-    # dual-view). The current fusion fails (full=0.1064) because the gate
-    # starts at alpha≈0.5 → KG noise pollutes LightGCN from epoch 1.
-    # Fix 1 biases the gate's final Linear with bias=5 → alpha≈0.993 at
-    # init, so the model starts LightGCN-like and only opens to KG when
-    # the gradient says it helps.
+    # Defaults are now the winning config (softmax rationale, fusion bias=5).
+    # `winner` runs the defaults → should reproduce NDCG ≈ 0.1235.
+    # Each `winner_no_X` flips one component off to prove it contributes.
+    # `winner_sigmoid_rat` and `winner_fb0` revert the two Fix-1 changes
+    # to prove that both are load-bearing (removing either drops us below
+    # LightGCN at 0.1179).
     presets = [
-        # ── baselines for reference ─────────────────────────────────
-        ("full",                       {}),                           # 0.1064
-        ("no_global_view",             {"use_global_view": False}),   # 0.1222
+        # ── WINNER (new defaults) ────────────────────────────────────
+        ("winner",                     {}),                          # target ≈ 0.1235
+
+        # ── Leave-one-out from the winner ────────────────────────────
+        ("winner_no_rat",              {"use_rationale": False}),
+        ("winner_no_svd",              {"use_svd_init":  False}),
+        ("winner_no_kg_lr",            {"use_kg_lr":     False}),
+        ("winner_no_acl",              {"use_acl":       False}),
+        ("winner_no_ucl",              {"use_ucl":       False}),
+
+        # ── Revert the two Fix-1 changes to prove they matter ────────
+        ("winner_sigmoid_rat",         {"rationale_style": "mlp_sigmoid"}),
+        ("winner_fb0",                 {"fusion_init_bias": 0.0}),
+        ("old_full",                   {  # both reverted → the original broken full
+            "rationale_style": "mlp_sigmoid", "fusion_init_bias": 0.0,
+        }),                                                          # ≈ 0.1064 expected
+
+        # ── Reference floors ─────────────────────────────────────────
+        ("no_global_view",             {"use_global_view": False}),  # ≈ 0.1218
         ("lightgcn_only",              {
             "use_global_view": False, "use_rationale": False,
             "use_acl": False, "use_ucl": False,
-        }),                                                           # 0.1179
-
-        # ── Fix 1: fusion_init_bias = 5.0 (alpha starts ≈0.993) ─────
-        ("fusion_b5",                  {"fusion_init_bias": 5.0}),
-        ("fusion_b5_softmax_rat",      {
-            "fusion_init_bias": 5.0, "rationale_style": "mlp_softmax",
-        }),
-        ("fusion_b5_no_ucl",           {
-            "fusion_init_bias": 5.0, "use_ucl": False,
-        }),
-
-        # ── Sanity: even stronger bias to confirm the trend ─────────
-        ("fusion_b8",                  {"fusion_init_bias": 8.0}),
+        }),                                                          # ≈ 0.1179
     ]
     return presets
 
