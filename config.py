@@ -17,11 +17,18 @@ class Config:
     num_aspects: int = 4
 
     # --- Ablation flags (all default True = full model) ---
-    use_rationale: bool = True   # False → uniform mean over aspects
-    use_svd_init: bool = True    # False → xavier init for item_kg_aspects
-    use_kg_lr: bool = True       # False → single lr for all params
-    use_acl: bool = True         # False → drop aspect-level CL
-    use_ucl: bool = True         # False → drop user cross-view CL
+    use_rationale: bool = True     # False → uniform mean over aspects
+    use_svd_init: bool = True      # False → xavier init for item_kg_aspects
+    use_kg_lr: bool = True         # False → single lr for all params
+    use_acl: bool = True           # False → drop aspect-level CL
+    use_ucl: bool = True           # False → drop user cross-view CL
+    use_global_view: bool = True   # False → skip global pipeline (pure LightGCN)
+
+    # --- Rationale masking variants (when use_rationale=True) ---
+    # mlp_sigmoid: current — MLP([u; a]) → sigmoid, no cross-aspect normalisation
+    # mlp_softmax: MLP([u; a]) → softmax over aspects (weights sum to 1)
+    # dot_softmax: (u · a) / √d → softmax over aspects (no extra params)
+    rationale_style: str = "mlp_sigmoid"
 
     # --- Training ---
     batch_size: int = 128
