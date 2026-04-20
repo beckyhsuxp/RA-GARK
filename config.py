@@ -37,6 +37,14 @@ class Config:
     # initially; gate only opens up to the global view when it helps.
     fusion_init_bias: float = 5.0
 
+    # --- Aspect LR scaling (per-param LR revisited, continuous knob) ---
+    # Multiplier applied to `learning_rate` for `item_kg_aspects` only.
+    # 1.0  → single lr for everything (default; pre-B, confirmed -0.1% only)
+    # 0.5  → legacy 5e-4 vs 1e-3 ratio
+    # 0.1  → 10× smaller → protects KG SVD init more aggressively
+    # 0.01 → 100× smaller → effectively near-frozen
+    kg_aspect_lr_scale: float = 1.0
+
     # --- Training ---
     batch_size: int = 128
     learning_rate: float = 1e-3
