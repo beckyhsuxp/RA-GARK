@@ -97,8 +97,23 @@ def train_ragark(cfg: Config, device: torch.device) -> dict:
         log.info("SVD init disabled — item_kg_aspects stays at xavier init")
     # ───────────────────────────────────────────────────────────────────
 
-    optimizer = torch.optim.Adam(model.parameters(), lr=cfg.learning_rate)
-    log.info("Optimizer: lr=%.1e", cfg.learning_rate)
+    if cfg.kg_aspect_lr_scale != 1.0:
+        kg_lr = cfg.learning_rate * cfg.kg_aspect_lr_scale
+        kg_param_id = id(model.item_kg_aspects)
+        base_params = [p for p in model.parameters() if id(p) != kg_param_id]
+        optimizer = torch.optim.Adam(
+            [
+                {"params": base_params, "lr": cfg.learning_rate},
+                {"params": [model.item_kg_aspects], "lr": kg_lr},
+            ]
+        )
+        log.info(
+            "Optimizer: base lr=%.1e, item_kg_aspects lr=%.1e (scale=%.3f)",
+            cfg.learning_rate, kg_lr, cfg.kg_aspect_lr_scale,
+        )
+    else:
+        optimizer = torch.optim.Adam(model.parameters(), lr=cfg.learning_rate)
+        log.info("Optimizer: lr=%.1e (single param group)", cfg.learning_rate)
 
     best_val_ndcg, best_epoch, no_improve = 0.0, 0, 0
     header = (
@@ -220,8 +235,9 @@ if __name__ == "__main__":
     cfg.use_acl          = True
     cfg.use_ucl          = True
     cfg.use_global_view  = True
-    cfg.rationale_style  = "mlp_softmax"   # mlp_sigmoid | mlp_softmax | dot_softmax
-    cfg.fusion_init_bias = 5.0             # 0 → α≈0.5 start; 5 → α≈0.993 (local-heavy)
+    cfg.rationale_style     = "mlp_softmax"   # mlp_sigmoid | mlp_softmax | dot_softmax
+    cfg.fusion_init_bias    = 5.0             # 0 → α≈0.5 start; 5 → α≈0.993 (local-heavy)
+    cfg.kg_aspect_lr_scale  = 1.0             # 1.0 = single lr; <1.0 slows item_kg_aspects
     # ───────────────────────────────────────────────────────────────────
 
     tag = (
@@ -231,6 +247,7 @@ if __name__ == "__main__":
         f"_ucl{int(cfg.use_ucl)}"
         f"_gv{int(cfg.use_global_view)}"
         f"_fb{cfg.fusion_init_bias:.0f}"
+        f"_kgs{cfg.kg_aspect_lr_scale:.2f}"
     )
     cfg.model_save_path = f"best_ragark_{tag}.pth"
 
