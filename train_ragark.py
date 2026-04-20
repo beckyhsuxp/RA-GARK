@@ -74,7 +74,9 @@ def train_ragark(cfg: Config, device: torch.device) -> None:
         num_aspects=cfg.num_aspects,
         dim=cfg.embedding_dim,
         n_layers=cfg.n_layers,
+        use_rationale=cfg.use_rationale,
     ).to(device)
+    log.info("use_rationale = %s", cfg.use_rationale)
 
     # ── KG SVD initialisation ──────────────────────────────────────────
     kg_init = build_kg_aspect_init(kg_adj, n_items, cfg.num_aspects, cfg.embedding_dim)
@@ -200,6 +202,13 @@ if __name__ == "__main__":
     cfg = Config()
     cfg.cl_weight = 0.005
     cfg.epochs = 80
-    cfg.model_save_path = "best_ragark_model.pth"
+
+    # ── Ablation toggle ────────────────────────────────────────────────
+    # cfg.use_rationale = True   → full RA-GARK (rationale masking ON)
+    # cfg.use_rationale = False  → ablation (uniform mean over aspects)
+    # ───────────────────────────────────────────────────────────────────
+    cfg.use_rationale = True
+    suffix = "rationale" if cfg.use_rationale else "noRationale"
+    cfg.model_save_path = f"best_ragark_model_{suffix}.pth"
 
     train_ragark(cfg, _device)

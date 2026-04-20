@@ -61,6 +61,7 @@ class RA_GARK(nn.Module):
         num_aspects: int = 4,
         dim: int = 64,
         n_layers: int = 2,
+        use_rationale: bool = True,
     ) -> None:
         super().__init__()
         self.num_users = num_users
@@ -68,6 +69,7 @@ class RA_GARK(nn.Module):
         self.dim = dim
         self.n_layers = n_layers
         self.num_aspects = num_aspects
+        self.use_rationale = use_rationale
         self.register_buffer("adj_matrix", adj_matrix)
 
         # Local view (LightGCN)
@@ -113,7 +115,10 @@ class RA_GARK(nn.Module):
 
         u_glo = self.user_global_emb(u_idx)
         i_aspects = self.item_kg_aspects[i_idx]
-        i_glo = self.rationale_masking(u_glo, i_aspects)
+        if self.use_rationale:
+            i_glo = self.rationale_masking(u_glo, i_aspects)
+        else:
+            i_glo = i_aspects.mean(dim=1)
 
         alpha_i = self.item_fusion_gate(torch.cat([i_loc, i_glo], dim=-1))
         i_final = alpha_i * i_loc + (1 - alpha_i) * i_glo
@@ -148,10 +153,13 @@ class RA_GARK(nn.Module):
         u_glo = self.user_global_emb(u_idx)
 
         i_asp = self.item_kg_aspects.unsqueeze(0).expand(B, -1, -1, -1)
-        u_exp = u_glo[:, None, None, :].expand_as(i_asp)
-        cat = torch.cat([u_exp, i_asp], dim=-1)
-        weights = self.rationale_masking.net(cat)
-        i_glo = (i_asp * weights).sum(dim=2)
+        if self.use_rationale:
+            u_exp = u_glo[:, None, None, :].expand_as(i_asp)
+            cat = torch.cat([u_exp, i_asp], dim=-1)
+            weights = self.rationale_masking.net(cat)
+            i_glo = (i_asp * weights).sum(dim=2)
+        else:
+            i_glo = i_asp.mean(dim=2)
 
         i_loc_exp = all_i_loc.unsqueeze(0).expand(B, -1, -1)
 
