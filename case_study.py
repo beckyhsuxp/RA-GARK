@@ -23,7 +23,9 @@ from __future__ import annotations
 
 import argparse
 import csv
+import glob
 import logging
+import os
 from collections import Counter
 from pathlib import Path
 
@@ -43,7 +45,33 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(me
 log = logging.getLogger("case")
 
 
-WINNER_CHECKPOINT = "best_ragark_rationale1_svd_init1_acl1_ucl1_global_view1_style-mlp_softmax_fb5.pth"
+def find_winner_checkpoint() -> str | None:
+    """Locate a winner checkpoint regardless of which script trained it.
+
+    train_ragark.py format:
+      best_ragark_rat1-mlp_softmax_svd1_acl1_ucl1_gv1_fb5.pth
+    run_ablations.py format:
+      best_ragark_rationale1_svd_init1_acl1_ucl1_global_view1_style-mlp_softmax_fb5.pth
+
+    Winner signature: mlp_softmax + fb5 + every flag ON (no 0-valued flag,
+    and no `_no_` in the filename from run_ablations preset names).
+    Most recently modified match wins.
+    """
+    all_files = glob.glob("best_ragark_*.pth")
+    off_markers = (
+        "svd0", "svd_init0", "acl0", "ucl0",
+        "gv0", "global_view0", "rat0", "rationale0",
+    )
+    candidates = [
+        f for f in all_files
+        if "mlp_softmax" in f and "fb5" in f
+        and not any(m in f for m in off_markers)
+        and "_no_" not in f
+    ]
+    if not candidates:
+        return None
+    candidates.sort(key=os.path.getmtime, reverse=True)
+    return candidates[0]
 
 
 def _rank_items_for_case_study(train_df, kg_adj, top_n: int = 20) -> list[int]:
@@ -68,17 +96,25 @@ def _pick_users_for_item(train_df, item_idx: int, k: int) -> list[int]:
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--checkpoint", default=WINNER_CHECKPOINT)
+    parser.add_argument("--checkpoint", default=None,
+                        help="Path to .pth. If omitted, auto-detects winner checkpoint.")
     parser.add_argument("--num_items", type=int, default=5)
     parser.add_argument("--users_per_item", type=int, default=3)
     parser.add_argument("--seed", type=int, default=42)
     args = parser.parse_args()
 
+    checkpoint = args.checkpoint or find_winner_checkpoint()
+    if checkpoint is None:
+        log.error("No winner checkpoint found. Train first:")
+        log.error("  python train_ragark.py              (fast)")
+        log.error("  python run_ablations.py --mode minimal")
+        return
+
     cfg = Config()
     set_seed(cfg.seed)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     log.info("Device: %s", device)
-    log.info("Checkpoint: %s", args.checkpoint)
+    log.info("Checkpoint: %s", checkpoint)
 
     # ── Data ───────────────────────────────────────────────────────────
     df, _, item_enc, asin_to_idx, n_users, n_items = load_interactions(cfg.interaction_path)
@@ -103,12 +139,11 @@ def main():
         fusion_init_bias=cfg.fusion_init_bias,
     ).to(device)
 
-    if not Path(args.checkpoint).exists():
-        log.error("Checkpoint not found: %s", args.checkpoint)
-        log.error("Run `python run_ablations.py` (preset `winner`) or `python train_ragark.py` first.")
+    if not Path(checkpoint).exists():
+        log.error("Checkpoint not found: %s", checkpoint)
         return
 
-    state = torch.load(args.checkpoint, map_location=device, weights_only=True)
+    state = torch.load(checkpoint, map_location=device, weights_only=True)
     model.load_state_dict(state)
     model.eval()
     log.info("Model: rationale_style=%s  fusion_init_bias=%.1f",
