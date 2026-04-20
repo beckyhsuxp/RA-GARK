@@ -222,7 +222,7 @@ if __name__ == "__main__":
     cfg.use_ucl          = True
     cfg.use_global_view  = True
     cfg.rationale_style       = "mlp_softmax"   # mlp_sigmoid | mlp_softmax | dot_softmax
-    cfg.rationale_temperature = 1.0             # <1 sharpens softmax (try 0.1 / 0.05)
+    cfg.rationale_temperature = 0.5             # <1 sharpens softmax (0.5 = best NDCG)
     cfg.fusion_init_bias      = 5.0             # 0 → α≈0.5; 5 → α≈0.993
     # ───────────────────────────────────────────────────────────────────
 
