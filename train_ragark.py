@@ -2,9 +2,10 @@
 RA-GARK — final model.
 
 Combines:
+  - Softmax rationale attention over KG-aspect item representations
+  - Local-biased fusion gate initialisation (+5 bias → α≈0.993)
   - KG SVD initialisation for item_kg_aspects
-  - Aspect-level cross-view CL (proj head + stop-grad)
-  - Per-parameter learning rate (KG aspect lr < base lr)
+  - Aspect-level + user cross-view CL (proj head + stop-grad)
 
 Run:
     python train_ragark.py
@@ -80,9 +81,9 @@ def train_ragark(cfg: Config, device: torch.device) -> dict:
         fusion_init_bias=cfg.fusion_init_bias,
     ).to(device)
     log.info(
-        "flags: rat=%s(%s) svd=%s kg_lr=%s acl=%s ucl=%s global=%s fusion_bias=%.1f",
+        "flags: rat=%s(%s) svd=%s acl=%s ucl=%s global=%s fusion_bias=%.1f",
         cfg.use_rationale, cfg.rationale_style,
-        cfg.use_svd_init, cfg.use_kg_lr, cfg.use_acl, cfg.use_ucl,
+        cfg.use_svd_init, cfg.use_acl, cfg.use_ucl,
         cfg.use_global_view, cfg.fusion_init_bias,
     )
 
@@ -96,21 +97,8 @@ def train_ragark(cfg: Config, device: torch.device) -> dict:
         log.info("SVD init disabled — item_kg_aspects stays at xavier init")
     # ───────────────────────────────────────────────────────────────────
 
-    if cfg.use_kg_lr:
-        # Lower lr for item_kg_aspects to preserve KG-pretrained semantics
-        kg_lr = getattr(cfg, "kg_aspect_lr", cfg.learning_rate * 0.1)
-        kg_param_id = id(model.item_kg_aspects)
-        base_params = [p for p in model.parameters() if id(p) != kg_param_id]
-        optimizer = torch.optim.Adam(
-            [
-                {"params": base_params, "lr": cfg.learning_rate},
-                {"params": [model.item_kg_aspects], "lr": kg_lr},
-            ]
-        )
-        log.info("Optimizer: base lr=%.1e, item_kg_aspects lr=%.1e", cfg.learning_rate, kg_lr)
-    else:
-        optimizer = torch.optim.Adam(model.parameters(), lr=cfg.learning_rate)
-        log.info("Optimizer: single lr=%.1e (per-param KG lr disabled)", cfg.learning_rate)
+    optimizer = torch.optim.Adam(model.parameters(), lr=cfg.learning_rate)
+    log.info("Optimizer: lr=%.1e", cfg.learning_rate)
 
     best_val_ndcg, best_epoch, no_improve = 0.0, 0, 0
     header = (
@@ -229,18 +217,16 @@ if __name__ == "__main__":
     # ── Ablation toggles — flip any flag to False to ablate ────────────
     cfg.use_rationale    = True
     cfg.use_svd_init     = True
-    cfg.use_kg_lr        = True
     cfg.use_acl          = True
     cfg.use_ucl          = True
     cfg.use_global_view  = True
-    cfg.rationale_style  = "mlp_sigmoid"   # mlp_sigmoid | mlp_softmax | dot_softmax
-    cfg.fusion_init_bias = 0.0             # 0 → α≈0.5 start; 5 → α≈0.993 (local-heavy)
+    cfg.rationale_style  = "mlp_softmax"   # mlp_sigmoid | mlp_softmax | dot_softmax
+    cfg.fusion_init_bias = 5.0             # 0 → α≈0.5 start; 5 → α≈0.993 (local-heavy)
     # ───────────────────────────────────────────────────────────────────
 
     tag = (
         f"rat{int(cfg.use_rationale)}-{cfg.rationale_style}"
         f"_svd{int(cfg.use_svd_init)}"
-        f"_kglr{int(cfg.use_kg_lr)}"
         f"_acl{int(cfg.use_acl)}"
         f"_ucl{int(cfg.use_ucl)}"
         f"_gv{int(cfg.use_global_view)}"

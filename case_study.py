@@ -43,7 +43,7 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(me
 log = logging.getLogger("case")
 
 
-WINNER_CHECKPOINT = "best_ragark_rationale1_svd_init1_kg_lr1_acl1_ucl1_global_view1_style-mlp_softmax_fb5.pth"
+WINNER_CHECKPOINT = "best_ragark_rationale1_svd_init1_acl1_ucl1_global_view1_style-mlp_softmax_fb5.pth"
 
 
 def _rank_items_for_case_study(train_df, kg_adj, top_n: int = 20) -> list[int]:

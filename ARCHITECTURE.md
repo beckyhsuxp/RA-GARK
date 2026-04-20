@@ -197,10 +197,8 @@ leave-one-out drops measured in Section 9):
    the collaborative signal from epoch 1.
 3. **★ KG SVD initialisation of `item_kg_aspects`** (−4.7% when
    reverted to xavier) — the global view starts from real KG semantics
-   rather than random noise. Combined with the per-parameter LR on
-   `item_kg_aspects` (kept, but negligible on its own: −0.1%), this
-   keeps the KG-pretrained aspect geometry intact through BPR
-   training.
+   rather than random noise, keeping the KG-pretrained aspect geometry
+   intact through BPR training.
 
 Supporting design choices:
 - **Aspect-level cross-view CL** (−1.9%) — `L_aCL`, aligns local item
@@ -208,8 +206,6 @@ Supporting design choices:
   side.
 - **User cross-view CL** (−3.6%) — `L_uCL`, pulls `u_loc` toward
   `u_glo`.
-- **Per-parameter LR** (−0.1%) — kept for completeness, but does not
-  carry a headline claim.
 
 ---
 
@@ -222,9 +218,10 @@ Supporting design choices:
 | `user_local_emb`     | `[Nu, d]`       | xavier      | 1e-3  |
 | `item_local_emb`     | `[Ni, d]`       | xavier      | 1e-3  |
 | `user_global_emb`    | `[Nu, d]`       | xavier      | 1e-3  |
-| `item_kg_aspects`    | `[Ni, A, d]`    | **KG SVD**  | **5e-4** |
+| `item_kg_aspects`    | `[Ni, A, d]`    | **KG SVD**  | 1e-3  |
 
-`Nu=905`, `Ni=1399`, `A=4`, `d=128`.
+`Nu=905`, `Ni=1399`, `A=4`, `d=128`. All parameters share a single
+Adam learning rate (1e-3).
 
 ### 5.2 LightGCN propagation
 
@@ -293,9 +290,7 @@ L_total = L_BPR + 0.005 · (L_aCL + L_uCL)
 
 ## 7. Training
 
-- **Optimizer**: Adam with two parameter groups
-  - `base_params`            → lr `1e-3`
-  - `item_kg_aspects`        → lr `5e-4`
+- **Optimizer**: Adam, single learning rate `1e-3` for all parameters
 - **Batch size**: 128
 - **Epochs**: 80 with early stopping on val NDCG@20 (patience = 10)
 - **Seed**: 42
@@ -341,7 +336,6 @@ original broken configuration. `lightgcn_only` is the no-KG floor.
 | Preset                 | NDCG       | Δ vs winner | What it removes                                         |
 |------------------------|------------|-------------|---------------------------------------------------------|
 | **winner**             | **0.1231** | —           | softmax rationale + fusion_bias=5 + every component on  |
-| winner_no_kg_lr        | 0.1230     | **−0.1 %**  | single lr for all params (per-param LR is negligible)   |
 | winner_no_rat          | 0.1222     | **−0.7 %**  | uniform mean over aspects (no rationale at all)         |
 | winner_no_acl          | 0.1207     | **−1.9 %**  | drop aspect-level CL                                    |
 | winner_no_ucl          | 0.1187     | **−3.6 %**  | drop user cross-view CL                                 |
@@ -358,9 +352,7 @@ softmax rationale, local-biased fusion init, and KG SVD init. Below
 them sit the two contrastive channels (uCL −3.6%, aCL −1.9%). Rationale
 *enabled* adds only −0.7%, so the lift from softmax is mostly
 *undoing the harm sigmoid causes* rather than the rationale signal
-being a large standalone contribution. Per-parameter LR is retained
-for training stability but its direct NDCG contribution is negligible
-(−0.1%).
+being a large standalone contribution.
 
 Reproduce with `python run_ablations.py`; raw numbers also land in
 `ablation_results.csv`.

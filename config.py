@@ -19,7 +19,6 @@ class Config:
     # --- Ablation flags (all default True = full model) ---
     use_rationale: bool = True     # False → uniform mean over aspects
     use_svd_init: bool = True      # False → xavier init for item_kg_aspects
-    use_kg_lr: bool = True         # False → single lr for all params
     use_acl: bool = True           # False → drop aspect-level CL
     use_ucl: bool = True           # False → drop user cross-view CL
     use_global_view: bool = True   # False → skip global pipeline (pure LightGCN)
@@ -44,7 +43,6 @@ class Config:
     epochs: int = 30
     seed: int = 42
     early_stop_patience: int = 10   # 0 disables early stopping
-    kg_aspect_lr: float = 5e-4      # lr for item_kg_aspects (v7 only) — sweep optimum
 
     # --- Loss weights ---
     cl_weight: float = 0.01   # InfoNCE contrastive loss
