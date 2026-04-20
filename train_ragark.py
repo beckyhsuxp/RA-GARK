@@ -46,7 +46,7 @@ logging.basicConfig(
 log = logging.getLogger(__name__)
 
 
-def train_ragark(cfg: Config, device: torch.device) -> None:
+def train_ragark(cfg: Config, device: torch.device) -> dict:
     set_seed(cfg.seed)
 
     df, _, _, asin_to_idx, n_users, n_items = load_interactions(cfg.interaction_path)
@@ -76,26 +76,36 @@ def train_ragark(cfg: Config, device: torch.device) -> None:
         n_layers=cfg.n_layers,
         use_rationale=cfg.use_rationale,
     ).to(device)
-    log.info("use_rationale = %s", cfg.use_rationale)
+    log.info(
+        "flags: rationale=%s svd=%s kg_lr=%s acl=%s ucl=%s",
+        cfg.use_rationale, cfg.use_svd_init, cfg.use_kg_lr, cfg.use_acl, cfg.use_ucl,
+    )
 
     # ── KG SVD initialisation ──────────────────────────────────────────
-    kg_init = build_kg_aspect_init(kg_adj, n_items, cfg.num_aspects, cfg.embedding_dim)
-    if kg_init is not None:
-        model.item_kg_aspects.data.copy_(kg_init.to(device))
-        log.info("item_kg_aspects initialised from KG SVD embeddings")
+    if cfg.use_svd_init:
+        kg_init = build_kg_aspect_init(kg_adj, n_items, cfg.num_aspects, cfg.embedding_dim)
+        if kg_init is not None:
+            model.item_kg_aspects.data.copy_(kg_init.to(device))
+            log.info("item_kg_aspects initialised from KG SVD embeddings")
+    else:
+        log.info("SVD init disabled — item_kg_aspects stays at xavier init")
     # ───────────────────────────────────────────────────────────────────
 
-    # Lower lr for item_kg_aspects to preserve KG-pretrained semantics
-    kg_lr = getattr(cfg, "kg_aspect_lr", cfg.learning_rate * 0.1)
-    kg_param_id = id(model.item_kg_aspects)
-    base_params = [p for p in model.parameters() if id(p) != kg_param_id]
-    optimizer = torch.optim.Adam(
-        [
-            {"params": base_params, "lr": cfg.learning_rate},
-            {"params": [model.item_kg_aspects], "lr": kg_lr},
-        ]
-    )
-    log.info("Optimizer: base lr=%.1e, item_kg_aspects lr=%.1e", cfg.learning_rate, kg_lr)
+    if cfg.use_kg_lr:
+        # Lower lr for item_kg_aspects to preserve KG-pretrained semantics
+        kg_lr = getattr(cfg, "kg_aspect_lr", cfg.learning_rate * 0.1)
+        kg_param_id = id(model.item_kg_aspects)
+        base_params = [p for p in model.parameters() if id(p) != kg_param_id]
+        optimizer = torch.optim.Adam(
+            [
+                {"params": base_params, "lr": cfg.learning_rate},
+                {"params": [model.item_kg_aspects], "lr": kg_lr},
+            ]
+        )
+        log.info("Optimizer: base lr=%.1e, item_kg_aspects lr=%.1e", cfg.learning_rate, kg_lr)
+    else:
+        optimizer = torch.optim.Adam(model.parameters(), lr=cfg.learning_rate)
+        log.info("Optimizer: single lr=%.1e (per-param KG lr disabled)", cfg.learning_rate)
 
     best_val_ndcg, best_epoch, no_improve = 0.0, 0, 0
     header = (
@@ -121,15 +131,21 @@ def train_ragark(cfg: Config, device: torch.device) -> None:
             loss_bpr = bpr_loss(pos_scores, neg_scores)
 
             # --- Aspect-level item CL (proj + stop-grad per aspect) ---
-            i_aspects = model.item_kg_aspects[pos_items]   # [B, A, dim]
-            loss_acl = aspect_level_cl(
-                model.cl_projector, i_pos_loc, i_aspects, cfg.temp
-            )
+            if cfg.use_acl:
+                i_aspects = model.item_kg_aspects[pos_items]   # [B, A, dim]
+                loss_acl = aspect_level_cl(
+                    model.cl_projector, i_pos_loc, i_aspects, cfg.temp
+                )
+            else:
+                loss_acl = torch.zeros((), device=device)
 
             # --- User cross-view CL (proj + stop-grad) ---
-            loss_ucl = infonce_loss(
-                model.cl_projector(u_loc), u_glo.detach(), cfg.temp
-            )
+            if cfg.use_ucl:
+                loss_ucl = infonce_loss(
+                    model.cl_projector(u_loc), u_glo.detach(), cfg.temp
+                )
+            else:
+                loss_ucl = torch.zeros((), device=device)
 
             loss = loss_bpr + cfg.cl_weight * (loss_acl + loss_ucl)
 
@@ -194,6 +210,8 @@ def train_ragark(cfg: Config, device: torch.device) -> None:
         log.info("  %-12s %.4f", metric, val)
     log.info("─" * 55)
 
+    return test_res
+
 
 if __name__ == "__main__":
     _device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -203,12 +221,21 @@ if __name__ == "__main__":
     cfg.cl_weight = 0.005
     cfg.epochs = 80
 
-    # ── Ablation toggle ────────────────────────────────────────────────
-    # cfg.use_rationale = True   → full RA-GARK (rationale masking ON)
-    # cfg.use_rationale = False  → ablation (uniform mean over aspects)
-    # ───────────────────────────────────────────────────────────────────
+    # ── Ablation toggles — flip any flag to False to ablate ────────────
     cfg.use_rationale = True
-    suffix = "rationale" if cfg.use_rationale else "noRationale"
-    cfg.model_save_path = f"best_ragark_model_{suffix}.pth"
+    cfg.use_svd_init  = True
+    cfg.use_kg_lr     = True
+    cfg.use_acl       = True
+    cfg.use_ucl       = True
+    # ───────────────────────────────────────────────────────────────────
+
+    tag = (
+        f"rat{int(cfg.use_rationale)}"
+        f"_svd{int(cfg.use_svd_init)}"
+        f"_kglr{int(cfg.use_kg_lr)}"
+        f"_acl{int(cfg.use_acl)}"
+        f"_ucl{int(cfg.use_ucl)}"
+    )
+    cfg.model_save_path = f"best_ragark_{tag}.pth"
 
     train_ragark(cfg, _device)
