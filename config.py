@@ -15,6 +15,7 @@ class Config:
     embedding_dim: int = 128
     n_layers: int = 2
     num_aspects: int = 4
+    use_rationale: bool = True   # False → uniform mean over aspects (ablation)
 
     # --- Training ---
     batch_size: int = 128
