@@ -58,6 +58,7 @@ def make_cfg(**overrides) -> Config:
         setattr(cfg, k, v)
     tag_bits = [f"{k.replace('use_', '')}{int(getattr(cfg, k))}" for k in BOOL_FLAGS]
     tag_bits.append(f"style-{cfg.rationale_style}")
+    tag_bits.append(f"t{cfg.rationale_temperature:.2f}")
     tag_bits.append(f"fb{cfg.fusion_init_bias:.0f}")
     cfg.model_save_path = f"best_ragark_{'_'.join(tag_bits)}.pth"
     return cfg
@@ -77,6 +78,13 @@ ALL_PRESETS = {
     "no_global_view":     {"use_global_view": False},                          # ≈ 0.1218
     "lightgcn_only":      {"use_global_view": False, "use_rationale": False,   # ≈ 0.1179
                            "use_acl": False, "use_ucl": False},
+
+    # ── Temperature sweep: rescue user-conditioned attention ───────────
+    # Case study showed τ=1 gives near-uniform attention. Sharpen the
+    # softmax to amplify small user-specific logit differences.
+    "winner_temp_0.5":    {"rationale_temperature": 0.5},
+    "winner_temp_0.1":    {"rationale_temperature": 0.1},
+    "winner_temp_0.05":   {"rationale_temperature": 0.05},
 }
 
 MODES = {
@@ -95,6 +103,12 @@ MODES = {
         "winner_no_ucl",
         "old_full",
         "lightgcn_only",
+    ],
+    "temp": [
+        "winner",           # τ=1.0 baseline
+        "winner_temp_0.5",
+        "winner_temp_0.1",
+        "winner_temp_0.05",
     ],
     "full": list(ALL_PRESETS.keys()),
 }
@@ -140,6 +154,7 @@ def main():
         for k in BOOL_FLAGS:
             row[k] = int(getattr(cfg, k))
         row["rationale_style"] = cfg.rationale_style
+        row["rationale_temperature"] = cfg.rationale_temperature
         for m in ("HR", "Precision", "Recall", "F1", "MAP", "NDCG"):
             row[m] = f"{test_res.get(m, float('nan')):.4f}" if test_res else "NaN"
         results.append(row)

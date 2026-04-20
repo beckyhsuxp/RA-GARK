@@ -21,11 +21,17 @@ class KGRationaleMasking(nn.Module):
     full-item ranking (i_aspects: [B, Ni, A, d]).
     """
 
-    def __init__(self, dim: int, style: str = "mlp_sigmoid") -> None:
+    def __init__(
+        self,
+        dim: int,
+        style: str = "mlp_sigmoid",
+        temperature: float = 1.0,
+    ) -> None:
         super().__init__()
         self.style = style
         self.dim = dim
         self.scale = dim ** 0.5
+        self.temperature = float(temperature)
         if style == "mlp_sigmoid":
             self.net = nn.Sequential(
                 nn.Linear(dim * 2, dim),
@@ -56,10 +62,11 @@ class KGRationaleMasking(nn.Module):
             return self.net(cat)                                   # [..., A, 1]
         if self.style == "mlp_softmax":
             cat = torch.cat([u_exp, i_aspects], dim=-1)
-            logits = self.net(cat).squeeze(-1)                     # [..., A]
+            logits = self.net(cat).squeeze(-1) / self.temperature  # [..., A]
             return F.softmax(logits, dim=-1).unsqueeze(-1)
         # dot_softmax
-        scores = (u_exp * i_aspects).sum(dim=-1) / self.scale      # [..., A]
+        scores = (u_exp * i_aspects).sum(dim=-1) / self.scale
+        scores = scores / self.temperature                         # [..., A]
         return F.softmax(scores, dim=-1).unsqueeze(-1)
 
     def forward(self, u_emb: torch.Tensor, i_aspects: torch.Tensor) -> torch.Tensor:
@@ -109,6 +116,7 @@ class RA_GARK(nn.Module):
         use_rationale: bool = True,
         use_global_view: bool = True,
         rationale_style: str = "mlp_sigmoid",
+        rationale_temperature: float = 1.0,
         fusion_init_bias: float = 0.0,
     ) -> None:
         super().__init__()
@@ -133,7 +141,9 @@ class RA_GARK(nn.Module):
         self.item_kg_aspects = nn.Parameter(torch.empty(num_items, num_aspects, dim))
         nn.init.xavier_normal_(self.item_kg_aspects)
 
-        self.rationale_masking = KGRationaleMasking(dim, style=rationale_style)
+        self.rationale_masking = KGRationaleMasking(
+            dim, style=rationale_style, temperature=rationale_temperature,
+        )
         self.user_fusion_gate = _make_fusion_gate(dim, init_bias=fusion_init_bias)
         self.item_fusion_gate = _make_fusion_gate(dim, init_bias=fusion_init_bias)
 

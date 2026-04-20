@@ -78,11 +78,12 @@ def train_ragark(cfg: Config, device: torch.device) -> dict:
         use_rationale=cfg.use_rationale,
         use_global_view=cfg.use_global_view,
         rationale_style=cfg.rationale_style,
+        rationale_temperature=cfg.rationale_temperature,
         fusion_init_bias=cfg.fusion_init_bias,
     ).to(device)
     log.info(
-        "flags: rat=%s(%s) svd=%s acl=%s ucl=%s global=%s fusion_bias=%.1f",
-        cfg.use_rationale, cfg.rationale_style,
+        "flags: rat=%s(%s, τ=%.2f) svd=%s acl=%s ucl=%s global=%s fusion_bias=%.1f",
+        cfg.use_rationale, cfg.rationale_style, cfg.rationale_temperature,
         cfg.use_svd_init, cfg.use_acl, cfg.use_ucl,
         cfg.use_global_view, cfg.fusion_init_bias,
     )
@@ -220,12 +221,14 @@ if __name__ == "__main__":
     cfg.use_acl          = True
     cfg.use_ucl          = True
     cfg.use_global_view  = True
-    cfg.rationale_style  = "mlp_softmax"   # mlp_sigmoid | mlp_softmax | dot_softmax
-    cfg.fusion_init_bias = 5.0             # 0 → α≈0.5 start; 5 → α≈0.993 (local-heavy)
+    cfg.rationale_style       = "mlp_softmax"   # mlp_sigmoid | mlp_softmax | dot_softmax
+    cfg.rationale_temperature = 1.0             # <1 sharpens softmax (try 0.1 / 0.05)
+    cfg.fusion_init_bias      = 5.0             # 0 → α≈0.5; 5 → α≈0.993
     # ───────────────────────────────────────────────────────────────────
 
     tag = (
         f"rat{int(cfg.use_rationale)}-{cfg.rationale_style}"
+        f"_t{cfg.rationale_temperature:.2f}"
         f"_svd{int(cfg.use_svd_init)}"
         f"_acl{int(cfg.use_acl)}"
         f"_ucl{int(cfg.use_ucl)}"
