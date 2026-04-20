@@ -30,6 +30,15 @@ class Config:
     # dot_softmax: (u · a) / √d → softmax over aspects (no extra params)
     rationale_style: str = "mlp_softmax"
 
+    # --- Softmax temperature (only applies to softmax-style rationale) ---
+    # Divides logits before softmax: weights = softmax(logits / τ).
+    # 1.0  → current (case study showed attention ≈ uniform; rationale NOT
+    #        user-conditioned, differences within 0.003 across users)
+    # 0.5  → 2× sharpening
+    # 0.1  → 10× sharpening — makes MLP's small u_glo signal visible
+    # 0.05 → 20× sharpening — most aggressive; may hurt optimisation
+    rationale_temperature: float = 1.0
+
     # --- Fusion gate init bias ---
     # Final Linear bias in the fusion gate MLP. 0.0 → alpha ≈ 0.5 at start
     # (50/50 local/global mix from epoch 1, noisy KG pollutes LightGCN).
