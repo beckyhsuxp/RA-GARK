@@ -1,8 +1,7 @@
 """
-Optuna hyperparameter search for v6 (aspect-level CL + proj head + stop-grad).
+Optuna hyperparameter search for RA-GARK (aspect-level CL + proj head + stop-grad).
 
 Tunes cl_weight and temp (InfoNCE temperature).
-reg_weight is fixed — MSE reg is effectively 0 with current architecture.
 
 Uses val NDCG@20 at epoch 20 as the objective (fast proxy).
 
@@ -19,7 +18,6 @@ import time
 import numpy as np
 import optuna
 import torch
-import torch.nn.functional as F
 from torch.utils.data import DataLoader
 
 from config import Config
@@ -82,15 +80,13 @@ def run_trial(cfg: Config, device: torch.device, seed: int = 42) -> float:
 
     for epoch in range(SEARCH_EPOCHS):
         model.train()
-        for users, pos_items, neg_items, kg_neighbors in loader:
-            users        = users.to(device)
-            pos_items    = pos_items.to(device)
-            neg_items    = neg_items.to(device)
-            kg_neighbors = kg_neighbors.to(device)
+        for users, pos_items, neg_items, _kg_neighbors in loader:
+            users     = users.to(device)
+            pos_items = pos_items.to(device)
+            neg_items = neg_items.to(device)
 
-            pos_scores, u_loc, u_glo, i_pos_loc, i_pos_glo = model(users, pos_items)
-            neg_scores, *_                                  = model(users, neg_items)
-            _, _, _, _, i_nbr_glo                           = model(users, kg_neighbors)
+            pos_scores, u_loc, u_glo, i_pos_loc, _ = model(users, pos_items)
+            neg_scores, *_                         = model(users, neg_items)
 
             # BPR
             loss_bpr = bpr_loss(pos_scores, neg_scores)
@@ -106,14 +102,7 @@ def run_trial(cfg: Config, device: torch.device, seed: int = 42) -> float:
                 model.cl_projector(u_loc), u_glo.detach(), cfg.temp
             )
 
-            # KG reg (MSE, effectively ~0)
-            loss_reg = F.mse_loss(i_pos_glo, i_nbr_glo)
-
-            loss = (
-                loss_bpr
-                + cfg.cl_weight * (loss_acl + loss_ucl)
-                + cfg.reg_weight * loss_reg
-            )
+            loss = loss_bpr + cfg.cl_weight * (loss_acl + loss_ucl)
 
             optimizer.zero_grad()
             loss.backward()
@@ -130,7 +119,6 @@ def objective(trial: optuna.Trial, device: torch.device) -> float:
     cfg = Config()
     cfg.cl_weight = trial.suggest_float("cl_weight", 1e-4, 0.1, log=True)
     cfg.temp      = trial.suggest_float("temp", 0.05, 0.5)
-    cfg.reg_weight = 0.973  # fixed, MSE reg is ~0 anyway
 
     t0 = time.perf_counter()
     ndcg = run_trial(cfg, device, seed=42)
