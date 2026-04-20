@@ -15,7 +15,13 @@ class Config:
     embedding_dim: int = 128
     n_layers: int = 2
     num_aspects: int = 4
-    use_rationale: bool = True   # False → uniform mean over aspects (ablation)
+
+    # --- Ablation flags (all default True = full model) ---
+    use_rationale: bool = True   # False → uniform mean over aspects
+    use_svd_init: bool = True    # False → xavier init for item_kg_aspects
+    use_kg_lr: bool = True       # False → single lr for all params
+    use_acl: bool = True         # False → drop aspect-level CL
+    use_ucl: bool = True         # False → drop user cross-view CL
 
     # --- Training ---
     batch_size: int = 128
