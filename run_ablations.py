@@ -41,7 +41,10 @@ logging.basicConfig(
 )
 log = logging.getLogger("ablate")
 
-FLAGS = ("use_rationale", "use_svd_init", "use_kg_lr", "use_acl", "use_ucl")
+BOOL_FLAGS = (
+    "use_rationale", "use_svd_init", "use_kg_lr",
+    "use_acl", "use_ucl", "use_global_view",
+)
 
 
 def make_cfg(**overrides) -> Config:
@@ -50,24 +53,37 @@ def make_cfg(**overrides) -> Config:
     cfg.epochs = 80
     for k, v in overrides.items():
         setattr(cfg, k, v)
-    tag_bits = [f"{k.replace('use_', '')}{int(getattr(cfg, k))}" for k in FLAGS]
+    tag_bits = [f"{k.replace('use_', '')}{int(getattr(cfg, k))}" for k in BOOL_FLAGS]
+    tag_bits.append(f"style-{cfg.rationale_style}")
     cfg.model_save_path = f"best_ragark_{'_'.join(tag_bits)}.pth"
     return cfg
 
 
 def run_presets():
+    # Presets from the previous round (1-10) kept for reproducibility.
+    # New presets (11+): use_global_view ablation and rationale-rescue variants.
+    # The previous winner was no_rat_no_ucl (NDCG 0.1204).
     presets = [
-        ("full",                       {}),  # all True
+        # ── sanity: previous results ────────────────────────────────
+        ("full",                       {}),
         ("no_rationale",               {"use_rationale": False}),
-        ("no_svd",                     {"use_svd_init":  False}),
-        ("no_kg_lr",                   {"use_kg_lr":     False}),
-        ("no_acl",                     {"use_acl":       False}),
-        ("no_ucl",                     {"use_ucl":       False}),
-        # From the winning baseline (no_rationale), ablate one more each:
-        ("no_rat_no_svd",              {"use_rationale": False, "use_svd_init": False}),
-        ("no_rat_no_kg_lr",            {"use_rationale": False, "use_kg_lr":    False}),
-        ("no_rat_no_acl",              {"use_rationale": False, "use_acl":      False}),
-        ("no_rat_no_ucl",              {"use_rationale": False, "use_ucl":      False}),
+        ("no_rat_no_ucl",              {"use_rationale": False, "use_ucl": False}),
+
+        # ── NEW: pure LightGCN / global-view ablations ──────────────
+        ("no_global_view",             {"use_global_view": False}),
+        ("lightgcn_only",              {
+            "use_global_view": False, "use_rationale": False,
+            "use_acl": False, "use_ucl": False,
+        }),
+
+        # ── NEW: rescue rationale with softmax / dot-product heads ──
+        ("rat_softmax",                {"rationale_style": "mlp_softmax"}),
+        ("rat_dot",                    {"rationale_style": "dot_softmax"}),
+
+        # Pair the new rationale heads with the winning config
+        # (no_ucl, everything else full) to see if they beat 0.1204
+        ("rat_softmax_no_ucl",         {"rationale_style": "mlp_softmax", "use_ucl": False}),
+        ("rat_dot_no_ucl",             {"rationale_style": "dot_softmax", "use_ucl": False}),
     ]
     return presets
 
@@ -95,8 +111,9 @@ def main():
         elapsed = time.perf_counter() - t0
 
         row = {"preset": name, "elapsed_s": f"{elapsed:.0f}"}
-        for k in FLAGS:
+        for k in BOOL_FLAGS:
             row[k] = int(getattr(cfg, k))
+        row["rationale_style"] = cfg.rationale_style
         for m in ("HR", "Precision", "Recall", "F1", "MAP", "NDCG"):
             row[m] = f"{test_res.get(m, float('nan')):.4f}" if test_res else "NaN"
         results.append(row)

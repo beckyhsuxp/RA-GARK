@@ -4,25 +4,67 @@ from typing import Optional, Tuple
 
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 
 
 class KGRationaleMasking(nn.Module):
-    """User-conditioned attention over item KG-aspect embeddings."""
+    """User-conditioned attention over item KG-aspect embeddings.
 
-    def __init__(self, dim: int) -> None:
+    Supports three attention styles, switchable at init:
+      * mlp_sigmoid — MLP([u; a]) → sigmoid, no cross-aspect normalisation
+                      (original formulation; tends to saturate on all-ones)
+      * mlp_softmax — MLP([u; a]) → softmax over aspects (weights sum to 1)
+      * dot_softmax — (u · a) / √d → softmax over aspects (param-free head)
+
+    forward() handles arbitrary leading dims in i_aspects so the same
+    module can be called from both training (i_aspects: [B, A, d]) and
+    full-item ranking (i_aspects: [B, Ni, A, d]).
+    """
+
+    def __init__(self, dim: int, style: str = "mlp_sigmoid") -> None:
         super().__init__()
-        self.net = nn.Sequential(
-            nn.Linear(dim * 2, dim),
-            nn.LeakyReLU(),
-            nn.Linear(dim, 1),
-            nn.Sigmoid(),
-        )
+        self.style = style
+        self.dim = dim
+        self.scale = dim ** 0.5
+        if style == "mlp_sigmoid":
+            self.net = nn.Sequential(
+                nn.Linear(dim * 2, dim),
+                nn.LeakyReLU(),
+                nn.Linear(dim, 1),
+                nn.Sigmoid(),
+            )
+        elif style == "mlp_softmax":
+            self.net = nn.Sequential(
+                nn.Linear(dim * 2, dim),
+                nn.LeakyReLU(),
+                nn.Linear(dim, 1),
+            )
+        elif style == "dot_softmax":
+            pass  # param-free
+        else:
+            raise ValueError(f"unknown rationale_style: {style}")
+
+    def _weights(self, u_emb: torch.Tensor, i_aspects: torch.Tensor) -> torch.Tensor:
+        # Broadcast u_emb to match i_aspects' leading dims; last dim = d
+        u = u_emb
+        while u.dim() < i_aspects.dim():
+            u = u.unsqueeze(-2)
+        u_exp = u.expand_as(i_aspects)
+
+        if self.style == "mlp_sigmoid":
+            cat = torch.cat([u_exp, i_aspects], dim=-1)
+            return self.net(cat)                                   # [..., A, 1]
+        if self.style == "mlp_softmax":
+            cat = torch.cat([u_exp, i_aspects], dim=-1)
+            logits = self.net(cat).squeeze(-1)                     # [..., A]
+            return F.softmax(logits, dim=-1).unsqueeze(-1)
+        # dot_softmax
+        scores = (u_exp * i_aspects).sum(dim=-1) / self.scale      # [..., A]
+        return F.softmax(scores, dim=-1).unsqueeze(-1)
 
     def forward(self, u_emb: torch.Tensor, i_aspects: torch.Tensor) -> torch.Tensor:
-        u_exp = u_emb.unsqueeze(1).expand_as(i_aspects)
-        cat = torch.cat([u_exp, i_aspects], dim=-1)
-        weights = self.net(cat)
-        return (i_aspects * weights).sum(dim=1)
+        w = self._weights(u_emb, i_aspects)
+        return (i_aspects * w).sum(dim=-2)
 
 
 def _make_fusion_gate(dim: int) -> nn.Sequential:
@@ -62,6 +104,8 @@ class RA_GARK(nn.Module):
         dim: int = 64,
         n_layers: int = 2,
         use_rationale: bool = True,
+        use_global_view: bool = True,
+        rationale_style: str = "mlp_sigmoid",
     ) -> None:
         super().__init__()
         self.num_users = num_users
@@ -70,6 +114,7 @@ class RA_GARK(nn.Module):
         self.n_layers = n_layers
         self.num_aspects = num_aspects
         self.use_rationale = use_rationale
+        self.use_global_view = use_global_view
         self.register_buffer("adj_matrix", adj_matrix)
 
         # Local view (LightGCN)
@@ -84,7 +129,7 @@ class RA_GARK(nn.Module):
         self.item_kg_aspects = nn.Parameter(torch.empty(num_items, num_aspects, dim))
         nn.init.xavier_normal_(self.item_kg_aspects)
 
-        self.rationale_masking = KGRationaleMasking(dim)
+        self.rationale_masking = KGRationaleMasking(dim, style=rationale_style)
         self.user_fusion_gate = _make_fusion_gate(dim)
         self.item_fusion_gate = _make_fusion_gate(dim)
 
@@ -120,11 +165,15 @@ class RA_GARK(nn.Module):
         else:
             i_glo = i_aspects.mean(dim=1)
 
-        alpha_i = self.item_fusion_gate(torch.cat([i_loc, i_glo], dim=-1))
-        i_final = alpha_i * i_loc + (1 - alpha_i) * i_glo
+        if self.use_global_view:
+            alpha_i = self.item_fusion_gate(torch.cat([i_loc, i_glo], dim=-1))
+            i_final = alpha_i * i_loc + (1 - alpha_i) * i_glo
 
-        alpha_u = self.user_fusion_gate(torch.cat([u_loc, u_glo], dim=-1))
-        u_final = alpha_u * u_loc + (1 - alpha_u) * u_glo
+            alpha_u = self.user_fusion_gate(torch.cat([u_loc, u_glo], dim=-1))
+            u_final = alpha_u * u_loc + (1 - alpha_u) * u_glo
+        else:
+            u_final = u_loc
+            i_final = i_loc
 
         scores = (u_final * i_final).sum(dim=-1)
         return scores, u_loc, u_glo, i_loc, i_glo
@@ -150,18 +199,17 @@ class RA_GARK(nn.Module):
 
         B = u_idx.size(0)
         u_loc = all_u_loc[u_idx]
-        u_glo = self.user_global_emb(u_idx)
+        i_loc_exp = all_i_loc.unsqueeze(0).expand(B, -1, -1)
 
+        if not self.use_global_view:
+            return torch.bmm(i_loc_exp, u_loc.unsqueeze(-1)).squeeze(-1)
+
+        u_glo = self.user_global_emb(u_idx)
         i_asp = self.item_kg_aspects.unsqueeze(0).expand(B, -1, -1, -1)
         if self.use_rationale:
-            u_exp = u_glo[:, None, None, :].expand_as(i_asp)
-            cat = torch.cat([u_exp, i_asp], dim=-1)
-            weights = self.rationale_masking.net(cat)
-            i_glo = (i_asp * weights).sum(dim=2)
+            i_glo = self.rationale_masking(u_glo, i_asp)
         else:
             i_glo = i_asp.mean(dim=2)
-
-        i_loc_exp = all_i_loc.unsqueeze(0).expand(B, -1, -1)
 
         alpha_i = self.item_fusion_gate(torch.cat([i_loc_exp, i_glo], dim=-1))
         i_final = alpha_i * i_loc_exp + (1 - alpha_i) * i_glo

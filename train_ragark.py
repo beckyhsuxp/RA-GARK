@@ -75,10 +75,13 @@ def train_ragark(cfg: Config, device: torch.device) -> dict:
         dim=cfg.embedding_dim,
         n_layers=cfg.n_layers,
         use_rationale=cfg.use_rationale,
+        use_global_view=cfg.use_global_view,
+        rationale_style=cfg.rationale_style,
     ).to(device)
     log.info(
-        "flags: rationale=%s svd=%s kg_lr=%s acl=%s ucl=%s",
-        cfg.use_rationale, cfg.use_svd_init, cfg.use_kg_lr, cfg.use_acl, cfg.use_ucl,
+        "flags: rat=%s(%s) svd=%s kg_lr=%s acl=%s ucl=%s global=%s",
+        cfg.use_rationale, cfg.rationale_style,
+        cfg.use_svd_init, cfg.use_kg_lr, cfg.use_acl, cfg.use_ucl, cfg.use_global_view,
     )
 
     # ── KG SVD initialisation ──────────────────────────────────────────
@@ -222,19 +225,22 @@ if __name__ == "__main__":
     cfg.epochs = 80
 
     # ── Ablation toggles — flip any flag to False to ablate ────────────
-    cfg.use_rationale = True
-    cfg.use_svd_init  = True
-    cfg.use_kg_lr     = True
-    cfg.use_acl       = True
-    cfg.use_ucl       = True
+    cfg.use_rationale    = True
+    cfg.use_svd_init     = True
+    cfg.use_kg_lr        = True
+    cfg.use_acl          = True
+    cfg.use_ucl          = True
+    cfg.use_global_view  = True
+    cfg.rationale_style  = "mlp_sigmoid"   # mlp_sigmoid | mlp_softmax | dot_softmax
     # ───────────────────────────────────────────────────────────────────
 
     tag = (
-        f"rat{int(cfg.use_rationale)}"
+        f"rat{int(cfg.use_rationale)}-{cfg.rationale_style}"
         f"_svd{int(cfg.use_svd_init)}"
         f"_kglr{int(cfg.use_kg_lr)}"
         f"_acl{int(cfg.use_acl)}"
         f"_ucl{int(cfg.use_ucl)}"
+        f"_gv{int(cfg.use_global_view)}"
     )
     cfg.model_save_path = f"best_ragark_{tag}.pth"
 
