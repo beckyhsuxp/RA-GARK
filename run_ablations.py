@@ -7,7 +7,6 @@ Presets covered (all use cl_weight=0.005, epochs=80, seed=42):
     full             all flags ON (current RA-GARK)
     no_rationale     uniform mean over aspects
     no_svd           xavier init instead of KG SVD
-    no_kg_lr         single global lr
     no_acl           drop aspect-level CL
     no_ucl           drop user cross-view CL
 
@@ -42,7 +41,7 @@ logging.basicConfig(
 log = logging.getLogger("ablate")
 
 BOOL_FLAGS = (
-    "use_rationale", "use_svd_init", "use_kg_lr",
+    "use_rationale", "use_svd_init",
     "use_acl", "use_ucl", "use_global_view",
 )
 
@@ -74,7 +73,6 @@ def run_presets():
         # ── Leave-one-out from the winner ────────────────────────────
         ("winner_no_rat",              {"use_rationale": False}),
         ("winner_no_svd",              {"use_svd_init":  False}),
-        ("winner_no_kg_lr",            {"use_kg_lr":     False}),
         ("winner_no_acl",              {"use_acl":       False}),
         ("winner_no_ucl",              {"use_ucl":       False}),
 
