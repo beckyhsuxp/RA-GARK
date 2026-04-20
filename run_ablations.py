@@ -55,7 +55,6 @@ def make_cfg(**overrides) -> Config:
     tag_bits = [f"{k.replace('use_', '')}{int(getattr(cfg, k))}" for k in BOOL_FLAGS]
     tag_bits.append(f"style-{cfg.rationale_style}")
     tag_bits.append(f"fb{cfg.fusion_init_bias:.0f}")
-    tag_bits.append(f"kgs{cfg.kg_aspect_lr_scale:.2f}")
     cfg.model_save_path = f"best_ragark_{'_'.join(tag_bits)}.pth"
     return cfg
 
@@ -83,14 +82,6 @@ def run_presets():
         ("old_full",                   {  # both reverted → the original broken full
             "rationale_style": "mlp_sigmoid", "fusion_init_bias": 0.0,
         }),                                                          # ≈ 0.1064 expected
-
-        # ── Part B: aggressive per-param LR ratio revisit ────────────
-        # Winner uses single lr (scale=1.0). See if slowing item_kg_aspects
-        # protects the KG-SVD init enough to beat 0.1231. Previous scale=0.5
-        # gave only -0.1% (within noise); try more aggressive slowdowns.
-        ("winner_kg_scale_0.5",        {"kg_aspect_lr_scale": 0.5}),
-        ("winner_kg_scale_0.1",        {"kg_aspect_lr_scale": 0.1}),
-        ("winner_kg_scale_0.01",       {"kg_aspect_lr_scale": 0.01}),
 
         # ── Reference floors ─────────────────────────────────────────
         ("no_global_view",             {"use_global_view": False}),  # ≈ 0.1218
