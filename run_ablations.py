@@ -55,35 +55,38 @@ def make_cfg(**overrides) -> Config:
         setattr(cfg, k, v)
     tag_bits = [f"{k.replace('use_', '')}{int(getattr(cfg, k))}" for k in BOOL_FLAGS]
     tag_bits.append(f"style-{cfg.rationale_style}")
+    tag_bits.append(f"fb{cfg.fusion_init_bias:.0f}")
     cfg.model_save_path = f"best_ragark_{'_'.join(tag_bits)}.pth"
     return cfg
 
 
 def run_presets():
-    # Presets from the previous round (1-10) kept for reproducibility.
-    # New presets (11+): use_global_view ablation and rationale-rescue variants.
-    # The previous winner was no_rat_no_ucl (NDCG 0.1204).
+    # Best so far: no_global_view = 0.1222 (but user requires fusion-gate
+    # dual-view). The current fusion fails (full=0.1064) because the gate
+    # starts at alpha≈0.5 → KG noise pollutes LightGCN from epoch 1.
+    # Fix 1 biases the gate's final Linear with bias=5 → alpha≈0.993 at
+    # init, so the model starts LightGCN-like and only opens to KG when
+    # the gradient says it helps.
     presets = [
-        # ── sanity: previous results ────────────────────────────────
-        ("full",                       {}),
-        ("no_rationale",               {"use_rationale": False}),
-        ("no_rat_no_ucl",              {"use_rationale": False, "use_ucl": False}),
-
-        # ── NEW: pure LightGCN / global-view ablations ──────────────
-        ("no_global_view",             {"use_global_view": False}),
+        # ── baselines for reference ─────────────────────────────────
+        ("full",                       {}),                           # 0.1064
+        ("no_global_view",             {"use_global_view": False}),   # 0.1222
         ("lightgcn_only",              {
             "use_global_view": False, "use_rationale": False,
             "use_acl": False, "use_ucl": False,
+        }),                                                           # 0.1179
+
+        # ── Fix 1: fusion_init_bias = 5.0 (alpha starts ≈0.993) ─────
+        ("fusion_b5",                  {"fusion_init_bias": 5.0}),
+        ("fusion_b5_softmax_rat",      {
+            "fusion_init_bias": 5.0, "rationale_style": "mlp_softmax",
+        }),
+        ("fusion_b5_no_ucl",           {
+            "fusion_init_bias": 5.0, "use_ucl": False,
         }),
 
-        # ── NEW: rescue rationale with softmax / dot-product heads ──
-        ("rat_softmax",                {"rationale_style": "mlp_softmax"}),
-        ("rat_dot",                    {"rationale_style": "dot_softmax"}),
-
-        # Pair the new rationale heads with the winning config
-        # (no_ucl, everything else full) to see if they beat 0.1204
-        ("rat_softmax_no_ucl",         {"rationale_style": "mlp_softmax", "use_ucl": False}),
-        ("rat_dot_no_ucl",             {"rationale_style": "dot_softmax", "use_ucl": False}),
+        # ── Sanity: even stronger bias to confirm the trend ─────────
+        ("fusion_b8",                  {"fusion_init_bias": 8.0}),
     ]
     return presets
 

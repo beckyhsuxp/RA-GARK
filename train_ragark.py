@@ -77,11 +77,13 @@ def train_ragark(cfg: Config, device: torch.device) -> dict:
         use_rationale=cfg.use_rationale,
         use_global_view=cfg.use_global_view,
         rationale_style=cfg.rationale_style,
+        fusion_init_bias=cfg.fusion_init_bias,
     ).to(device)
     log.info(
-        "flags: rat=%s(%s) svd=%s kg_lr=%s acl=%s ucl=%s global=%s",
+        "flags: rat=%s(%s) svd=%s kg_lr=%s acl=%s ucl=%s global=%s fusion_bias=%.1f",
         cfg.use_rationale, cfg.rationale_style,
-        cfg.use_svd_init, cfg.use_kg_lr, cfg.use_acl, cfg.use_ucl, cfg.use_global_view,
+        cfg.use_svd_init, cfg.use_kg_lr, cfg.use_acl, cfg.use_ucl,
+        cfg.use_global_view, cfg.fusion_init_bias,
     )
 
     # ── KG SVD initialisation ──────────────────────────────────────────
@@ -232,6 +234,7 @@ if __name__ == "__main__":
     cfg.use_ucl          = True
     cfg.use_global_view  = True
     cfg.rationale_style  = "mlp_sigmoid"   # mlp_sigmoid | mlp_softmax | dot_softmax
+    cfg.fusion_init_bias = 0.0             # 0 → α≈0.5 start; 5 → α≈0.993 (local-heavy)
     # ───────────────────────────────────────────────────────────────────
 
     tag = (
@@ -241,6 +244,7 @@ if __name__ == "__main__":
         f"_acl{int(cfg.use_acl)}"
         f"_ucl{int(cfg.use_ucl)}"
         f"_gv{int(cfg.use_global_view)}"
+        f"_fb{cfg.fusion_init_bias:.0f}"
     )
     cfg.model_save_path = f"best_ragark_{tag}.pth"
 
