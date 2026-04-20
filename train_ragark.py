@@ -21,7 +21,6 @@ from typing import Tuple
 import numpy as np
 import pandas as pd
 import torch
-import torch.nn.functional as F
 from torch.utils.data import DataLoader
 
 from config import Config
@@ -98,7 +97,7 @@ def train_ragark(cfg: Config, device: torch.device) -> None:
 
     best_val_ndcg, best_epoch, no_improve = 0.0, 0, 0
     header = (
-        f"{'Ep':>4} | {'Loss':>8} | {'BPR':>8} | {'aCL':>8} | {'uCL':>8} | {'Reg':>8} |"
+        f"{'Ep':>4} | {'Loss':>8} | {'BPR':>8} | {'aCL':>8} | {'uCL':>8} |"
         f" {'vHR':>7} | {'vRecall':>7} | {'vNDCG':>7} | Note"
     )
     sep = "-" * len(header)
@@ -106,17 +105,15 @@ def train_ragark(cfg: Config, device: torch.device) -> None:
 
     for epoch in range(cfg.epochs):
         model.train()
-        total_loss = total_bpr = total_acl = total_ucl = total_reg = 0.0
+        total_loss = total_bpr = total_acl = total_ucl = 0.0
 
-        for users, pos_items, neg_items, kg_neighbors in loader:
+        for users, pos_items, neg_items, _kg_neighbors in loader:
             users = users.to(device)
             pos_items = pos_items.to(device)
             neg_items = neg_items.to(device)
-            kg_neighbors = kg_neighbors.to(device)
 
-            pos_scores, u_loc, u_glo, i_pos_loc, i_pos_glo = model(users, pos_items)
+            pos_scores, u_loc, u_glo, i_pos_loc, _ = model(users, pos_items)
             neg_scores, *_ = model(users, neg_items)
-            _, _, _, _, i_nbr_glo = model(users, kg_neighbors)
 
             # --- BPR ---
             loss_bpr = bpr_loss(pos_scores, neg_scores)
@@ -132,14 +129,7 @@ def train_ragark(cfg: Config, device: torch.device) -> None:
                 model.cl_projector(u_loc), u_glo.detach(), cfg.temp
             )
 
-            # --- KG regularization ---
-            loss_reg = F.mse_loss(i_pos_glo, i_nbr_glo)
-
-            loss = (
-                loss_bpr
-                + cfg.cl_weight * (loss_acl + loss_ucl)
-                + cfg.reg_weight * loss_reg
-            )
+            loss = loss_bpr + cfg.cl_weight * (loss_acl + loss_ucl)
 
             optimizer.zero_grad()
             loss.backward()
@@ -149,14 +139,12 @@ def train_ragark(cfg: Config, device: torch.device) -> None:
             total_bpr += loss_bpr.item()
             total_acl += loss_acl.item()
             total_ucl += loss_ucl.item()
-            total_reg += loss_reg.item()
 
         n = len(loader)
         avg_loss = total_loss / n
         avg_bpr = total_bpr / n
         avg_acl = total_acl / n
         avg_ucl = total_ucl / n
-        avg_reg = total_reg / n
 
         t0 = time.perf_counter()
         val_res = evaluate(
@@ -176,8 +164,8 @@ def train_ragark(cfg: Config, device: torch.device) -> None:
             no_improve += 1
 
         log.info(
-            "%4d | %8.4f | %8.4f | %8.4f | %8.4f | %8.4f | %7.4f | %7.4f | %7.4f | %s",
-            epoch + 1, avg_loss, avg_bpr, avg_acl, avg_ucl, avg_reg,
+            "%4d | %8.4f | %8.4f | %8.4f | %8.4f | %7.4f | %7.4f | %7.4f | %s",
+            epoch + 1, avg_loss, avg_bpr, avg_acl, avg_ucl,
             val_res["HR"], val_res["Recall"], val_res["NDCG"], note,
         )
 
@@ -211,7 +199,6 @@ if __name__ == "__main__":
 
     cfg = Config()
     cfg.cl_weight = 0.005
-    cfg.reg_weight = 0.973
     cfg.epochs = 80
     cfg.model_save_path = "best_ragark_model.pth"
 

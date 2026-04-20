@@ -26,7 +26,6 @@ class Config:
 
     # --- Loss weights ---
     cl_weight: float = 0.01   # InfoNCE contrastive loss
-    reg_weight: float = 0.1   # KG consistency regularization
     temp: float = 0.2         # InfoNCE temperature
 
     # --- KG pruning ---
