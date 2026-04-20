@@ -1,6 +1,7 @@
 """
-Draw Figure 1: RA-GARK architecture with the three ★-novelties
-highlighted. Saves PNG and PDF for paper use.
+Draw Figure 1: RA-GARK architecture as a horizontal left-to-right pipeline.
+Two parallel lanes (LOCAL and GLOBAL) flow into a fusion gate that
+produces the final score. The three ★-novelties are highlighted inline.
 
 Run:
     python figures/architecture.py
@@ -17,147 +18,241 @@ import matplotlib.pyplot as plt
 from matplotlib.patches import FancyArrowPatch, FancyBboxPatch
 
 
-# ── Style constants ─────────────────────────────────────────────────────
-COLOR_LOCAL   = "#E6F0FF"
-COLOR_GLOBAL  = "#FFF0E0"
-COLOR_FUSION  = "#E8E8F8"
-COLOR_LOSS    = "#F8F8E0"
+# ── Palette ─────────────────────────────────────────────────────────────
+COLOR_INPUT   = "#E8E8E8"
+COLOR_LOCAL   = "#DCE8FB"
+COLOR_GLOBAL  = "#FCE6CE"
+COLOR_FUSION  = "#E4E0F5"
+COLOR_SCORE   = "#FFFFFF"
+COLOR_LOSS    = "#F5F1C8"
 COLOR_STAR    = "#D83A3A"
-EDGE_COLOR    = "#333333"
-FONT_LABEL    = dict(fontsize=10, ha="center", va="center")
-FONT_STAR     = dict(fontsize=16, color=COLOR_STAR, ha="center", va="center", weight="bold")
-FONT_CAPTION  = dict(fontsize=9, color=COLOR_STAR, ha="center", va="center", style="italic")
+EDGE_COLOR    = "#2A2A2A"
+
+LANE_LOCAL_Y  = 4.5       # centre Y of the LOCAL lane
+LANE_GLOBAL_Y = 2.0       # centre Y of the GLOBAL lane
+FUSION_Y      = 3.25      # centre Y of the fusion gate block
 
 
-def _box(ax, x, y, w, h, text, color, subtext=None, *, bold=False):
-    """Rounded box with centred text."""
+# ── Primitives ──────────────────────────────────────────────────────────
+def draw_box(ax, x, y, w, h, title, *, color, subtitle=None, bold=True,
+             title_size=10, sub_size=8):
+    """Rounded rectangle with centred title (and optional subtitle)."""
     box = FancyBboxPatch(
         (x, y), w, h,
         boxstyle="round,pad=0.04,rounding_size=0.12",
-        linewidth=1.1, edgecolor=EDGE_COLOR, facecolor=color,
+        linewidth=1.0, edgecolor=EDGE_COLOR, facecolor=color,
     )
     ax.add_patch(box)
-    tfont = FONT_LABEL.copy()
-    if bold:
-        tfont["weight"] = "bold"
-    if subtext is None:
-        ax.text(x + w / 2, y + h / 2, text, **tfont)
+    cx, cy = x + w / 2, y + h / 2
+    if subtitle is None:
+        ax.text(cx, cy, title,
+                ha="center", va="center",
+                fontsize=title_size, weight="bold" if bold else "normal")
     else:
-        ax.text(x + w / 2, y + h * 0.63, text, **tfont)
-        sub = tfont.copy()
-        sub.update(fontsize=8, color="#444444", style="italic", weight="normal")
-        ax.text(x + w / 2, y + h * 0.28, subtext, **sub)
+        ax.text(cx, cy + h * 0.17, title,
+                ha="center", va="center",
+                fontsize=title_size, weight="bold" if bold else "normal")
+        ax.text(cx, cy - h * 0.22, subtitle,
+                ha="center", va="center",
+                fontsize=sub_size, color="#444444", style="italic")
+    return (cx, cy, x, y, x + w, y + h)
 
 
-def _star(ax, x, y, caption=None):
-    ax.text(x, y, "★", **FONT_STAR)
-    if caption is not None:
-        ax.text(x, y - 0.30, caption, **FONT_CAPTION)
-
-
-def _arrow(ax, x1, y1, x2, y2, *, dashed=False, label=None):
-    style = "-" if not dashed else "--"
+def draw_arrow(ax, x1, y1, x2, y2, *, dashed=False, label=None, label_dy=0.12,
+               lw=1.1):
+    style = "--" if dashed else "-"
+    color = "#777777" if dashed else EDGE_COLOR
     arr = FancyArrowPatch(
         (x1, y1), (x2, y2),
         arrowstyle="-|>", linestyle=style,
-        color=EDGE_COLOR, linewidth=1.1, mutation_scale=12,
+        color=color, linewidth=lw, mutation_scale=11,
     )
     ax.add_patch(arr)
     if label:
-        ax.text((x1 + x2) / 2, (y1 + y2) / 2 + 0.05, label, fontsize=8,
-                ha="center", va="bottom", style="italic", color="#555555")
+        ax.text((x1 + x2) / 2, (y1 + y2) / 2 + label_dy, label,
+                ha="center", va="bottom",
+                fontsize=7.5, color="#555555", style="italic")
 
 
+def draw_star(ax, x, y, caption, *, dx=0.0, dy=0.55):
+    """Red ★ with italic caption above it."""
+    ax.text(x, y, "★", ha="center", va="center",
+            fontsize=14, color=COLOR_STAR, weight="bold")
+    if caption:
+        ax.text(x + dx, y + dy, caption,
+                ha="center", va="center",
+                fontsize=7.8, color=COLOR_STAR, style="italic", weight="bold")
+
+
+def lane_band(ax, y_centre, label, color, *, y_span=1.2, x0=0.3, x1=15.8):
+    """Faint background band to signal the swim-lane."""
+    h = y_span
+    ax.add_patch(FancyBboxPatch(
+        (x0, y_centre - h / 2), x1 - x0, h,
+        boxstyle="round,pad=0.0,rounding_size=0.10",
+        linewidth=0, facecolor=color, alpha=0.35,
+    ))
+    ax.text(x0 + 0.15, y_centre + h / 2 - 0.22, label,
+            ha="left", va="top",
+            fontsize=9.5, color="#333333", weight="bold", style="italic")
+
+
+# ── Main figure ─────────────────────────────────────────────────────────
 def draw():
-    fig, ax = plt.subplots(figsize=(12, 7.2))
-    ax.set_xlim(0, 12)
-    ax.set_ylim(0, 7.5)
+    fig, ax = plt.subplots(figsize=(16, 6.0))
+    ax.set_xlim(0, 16)
+    ax.set_ylim(0, 6.2)
     ax.set_aspect("equal")
     ax.axis("off")
 
-    # Title
-    ax.text(6.0, 7.2,
-            "RA-GARK: Dual-View Recommendation with Softmax Rationale Attention and Local-Biased Fusion",
-            fontsize=12, ha="center", va="center", weight="bold")
+    # Title (right-aligned so it doesn't collide with the input box)
+    ax.text(8.0, 5.95,
+            "RA-GARK: Dual-View Recommendation with Softmax Aspect Saliency and Local-Biased Fusion",
+            ha="center", va="center",
+            fontsize=11.5, weight="bold", color="#1F3A68")
 
-    # Input
-    _box(ax, 5.0, 6.25, 2.0, 0.55, "INPUT (u, i)", "#F0F0F0", bold=True)
+    # ── Swim lanes ─────────────────────────────────────────────────────
+    lane_band(ax, LANE_LOCAL_Y,  "LOCAL VIEW  (collaborative signal)",
+              COLOR_LOCAL,  y_span=1.3, x0=1.9, x1=10.0)
+    lane_band(ax, LANE_GLOBAL_Y, "GLOBAL VIEW  (KG semantic signal)",
+              COLOR_GLOBAL, y_span=1.3, x0=1.9, x1=10.0)
 
-    # ── Local view column (left) ────────────────────────────────────────
-    _box(ax, 0.6, 5.0, 3.6, 0.55, "user_local_emb, item_local_emb", COLOR_LOCAL)
-    _box(ax, 0.6, 4.1, 3.6, 0.65, "LightGCN propagation",
-         COLOR_LOCAL, subtext="D⁻¹ᐟ² A D⁻¹ᐟ² x,  K=2,  layer-mean")
-    _box(ax, 1.2, 3.05, 1.35, 0.55, "u_loc", COLOR_LOCAL, bold=True)
-    _box(ax, 2.85, 3.05, 1.35, 0.55, "i_loc", COLOR_LOCAL, bold=True)
+    # ── INPUT ─────────────────────────────────────────────────────────
+    draw_box(ax, 0.3, 2.9, 1.5, 0.8,
+             "INPUT", color=COLOR_INPUT, subtitle="user u,  item i",
+             title_size=11, sub_size=9)
 
-    # ── Global view column (right) ──────────────────────────────────────
-    _box(ax, 7.8, 5.0, 3.6, 0.55, "item_kg_aspects  [Ni, A, d]", COLOR_GLOBAL, bold=True)
-    _star(ax, 7.6, 5.27, caption="KG SVD init")
+    # ── LOCAL lane: embeddings → LightGCN → u_loc / i_loc ──────────────
+    draw_box(ax, 2.1, LANE_LOCAL_Y - 0.3, 2.1, 0.7,
+             "user / item\nlocal embs",
+             color=COLOR_LOCAL, title_size=9, bold=False)
+    draw_box(ax, 4.5, LANE_LOCAL_Y - 0.35, 2.1, 0.8,
+             "LightGCN",
+             color=COLOR_LOCAL, subtitle="D⁻¹ᐟ² A D⁻¹ᐟ² x,  K=2",
+             title_size=10, sub_size=8)
+    draw_box(ax, 6.9, LANE_LOCAL_Y - 0.3, 1.3, 0.7,
+             "u_loc", color="white", title_size=10)
+    draw_box(ax, 8.4, LANE_LOCAL_Y - 0.3, 1.3, 0.7,
+             "i_loc", color="white", title_size=10)
 
-    _box(ax, 7.8, 4.1, 3.6, 0.65, "KG Rationale Masking",
-         COLOR_GLOBAL,
-         subtext="weights = softmax(MLP([u_glo; i_aspects]))")
-    _star(ax, 7.6, 4.44, caption="Softmax\nnormalise")
+    # ── GLOBAL lane: item_kg_aspects / u_glo → Rationale → i_glo ───────
+    draw_box(ax, 2.1, LANE_GLOBAL_Y - 0.3, 2.1, 0.7,
+             "item_kg_aspects",
+             color=COLOR_GLOBAL, subtitle="[N, A=4, d]",
+             title_size=9, sub_size=8)
+    draw_star(ax, 2.1 + 2.1 - 0.2, LANE_GLOBAL_Y + 0.6,
+              "KG SVD init", dx=0.0, dy=0.32)
 
-    _box(ax, 7.8, 3.05, 1.6, 0.55, "u_glo", COLOR_GLOBAL)
-    _box(ax, 9.8, 3.05, 1.6, 0.55, "i_glo = Σ w·aspect", COLOR_GLOBAL)
+    draw_box(ax, 4.5, LANE_GLOBAL_Y - 0.35, 2.1, 0.8,
+             "Rationale Masking",
+             color=COLOR_GLOBAL,
+             subtitle="softmax(MLP(·) / τ),  τ = 0.5",
+             title_size=10, sub_size=8)
+    draw_star(ax, 4.5 + 2.1 - 0.2, LANE_GLOBAL_Y + 0.65,
+              "Softmax + τ", dx=0.0, dy=0.32)
 
-    # ── Fusion gate row ─────────────────────────────────────────────────
-    _box(ax, 1.4, 1.85, 3.4, 0.65, "user_fusion_gate",
-         COLOR_FUSION, subtext="α_u = σ(MLP + b=+5)  →  u_final")
-    _box(ax, 7.2, 1.85, 3.4, 0.65, "item_fusion_gate",
-         COLOR_FUSION, subtext="α_i = σ(MLP + b=+5)  →  i_final")
-    _star(ax, 4.9, 2.25, caption="Local-biased init\n(α≈0.993 at start)")
-    _star(ax, 7.0, 2.25, caption=None)
+    draw_box(ax, 6.9, LANE_GLOBAL_Y - 0.3, 1.3, 0.7,
+             "u_glo", color="white", title_size=10)
+    draw_box(ax, 8.4, LANE_GLOBAL_Y - 0.3, 1.3, 0.7,
+             "i_glo", color="white", title_size=10)
 
-    # Score and losses
-    _box(ax, 4.9, 0.85, 2.2, 0.6, "score = u_final · i_final", "#FFFFFF", bold=True)
-    _box(ax, 0.4, 0.05, 2.2, 0.5, "L_BPR", COLOR_LOSS, bold=True)
-    _box(ax, 4.9, 0.05, 2.2, 0.5, "L_aCL   (aspect CL, stop-grad)", COLOR_LOSS)
-    _box(ax, 9.4, 0.05, 2.2, 0.5, "L_uCL   (user CL, stop-grad)", COLOR_LOSS)
+    # ── FUSION GATES (one per side) ────────────────────────────────────
+    draw_box(ax, 10.3, LANE_LOCAL_Y - 0.35, 2.2, 0.85,
+             "user fusion gate",
+             color=COLOR_FUSION,
+             subtitle="α_u = σ(MLP + 5)   →   u_final",
+             title_size=9.5, sub_size=8)
+    draw_box(ax, 10.3, LANE_GLOBAL_Y - 0.35, 2.2, 0.85,
+             "item fusion gate",
+             color=COLOR_FUSION,
+             subtitle="α_i = σ(MLP + 5)   →   i_final",
+             title_size=9.5, sub_size=8)
+    draw_star(ax, 10.3 + 2.2 + 0.3, FUSION_Y + 0.05,
+              "Local-biased\ninit  bias = +5", dx=0.0, dy=0.48)
 
-    # ── Arrows: input → views ───────────────────────────────────────────
-    _arrow(ax, 5.6, 6.25, 2.5, 5.60)                         # in → local emb
-    _arrow(ax, 6.4, 6.25, 9.6, 5.60)                         # in → global emb
+    # ── SCORE ──────────────────────────────────────────────────────────
+    draw_box(ax, 13.2, FUSION_Y - 0.4, 2.4, 0.8,
+             "score",
+             color=COLOR_SCORE,
+             subtitle="u_final · i_final",
+             title_size=11, sub_size=9)
 
-    # Local chain
-    _arrow(ax, 2.4, 5.00, 2.4, 4.78)                         # emb → lightgcn
-    _arrow(ax, 2.0, 4.08, 1.85, 3.65)                        # lightgcn → u_loc
-    _arrow(ax, 2.8, 4.08, 3.5, 3.65)                         # lightgcn → i_loc
+    # ── LOSSES (bottom) ────────────────────────────────────────────────
+    draw_box(ax, 1.9, 0.3, 2.3, 0.55,
+             "L_aCL", color=COLOR_LOSS, title_size=9, bold=True)
+    ax.text(1.9 + 1.15, 0.15,
+            "aspect-level CL (stop-grad)",
+            ha="center", va="center",
+            fontsize=7.3, color="#555555", style="italic")
 
-    # Global chain
-    _arrow(ax, 9.6, 5.00, 9.6, 4.78)                         # aspects → rationale
-    _arrow(ax, 8.4, 4.08, 8.6, 3.65)                         # rationale → u_glo (shown as input below)
-    _arrow(ax, 9.8, 4.08, 10.6, 3.65)                        # rationale → i_glo
-    # user_global_emb feeds rationale — draw a small box above "u_glo"
-    _arrow(ax, 8.6, 3.05, 8.6, 4.10, dashed=True, label="condition")
+    draw_box(ax, 4.6, 0.3, 2.3, 0.55,
+             "L_uCL", color=COLOR_LOSS, title_size=9, bold=True)
+    ax.text(4.6 + 1.15, 0.15,
+            "user cross-view CL (stop-grad)",
+            ha="center", va="center",
+            fontsize=7.3, color="#555555", style="italic")
 
-    # Into fusion
-    _arrow(ax, 1.85, 3.05, 2.2, 2.52)                        # u_loc → user_fusion
-    _arrow(ax, 8.6, 3.05, 7.8, 2.52)                         # u_glo → user_fusion
-    _arrow(ax, 3.5, 3.05, 4.4, 2.52, dashed=False)           # (cross) — not needed; remove
-    _arrow(ax, 3.5, 3.05, 8.3, 2.52)                         # i_loc → item_fusion
-    _arrow(ax, 10.6, 3.05, 9.3, 2.52)                        # i_glo → item_fusion
+    draw_box(ax, 13.0, 0.3, 2.6, 0.55,
+             "L_BPR",
+             color=COLOR_LOSS, subtitle="L_total = L_BPR + 0.005·(L_aCL+L_uCL)",
+             title_size=9, sub_size=7.5)
 
-    # Into score
-    _arrow(ax, 3.1, 1.85, 5.5, 1.48)
-    _arrow(ax, 8.9, 1.85, 6.5, 1.48)
+    # ── Arrows (left → right) ──────────────────────────────────────────
+    # INPUT → lanes
+    draw_arrow(ax, 1.8, 3.3, 2.1, LANE_LOCAL_Y - 0.02)
+    draw_arrow(ax, 1.8, 3.3, 2.1, LANE_GLOBAL_Y + 0.02)
 
-    # Score → losses
-    _arrow(ax, 5.5, 0.85, 1.5, 0.56)                         # score → L_BPR
+    # LOCAL lane forward
+    draw_arrow(ax, 4.2, LANE_LOCAL_Y, 4.5, LANE_LOCAL_Y)
+    draw_arrow(ax, 6.6, LANE_LOCAL_Y, 6.9, LANE_LOCAL_Y)
+    draw_arrow(ax, 8.2, LANE_LOCAL_Y, 8.4, LANE_LOCAL_Y)
 
-    # CL arrows (dashed — stop-grad)
-    _arrow(ax, 3.5, 3.05, 6.0, 0.56, dashed=True)            # i_loc → aCL
-    _arrow(ax, 10.6, 3.05, 6.0, 0.56, dashed=True)           # aspects → aCL  (stop-grad target)
-    _arrow(ax, 1.85, 3.05, 10.4, 0.56, dashed=True)          # u_loc → uCL
-    _arrow(ax, 8.6, 3.05, 10.4, 0.56, dashed=True)           # u_glo → uCL  (stop-grad target)
+    # GLOBAL lane forward
+    draw_arrow(ax, 4.2, LANE_GLOBAL_Y, 4.5, LANE_GLOBAL_Y)
+    draw_arrow(ax, 6.6, LANE_GLOBAL_Y, 6.9, LANE_GLOBAL_Y)
+    draw_arrow(ax, 8.2, LANE_GLOBAL_Y, 8.4, LANE_GLOBAL_Y)
 
-    # ── Legend for stars ────────────────────────────────────────────────
-    ax.text(0.1, 6.8, "★  = novelty", **FONT_CAPTION)
+    # u_glo feeds back as conditioning into Rationale Masking (dashed)
+    draw_arrow(ax, 7.55, LANE_GLOBAL_Y + 0.4, 5.55, LANE_GLOBAL_Y + 0.05,
+               dashed=True, label="condition")
 
+    # Lanes → Fusion gates (u_loc+u_glo → user gate, i_loc+i_glo → item gate)
+    draw_arrow(ax, 7.55, LANE_LOCAL_Y,  10.3, LANE_LOCAL_Y)                 # u_loc
+    draw_arrow(ax, 7.55, LANE_GLOBAL_Y, 10.3, LANE_GLOBAL_Y)                # u_glo — into user gate via cross
+    draw_arrow(ax, 9.05, LANE_LOCAL_Y,  10.3, LANE_LOCAL_Y,  lw=0.8)        # (overlap no-op)
+    draw_arrow(ax, 9.05, LANE_GLOBAL_Y, 10.3, LANE_GLOBAL_Y, lw=0.8)
+    # Cross flow: u_glo also needs to reach user fusion gate (same lane)
+    # i_loc needs to reach item fusion gate (same lane) — already covered above
+    draw_arrow(ax, 7.55, LANE_GLOBAL_Y + 0.1, 10.3, LANE_LOCAL_Y - 0.2,
+               dashed=False, lw=0.9)
+    draw_arrow(ax, 7.55, LANE_LOCAL_Y - 0.1, 10.3, LANE_GLOBAL_Y + 0.2,
+               dashed=False, lw=0.9)
+
+    # Fusion → score (one arrow from user gate, one from item gate)
+    draw_arrow(ax, 12.5, LANE_LOCAL_Y - 0.05,  13.2, FUSION_Y + 0.2)
+    draw_arrow(ax, 12.5, LANE_GLOBAL_Y + 0.05, 13.2, FUSION_Y - 0.2)
+
+    # Score → L_BPR
+    draw_arrow(ax, 14.4, FUSION_Y - 0.4, 14.4, 0.85)
+
+    # CL losses (dashed, stop-grad) from the lanes
+    # aCL pulls from i_loc ↔ aspects
+    draw_arrow(ax, 9.05, LANE_LOCAL_Y - 0.3, 3.0, 0.85, dashed=True)
+    draw_arrow(ax, 3.15, LANE_GLOBAL_Y - 0.3, 3.05, 0.85, dashed=True)
+    # uCL pulls from u_loc ↔ u_glo
+    draw_arrow(ax, 7.55, LANE_LOCAL_Y - 0.3, 5.75, 0.85, dashed=True)
+    draw_arrow(ax, 7.55, LANE_GLOBAL_Y - 0.3, 5.75, 0.85, dashed=True)
+
+    # ── Legend ─────────────────────────────────────────────────────────
+    ax.text(0.3, 0.55, "★  novelty",
+            fontsize=9, color=COLOR_STAR, style="italic", weight="bold")
+    ax.text(0.3, 0.25, "dashed = stop-grad / CL path",
+            fontsize=8, color="#555555", style="italic")
+
+    # Save
     Path("figures").mkdir(exist_ok=True)
-    fig.tight_layout()
-    fig.savefig("figures/architecture.png", dpi=200, bbox_inches="tight")
+    fig.tight_layout(pad=0.2)
+    fig.savefig("figures/architecture.png", dpi=220, bbox_inches="tight")
     fig.savefig("figures/architecture.pdf", bbox_inches="tight")
     print("Saved: figures/architecture.png and figures/architecture.pdf")
 
