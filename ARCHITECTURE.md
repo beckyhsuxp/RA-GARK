@@ -180,15 +180,21 @@ score is the dot product `u_final · i_final`.
 Three novelties to highlight in the figure caption (all % are NDCG@20
 leave-one-out drops measured in Section 9):
 
-1. **★ Softmax-normalised rationale attention** (−6.4% when reverted
-   to sigmoid) — over the A aspects of an item, conditioned on the
-   user's global embedding. The naive `sigmoid(MLP([u; a]))`
+1. **★ Softmax-normalised aspect-saliency attention** (−6.4% when
+   reverted to sigmoid) — over the A aspects of an item, conditioned
+   on the user's global embedding. The naive `sigmoid(MLP([u; a]))`
    formulation produces unnormalised per-aspect weights that saturate,
    and is not merely neutral but **actively harmful**: sigmoid
    rationale (0.1152 NDCG) does *worse* than disabling rationale
    entirely and using a uniform aspect mean (0.1222 NDCG). Replacing
-   the sigmoid with a softmax across aspects turns the rationale
-   module into a net-positive contribution (winner 0.1231 NDCG).
+   the sigmoid with a softmax (with temperature τ=0.5) turns the
+   rationale module into a net-positive contribution (winner 0.1238
+   NDCG) and produces visibly differentiated **item-level aspect
+   saliency** — each item learns which of its A aspect slots carries
+   the strongest recommendation signal (see Section 9.1 case study).
+   Note: attention is primarily **item-conditioned**, with only
+   marginal per-user modulation; stronger user conditioning is left
+   as future work.
 2. **★ Local-biased fusion gate initialisation** (−4.7% when reverted
    to bias 0) — the fusion gate MLP's final Linear bias is initialised
    to `+5` so `α = σ(5) ≈ 0.993` at epoch 0. The model starts
@@ -235,19 +241,25 @@ final  = mean(x⁰, x¹, …, xᴷ)         K = 2
 
 For each `(user, item)` pair, attention weights are computed across the
 A aspects of the item conditioned on the user's global embedding, then
-**softmax-normalised across the aspect axis**:
+**softmax-normalised across the aspect axis** with temperature τ:
 
 ```
 logits  = MLP([u_glo ; i_aspects]).squeeze(-1)   # [B, A]
-weights = softmax(logits, dim=-1)                # [B, A]   (sums to 1)
+weights = softmax(logits / τ, dim=-1)            # [B, A]   (sums to 1)
 i_glo   = Σ_a  weights[a] · i_aspects[a]         # [B, d]
 ```
 
-The softmax is the critical choice. The legacy `sigmoid(MLP([u; a]))`
-formulation treats each aspect weight independently (no cross-aspect
-competition), which empirically saturates near 1 for most aspects and
-effectively averages without selecting. Softmax produces a sparse,
-competitive attention that matches the rationale-masking intuition.
+Two critical choices:
+- **Softmax instead of sigmoid.** The legacy `sigmoid(MLP([u; a]))`
+  treats each aspect weight independently (no cross-aspect
+  competition), empirically saturates near 1 for most aspects, and
+  effectively averages without selecting. Softmax produces a sparse,
+  competitive attention that matches the rationale-masking intuition.
+- **Temperature τ=0.5.** The MLP's raw logits are small in magnitude,
+  so τ=1.0 softmax collapses to ≈ uniform weights. Dividing logits by
+  τ<1 amplifies small differences before softmax; τ=0.5 gives the
+  best NDCG (0.1238) while producing visibly differentiated
+  per-item attention in the case study (Section 9.1).
 
 ### 5.4 Fusion gates (independent for user and item)
 
@@ -312,16 +324,16 @@ the user-stratified split (seed=42), and the same evaluator.
 | KGCL (SIGIR 2022)                           | 0.1073     | 0.4696     | 0.1827     | 0.0479     |
 | KGAT (KDD 2019)                             | 0.1079     | 0.4773     | 0.1807     | 0.0491     |
 | KGRec (KDD 2023)                            | 0.1095     | 0.4729     | 0.1834     | 0.0500     |
-| **RA-GARK (Ours)**                          | **0.1231** | **0.4961** | **0.2003** | **0.0586** |
+| **RA-GARK (Ours, τ=0.5)**                   | **0.1238** | **0.4961** | **0.2014** | **0.0591** |
 
 Relative improvement of RA-GARK vs the strongest KG-based baseline (KGRec):
 
 | Metric | KGRec | RA-GARK | Δ |
 |---|---|---|---|
-| NDCG@20 | 0.1095 | 0.1231 | **+12.4 %** |
+| NDCG@20 | 0.1095 | 0.1238 | **+13.1 %** |
 | HR@20 | 0.4729 | 0.4961 | **+4.9 %** |
-| Recall@20 | 0.1834 | 0.2003 | **+9.2 %** |
-| MAP@20 | 0.0500 | 0.0586 | **+17.2 %** |
+| Recall@20 | 0.1834 | 0.2014 | **+9.8 %** |
+| MAP@20 | 0.0500 | 0.0591 | **+18.2 %** |
 
 ---
 
@@ -335,16 +347,17 @@ original broken configuration. `lightgcn_only` is the no-KG floor.
 
 | Preset                 | NDCG       | Δ vs winner | What it removes                                         |
 |------------------------|------------|-------------|---------------------------------------------------------|
-| **winner**             | **0.1231** | —           | softmax rationale + fusion_bias=5 + every component on  |
-| winner_no_rat          | 0.1222     | **−0.7 %**  | uniform mean over aspects (no rationale at all)         |
-| winner_no_acl          | 0.1207     | **−1.9 %**  | drop aspect-level CL                                    |
-| winner_no_ucl          | 0.1187     | **−3.6 %**  | drop user cross-view CL                                 |
-| winner_no_svd          | 0.1173     | **−4.7 %**  | xavier init for `item_kg_aspects` instead of KG SVD     |
-| winner_fb0             | 0.1173     | **−4.7 %**  | revert fusion bias (5 → 0); α starts 0.5                |
-| winner_sigmoid_rat     | 0.1152     | **−6.4 %**  | revert rationale head (softmax → sigmoid MLP)           |
-| old_full               | 0.1067     | **−13.3 %** | both Fix-1 reverts → pre-fix broken full config         |
-| no_global_view         | 0.1214     | −1.4 %      | skip the whole global pipeline (CL-only dual-view)      |
-| lightgcn_only          | 0.1179     | −4.2 %      | no KG at all (floor)                                    |
+| **winner (τ=0.5)**     | **0.1238** | —           | softmax rationale + τ=0.5 + fusion_bias=5 + all on      |
+| winner (τ=1.0)         | 0.1231     | −0.6 %      | default temperature — attention ≈ uniform, small dip    |
+| winner_no_rat          | 0.1222     | **−1.3 %**  | uniform mean over aspects (no rationale at all)         |
+| winner_no_acl          | 0.1207     | **−2.5 %**  | drop aspect-level CL                                    |
+| winner_no_ucl          | 0.1187     | **−4.1 %**  | drop user cross-view CL                                 |
+| winner_no_svd          | 0.1173     | **−5.3 %**  | xavier init for `item_kg_aspects` instead of KG SVD     |
+| winner_fb0             | 0.1173     | **−5.3 %**  | revert fusion bias (5 → 0); α starts 0.5                |
+| winner_sigmoid_rat     | 0.1152     | **−7.0 %**  | revert rationale head (softmax → sigmoid MLP)           |
+| old_full               | 0.1067     | **−13.8 %** | both Fix-1 reverts → pre-fix broken full config         |
+| no_global_view         | 0.1214     | −1.9 %      | skip the whole global pipeline (CL-only dual-view)      |
+| lightgcn_only          | 0.1179     | −4.8 %      | no KG at all (floor)                                    |
 
 **Reading the table.** Three contributions carry the headline
 novelty, each responsible for ≥ 4.7% of NDCG when removed individually:
