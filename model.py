@@ -67,18 +67,21 @@ class KGRationaleMasking(nn.Module):
         return (i_aspects * w).sum(dim=-2)
 
 
-def _make_fusion_gate(dim: int) -> nn.Sequential:
-    gate = nn.Sequential(
-        nn.Linear(dim * 2, dim),
-        nn.Tanh(),
-        nn.Linear(dim, 1),
-        nn.Sigmoid(),
-    )
-    for layer in gate:
-        if isinstance(layer, nn.Linear):
-            nn.init.xavier_uniform_(layer.weight)
-            nn.init.zeros_(layer.bias)
-    return gate
+def _make_fusion_gate(dim: int, init_bias: float = 0.0) -> nn.Sequential:
+    """Fusion gate MLP returning alpha in (0,1).
+
+    init_bias is set on the FINAL Linear bias (pre-sigmoid). With
+    init_bias=0 the gate starts at alpha≈0.5 (50/50 mix). With
+    init_bias=5 it starts at alpha≈σ(5)≈0.993, biasing the model
+    toward the local view until the global view earns its place.
+    """
+    linear_in = nn.Linear(dim * 2, dim)
+    linear_out = nn.Linear(dim, 1)
+    nn.init.xavier_uniform_(linear_in.weight)
+    nn.init.zeros_(linear_in.bias)
+    nn.init.xavier_uniform_(linear_out.weight)
+    nn.init.constant_(linear_out.bias, init_bias)
+    return nn.Sequential(linear_in, nn.Tanh(), linear_out, nn.Sigmoid())
 
 
 class RA_GARK(nn.Module):
@@ -106,6 +109,7 @@ class RA_GARK(nn.Module):
         use_rationale: bool = True,
         use_global_view: bool = True,
         rationale_style: str = "mlp_sigmoid",
+        fusion_init_bias: float = 0.0,
     ) -> None:
         super().__init__()
         self.num_users = num_users
@@ -130,8 +134,8 @@ class RA_GARK(nn.Module):
         nn.init.xavier_normal_(self.item_kg_aspects)
 
         self.rationale_masking = KGRationaleMasking(dim, style=rationale_style)
-        self.user_fusion_gate = _make_fusion_gate(dim)
-        self.item_fusion_gate = _make_fusion_gate(dim)
+        self.user_fusion_gate = _make_fusion_gate(dim, init_bias=fusion_init_bias)
+        self.item_fusion_gate = _make_fusion_gate(dim, init_bias=fusion_init_bias)
 
         # Projection head for contrastive learning (used by v5+)
         self.cl_projector = nn.Sequential(
