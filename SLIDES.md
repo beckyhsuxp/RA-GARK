@@ -128,32 +128,71 @@ KG-aware Recommendation · 稀疏 KG · Graceful Degradation
 
 ---
 
-## Slide 8 — Related Work: Dual-View & Attention Normalization
+## Slide 8 — Related Work: Dual-View / Multi-View Recommenders
 
-**Dual-View Recommenders（SGL / DCCF 等）**
+**現有雙視角方法（SGL / DCCF 等）**
 
-- 建立多視角並以對比學習對齊
-  - 視角多為同一圖的不同擾動（同一訊號空間）
-- **本文兩視角根本異質：行為 vs. 知識**
-  - 需要 fusion gate 顯式控制混合比例，而非僅靠 CL 隱式對齊
+- 建立多個視角並以對比學習對齊
+  - 視角多為**同一圖的不同擾動**（edge drop、node drop、random walk）
+  - 兩視角本質上仍處於**同一訊號空間**
+- 整合方式多以 CL 隱式對齊，或以 attention 加權合併
 
-**Attention Normalization（DIN / NAIS）**
+**本文兩視角結構上異質**
+
+- **Local view**：user–item 二部圖的 LightGCN 傳播（協同訊號）
+- **Global view**：KG 上的 aspect 表示 + rationale masking（語意訊號）
+- **不是同一圖的變形，而是不同資訊源的獨立管線**
+- 需要 fusion gate **顯式控制混合比例**，而非僅靠 CL 隱式對齊
+
+---
+
+## Slide 9 — Related Work: Gating vs Attention for Multi-Signal Fusion
+
+**整合多個訊號源的兩種主流機制：**
+
+| | **Attention** | **Gating** |
+|---|---|---|
+| 典型文獻 | KGAT / KGRec / DIN | LSTM / MoE / Highway |
+| 權重形式 | 分佈（softmax over candidates）| 標量或向量閘 α ∈ (0, 1) |
+| 語意 | **競爭**（相對重要性）| **開關**（該路徑是否採用）|
+| 優勢 | 富表達力、跨元素競爭 | 可獨立開關、訓練穩定 |
+| 適用情境 | 多個**同類候選**互相比較 | **異質管線**需要選擇性採用 |
+
+**本文同時使用兩者，但分層：**
+
+- **Aspect 選擇層級（§3.4.3）** → **Attention**（softmax）
+  - A = 4 個 aspect 槽是「同類候選」，互相競爭誰代表此 item
+- **視角融合層級（§3.5）** → **Gating**（local-biased）
+  - Local / global 是**本質異質的兩條管線**，需要的是「是否採用」而非「誰比較重要」
+  - Gating 的標量閘與「本地偏置初始化」天然相容 → 結構上的**可安全退化**
+
+> **核心區分：Attention 用於「選擇」，Gating 用於「開關」**
+
+---
+
+## Slide 10 — Related Work: Attention Normalization
+
+*DIN [Zhou et al., 2018] / NAIS [He et al., 2018] / AFM [Xiao et al., 2017]*
+
+**Sigmoid vs Softmax 的設計取捨**
 
 | | Sigmoid | Softmax |
 |---|---|---|
 | 語意假設 | 各元素獨立 | 少數互相競爭 |
-| 訓練行為 | 飽和均勻 | 具鑑別力 |
-| 本文結果 | −7.0% NDCG | 最佳 |
+| 歸一化 | 無（element-wise 0–1）| $\sum_a w_a = 1$ |
+| 訓練行為 | 易飽和到近均勻 | 具鑑別力 |
+| 本文結果 | 0.1152 NDCG | **0.1238 NDCG** |
 
 **本文觀察**
 
-- **Aspect 選擇語意 = 少數選項互相競爭 → softmax 符合需求**
-  - sigmoid → softmax 差距：−7.0% NDCG（全文最大單項影響）
-- 結論：歸一化方式應與 rationale 的語意假設明確對齊
+- **Aspect 選擇的語意 = 少數選項互相競爭 → softmax 符合需求**
+- sigmoid → softmax 差距：**−7.0% NDCG（全文最大單項影響）**
+- **結論**：歸一化方式應與 rationale 的語意假設明確對齊
+- 此為**一般性方法論啟示**，未必僅限本文設定
 
 ---
 
-## Slide 9 — Related Work: Summary
+## Slide 11 — Related Work: Summary
 
 | 面向 | KGAT | KGCL | MCCLK | KGRec | **RA-GARK** |
 |------|------|------|-------|-------|-------------|
@@ -168,7 +207,7 @@ KG-aware Recommendation · 稀疏 KG · Graceful Degradation
 
 ---
 
-## Slide 10 — Model Overview
+## Slide 12 — Model Overview
 
 ![RA-GARK 整體架構：雙視角 swim-lane，經 fusion gate 融合後輸出 score；L_aCL / L_uCL 為 stop-grad 的對比學習路徑。](figures/architecture.png)
 
@@ -186,7 +225,7 @@ KG-aware Recommendation · 稀疏 KG · Graceful Degradation
 
 ---
 
-## Slide 11 — Preliminaries
+## Slide 13 — Preliminaries
 
 **符號定義**
 
@@ -213,7 +252,7 @@ KG-aware Recommendation · 稀疏 KG · Graceful Degradation
 
 ---
 
-## Slide 12 — Local View: LightGCN Propagation
+## Slide 14 — Local View: LightGCN Propagation
 
 - **沿用標準 LightGCN，K=2 層線性傳播，不做任何修改**
   - 正規化鄰接：Ã = D^(−1/2) A D^(−1/2)
@@ -228,7 +267,7 @@ KG-aware Recommendation · 稀疏 KG · Graceful Degradation
 
 ---
 
-## Slide 13 — Global View: KG-SVD Initialization
+## Slide 15 — Global View: KG-SVD Initialization
 
 **多面向 Item 表示**
 
@@ -253,7 +292,7 @@ KG-aware Recommendation · 稀疏 KG · Graceful Degradation
 
 ---
 
-## Slide 14 — Global View: Softmax Aspect-Saliency Attention
+## Slide 16 — Global View: Softmax Aspect-Saliency Attention
 
 ```
 ℓ = MLP([ u_glo ⊕ P_i ])  ∈ R^A
@@ -277,7 +316,7 @@ MLP：Linear(2d→d) → LeakyReLU → Linear(d→1)
 
 ---
 
-## Slide 15 — Local-Biased Fusion Gate
+## Slide 17 — Local-Biased Fusion Gate
 
 ```
 α_u = σ( MLP_gate([ u_loc ⊕ u_glo ]) )
@@ -301,7 +340,7 @@ MLP_gate：Linear(2d→d) → Tanh → Linear(d→1) → Sigmoid
 
 ---
 
-## Slide 16 — Cross-View Contrastive Regularization
+## Slide 18 — Cross-View Contrastive Regularization
 
 目的：使 local 與 global 兩個嵌入空間幾何保持一致
 
@@ -327,7 +366,7 @@ L_total  =  L_BPR  +  0.005 · ( L_aCL + L_uCL )
 
 ---
 
-## Slide 17 — Training Setup & Complexity
+## Slide 19 — Training Setup & Complexity
 
 **優化設定**
 
@@ -350,7 +389,7 @@ L_total  =  L_BPR  +  0.005 · ( L_aCL + L_uCL )
 
 ---
 
-## Slide 18 — Dataset & KG Construction
+## Slide 20 — Dataset & KG Construction
 
 | 905 | 1,399 | 22,265 | 3,370 | 2,098 |
 |-----|-------|--------|-------|-------|
@@ -371,7 +410,7 @@ L_total  =  L_BPR  +  0.005 · ( L_aCL + L_uCL )
 
 ---
 
-## Slide 19 — Experimental Results
+## Slide 21 — Experimental Results
 
 | 模型 | NDCG@20 | vs KGRec | vs LightGCN |
 |------|---------|----------|-------------|
@@ -390,7 +429,7 @@ L_total  =  L_BPR  +  0.005 · ( L_aCL + L_uCL )
 
 ---
 
-## Slide 20 — Ablation Study
+## Slide 22 — Ablation Study
 
 | 設定 | NDCG@20 | vs 完整 |
 |------|---------|--------|
@@ -408,7 +447,7 @@ L_total  =  L_BPR  +  0.005 · ( L_aCL + L_uCL )
 
 ---
 
-## Slide 21 — Methodological Insight: Attention Normalization
+## Slide 23 — Methodological Insight: Attention Normalization
 
 | | Sigmoid | Softmax |
 |---|---------|---------|
@@ -425,7 +464,7 @@ L_total  =  L_BPR  +  0.005 · ( L_aCL + L_uCL )
 
 ---
 
-## Slide 22 — Conclusion
+## Slide 24 — Conclusion
 
 **主要成果**
 
