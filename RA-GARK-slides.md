@@ -33,13 +33,19 @@ KG-aware Recommendation · 稀疏 KG · Graceful Degradation
 
 ## Slide 3 — Research Question
 
-> 在稀疏 KG 的設定下，如何讓 KG 訊號在「有幫助」時被充分利用、在「幫助有限」時不干擾協同訊號？
+**觀察引出的兩個問題：**
 
-**設計哲學：Graceful Degradation（可安全退化）**
+> **診斷（Why）**：為什麼 KG-aware 方法在稀疏 KG 上反而輸給純 LightGCN？它們的失敗模式是什麼？
+>
+> **處方（What）**：什麼樣的 KG 整合設計原則，能讓 KG 訊號在「有訊號」時被充分利用、在「噪聲」時不污染協同過濾？
 
-- **KG 不是 scoring 的必經成分，而是一條可被顯式閘控的側通道**
-- KG 訊號無法提供增益時 → 模型自動退化為純 LightGCN
-- 目標不是「KG 訊號最大化」，而是在 KG 品質波動時提供最強容錯性
+**本文主張：**
+
+- **KG 不應是 scoring 管線的必經成分**（如 KGAT-style 深度融入）
+- **KG 應是一條可被顯式閘控的側通道**（side-channel with explicit gating）
+- 三項設計體現此原則：**Softmax 面向挑選 · KG-SVD 初始化 · 本地偏置融合閘**
+
+**我們將證明**：此原則能在稀疏 KG 下讓 KG 整合從 **net-negative 翻轉為 +13.1% 增益**。
 
 ---
 
