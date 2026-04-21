@@ -164,6 +164,8 @@ KG-aware Recommendation · 稀疏 KG · Graceful Degradation
 
 ## Slide 10 — Model Overview
 
+![RA-GARK 整體架構：雙視角 swim-lane，經 fusion gate 融合後輸出 score；L_aCL / L_uCL 為 stop-grad 的對比學習路徑。](figures/architecture.png)
+
 **RA-GARK 四個模組**
 
 - **① Local View：LightGCN（K=2），user–item 互動圖 → u_loc, i_loc**
