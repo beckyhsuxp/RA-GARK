@@ -144,7 +144,6 @@ def draw():
              "item_kg_aspects",
              color=COLOR_GLOBAL, subtitle="[N_i, A = 4, d]",
              title_size=9.5, sub_size=8)
-    draw_star(ax, 3.2, LANE_GLOBAL_Y + 0.80, "KG SVD init")
 
     # Box 2: Rationale masking
     draw_box(ax, 4.4, LANE_GLOBAL_Y - 0.38, 2.0, 0.8,
@@ -152,7 +151,6 @@ def draw():
              color=COLOR_GLOBAL,
              subtitle="softmax(MLP(·) / τ),  τ = 0.5",
              title_size=9.5, sub_size=8)
-    draw_star(ax, 5.4, LANE_GLOBAL_Y + 0.80, "Softmax + τ")
 
     # Box 3: merged outputs
     draw_box(ax, 6.6, LANE_GLOBAL_Y - 0.38, 2.4, 0.8,
@@ -174,8 +172,6 @@ def draw():
              color=COLOR_FUSION,
              subtitle="α_i = σ(MLP + 5)   →   i_final",
              title_size=9.5, sub_size=8)
-    # One shared ★ between the two boxes
-    draw_star(ax, 10.85, FUSION_Y, "Local-biased init")
 
     # ── SCORE ──────────────────────────────────────────────────────────
     draw_box(ax, 12.4, FUSION_Y - 0.40, 2.4, 0.8,
@@ -251,9 +247,7 @@ def draw():
                           boxstyle="round,pad=0.25", linewidth=0.7))
 
     # ── Legend ─────────────────────────────────────────────────────────
-    ax.text(0.30, 0.75, "★  novelty",
-            fontsize=9.5, color=COLOR_STAR, style="italic", weight="bold")
-    ax.text(0.30, 0.45, "dashed = stop-grad CL",
+    ax.text(0.30, 0.55, "dashed = stop-grad CL",
             fontsize=8.5, color="#555555", style="italic")
 
     # Save
