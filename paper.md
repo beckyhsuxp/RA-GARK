@@ -79,7 +79,7 @@
 
 ## 1.4 本文貢獻
 
-本文提出 **RA-GARK（Rationale-Aware Gating over Review-Aspect Knowledge Graph）**。其三項核心設計均經過消融實驗驗證：
+本文提出 **RA-GARK（Rationale-Aware Gating over Review-Aspect Knowledge Graph）**，一個具備「可安全退化」特性的雙視角 KG-aware 推薦架構。本地視角沿用 LightGCN 於 user–item 二部圖上學習純協同訊號；全域視角將每個商品的 KG 語意展開為 $A$ 個可選擇的 aspect 槽，透過 user-conditioned 的 rationale masking 生成語意表示；兩視角最終透過一個可學習的 fusion gate 合併為最終表示進行 scoring。三個視為主要貢獻的設計決策——作用於全域視角的 **Softmax 面向顯著性注意力**、作用於融合閘的**本地偏置初始化**，以及作用於 KG aspect 嵌入的 **KG-SVD 初始化**——共同構成了 RA-GARK 在稀疏 KG 下優於現有 KG-aware 方法的關鍵。三項設計皆經過消融實驗驗證：
 
 1. **Softmax 面向顯著性注意力（Softmax Aspect-Saliency Attention）**：將每個 item 的 KG 語意展開為 $A$ 個 aspect 槽，並以**跨 aspect 的 softmax 加溫度縮放**計算注意力。我們觀察到，若改為常見的 sigmoid 形式，在本文資料集上其表現甚至低於完全不使用 rationale 的 uniform mean；此差距高達 −7.0% NDCG。這項發現提示我們，在 rationale-aware 設計中，**注意力歸一化方式的選擇**可能比想像中更具影響力。
 
