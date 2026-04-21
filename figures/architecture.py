@@ -181,24 +181,16 @@ def draw():
              subtitle="u_final · i_final",
              title_size=11, sub_size=9)
 
-    # ── LOSSES (bottom row, placed under their sources) ────────────────
-    # L_aCL sits below the KG aspects → aligns with item_kg_aspects above it
-    draw_box(ax, 4.40, 0.30, 2.1, 0.60,
-             "L_aCL",
+    # ── LOSSES ─────────────────────────────────────────────────────────
+    # Only L_BPR is drawn as a box (it is the main training signal on
+    # the score). L_aCL and L_uCL are shown inline between the two
+    # lanes as short vertical dashed "CL connectors" — keeping the
+    # bottom strip clean.
+    draw_box(ax, 11.6, 0.30, 3.6, 0.65,
+             "L_BPR   ( +  0.005 · [L_aCL + L_uCL] )",
              color=COLOR_LOSS,
-             subtitle="aspect CL (stop-grad)",
-             title_size=9.5, sub_size=8)
-    # L_uCL sits below the merged outputs (where u_loc and u_glo come out)
-    draw_box(ax, 6.80, 0.30, 2.1, 0.60,
-             "L_uCL",
-             color=COLOR_LOSS,
-             subtitle="user CL (stop-grad)",
-             title_size=9.5, sub_size=8)
-    draw_box(ax, 12.4, 0.30, 2.4, 0.60,
-             "L_BPR",
-             color=COLOR_LOSS,
-             subtitle="L_total = L_BPR + 0.005·(L_aCL + L_uCL)",
-             title_size=9.5, sub_size=7.8)
+             subtitle="BPR ranking loss on score  +  small CL regulariser",
+             title_size=10, sub_size=8)
 
     # ── SOLID ARROWS (data flow) ───────────────────────────────────────
     # INPUT → lanes
@@ -227,15 +219,35 @@ def draw():
     draw_arrow(ax, 12.10, LANE_GLOBAL_Y, 12.40, FUSION_Y - 0.15)
 
     # Score → L_BPR (bottom)
-    draw_arrow(ax, 13.60, FUSION_Y - 0.40, 13.60, 0.90)
+    draw_arrow(ax, 13.40, FUSION_Y - 0.40, 13.40, 0.95)
 
-    # ── DASHED CL ARROWS (stop-grad paths, shortened) ─────────────────
-    # L_aCL pulls i_loc (local outputs) and aspects (item_kg_aspects)
-    draw_arrow(ax, 7.40, LANE_LOCAL_Y - 0.38, 5.45, 0.90, dashed=True)
-    draw_arrow(ax, 3.20, LANE_GLOBAL_Y - 0.38, 5.45, 0.90, dashed=True)
-    # L_uCL pulls u_loc and u_glo (both at the outputs column)
-    draw_arrow(ax, 7.80, LANE_LOCAL_Y - 0.38, 7.85, 0.90, dashed=True)
-    draw_arrow(ax, 7.80, LANE_GLOBAL_Y - 0.38, 7.85, 0.90, dashed=True)
+    # ── INLINE CL CONNECTORS (vertical dashed between the two lanes) ──
+    # Each CL loss shown as a short labelled dashed double-arrow
+    # between the lanes, at the x of its source pair.
+    cl_y_top, cl_y_bot = LANE_LOCAL_Y - 0.40, LANE_GLOBAL_Y + 0.40
+    cl_y_mid = (cl_y_top + cl_y_bot) / 2
+
+    # Connector x positions chosen to sit between the ★ novelty markers
+    # (★ are at x ≈ 3.2, 5.4, 10.85) so the CL labels don't collide with
+    # the ★ captions.
+    for cl_x, cl_label, cl_sub in [
+        (4.30, "L_aCL", "i_loc ↔ aspects"),     # between aspects and Rationale
+        (6.50, "L_uCL", "u_loc ↔ u_glo"),        # between Rationale and outputs
+    ]:
+        # short dashed stubs near each lane edge
+        draw_arrow(ax, cl_x, cl_y_top, cl_x, cl_y_mid + 0.22,
+                   dashed=True, lw=0.95)
+        draw_arrow(ax, cl_x, cl_y_bot, cl_x, cl_y_mid - 0.22,
+                   dashed=True, lw=0.95)
+        # label pill in the middle of the gap
+        ax.text(cl_x, cl_y_mid + 0.06, cl_label,
+                ha="center", va="center",
+                fontsize=8.8, color="#444",
+                bbox=dict(facecolor="white", edgecolor="#888",
+                          boxstyle="round,pad=0.24", linewidth=0.7))
+        ax.text(cl_x, cl_y_mid - 0.22, cl_sub,
+                ha="center", va="center",
+                fontsize=7.2, color="#666", style="italic")
 
     # ── Legend ─────────────────────────────────────────────────────────
     ax.text(0.30, 0.75, "★  novelty",
