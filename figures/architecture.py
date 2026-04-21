@@ -228,26 +228,24 @@ def draw():
     cl_y_mid = (cl_y_top + cl_y_bot) / 2
 
     # Connector x positions chosen to sit between the ★ novelty markers
-    # (★ are at x ≈ 3.2, 5.4, 10.85) so the CL labels don't collide with
-    # the ★ captions.
-    for cl_x, cl_label, cl_sub in [
-        (4.30, "L_aCL", "i_loc ↔ aspects"),     # between aspects and Rationale
-        (6.50, "L_uCL", "u_loc ↔ u_glo"),        # between Rationale and outputs
+    # (★ at x ≈ 3.2, 5.4, 10.85) so the CL labels don't collide with
+    # the ★ captions. Sub-captions dropped to keep the mid-gap clean;
+    # the pair each CL aligns is described in §3.7 of the paper.
+    for cl_x, cl_label in [
+        (4.30, "L_aCL"),      # between item_kg_aspects and Rationale
+        (6.50, "L_uCL"),      # between Rationale and Global outputs
     ]:
-        # short dashed stubs near each lane edge
-        draw_arrow(ax, cl_x, cl_y_top, cl_x, cl_y_mid + 0.22,
+        # dashed stubs from each lane edge toward the pill
+        draw_arrow(ax, cl_x, cl_y_top, cl_x, cl_y_mid + 0.32,
                    dashed=True, lw=0.95)
-        draw_arrow(ax, cl_x, cl_y_bot, cl_x, cl_y_mid - 0.22,
+        draw_arrow(ax, cl_x, cl_y_bot, cl_x, cl_y_mid - 0.32,
                    dashed=True, lw=0.95)
-        # label pill in the middle of the gap
-        ax.text(cl_x, cl_y_mid + 0.06, cl_label,
+        # label pill centred between the two lanes
+        ax.text(cl_x, cl_y_mid, cl_label,
                 ha="center", va="center",
-                fontsize=8.8, color="#444",
+                fontsize=9, color="#444",
                 bbox=dict(facecolor="white", edgecolor="#888",
-                          boxstyle="round,pad=0.24", linewidth=0.7))
-        ax.text(cl_x, cl_y_mid - 0.22, cl_sub,
-                ha="center", va="center",
-                fontsize=7.2, color="#666", style="italic")
+                          boxstyle="round,pad=0.25", linewidth=0.7))
 
     # ── Legend ─────────────────────────────────────────────────────────
     ax.text(0.30, 0.75, "★  novelty",
