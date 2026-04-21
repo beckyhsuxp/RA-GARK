@@ -88,7 +88,10 @@ def lane_band(ax, y_centre, label, color, *, y_span=1.35, x0=2.0, x1=9.2):
         boxstyle="round,pad=0.0,rounding_size=0.10",
         linewidth=0, facecolor=color, alpha=0.32,
     ))
-    ax.text(x0 + 0.12, y_centre + h / 2 - 0.18, label,
+    # Lane label sits inside the band at its very top edge, so it is
+    # clearly part of the band without overlapping the boxes below it
+    # nor the ★ captions sitting in the mid-gap.
+    ax.text(x0 + 0.12, y_centre + h / 2 - 0.03, label,
             ha="left", va="top",
             fontsize=9.5, color="#333333", weight="bold", style="italic")
 
