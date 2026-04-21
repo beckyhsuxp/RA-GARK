@@ -6,7 +6,7 @@
 
 ## 目錄
 
-- [1. Motivation](#1-motivation)
+- [1. Introduction](#1-introduction)
   - [1.1 研究背景](#11-研究背景)
   - [1.2 稀疏 KG 設定下的觀察](#12-稀疏-kg-設定下的觀察)
   - [1.3 研究問題](#13-研究問題)
@@ -41,7 +41,7 @@
 
 ---
 
-# 1. Motivation
+# 1. Introduction
 
 ## 1.1 研究背景
 
