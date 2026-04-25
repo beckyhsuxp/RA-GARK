@@ -203,55 +203,34 @@ def train_ragark(cfg: Config, device: torch.device) -> dict:
     return test_res
 
 
-def _make_base_cfg() -> Config:
+if __name__ == "__main__":
+    _device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    log.info("Device: %s", _device)
+
     cfg = Config()
+    cfg.cl_weight = 0.005   # confirmed peak by sweep over {0.001…0.02}
     cfg.epochs = 80
+
+    # ── Ablation toggles — flip any flag to False to ablate ────────────
     cfg.use_rationale         = True
     cfg.use_svd_init          = True
     cfg.use_acl               = True
     cfg.use_ucl               = True
     cfg.use_global_view       = True
-    cfg.rationale_style       = "mlp_softmax"
-    cfg.rationale_temperature = 0.5
-    cfg.fusion_init_bias      = 5.0
-    return cfg
+    cfg.rationale_style       = "mlp_softmax"   # mlp_sigmoid | mlp_softmax | dot_softmax
+    cfg.rationale_temperature = 0.5             # <1 sharpens softmax (0.5 = best NDCG)
+    cfg.fusion_init_bias      = 5.0             # 0 → α≈0.5; 5 → α≈0.993
+    # ───────────────────────────────────────────────────────────────────
 
+    tag = (
+        f"rat{int(cfg.use_rationale)}-{cfg.rationale_style}"
+        f"_t{cfg.rationale_temperature:.2f}"
+        f"_svd{int(cfg.use_svd_init)}"
+        f"_acl{int(cfg.use_acl)}"
+        f"_ucl{int(cfg.use_ucl)}"
+        f"_gv{int(cfg.use_global_view)}"
+        f"_fb{cfg.fusion_init_bias:.0f}"
+    )
+    cfg.model_save_path = f"best_ragark_{tag}.pth"
 
-if __name__ == "__main__":
-    _device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    log.info("Device: %s", _device)
-
-    # ── 1-D sweep over cl_weight (multiplies L_aCL + L_uCL) ────────────
-    cl_weights = [0.001, 0.0025, 0.005, 0.01, 0.02]
-
-    summary = []
-    for cl_w in cl_weights:
-        cfg = _make_base_cfg()
-        cfg.cl_weight = cl_w
-        cfg.model_save_path = f"best_ragark_cl{cl_w:.4f}.pth"
-
-        log.info("\n%s", "=" * 90)
-        log.info("RUN cl_weight=%.4f", cl_w)
-        log.info("%s", "=" * 90)
-
-        try:
-            test_res = train_ragark(cfg, _device)
-        except Exception as e:
-            log.exception("cl_weight=%.4f FAILED: %s", cl_w, e)
-            test_res = None
-        summary.append((cl_w, test_res))
-
-    # ── Summary table ──────────────────────────────────────────────────
-    log.info("\n%s", "=" * 90)
-    log.info("CL-WEIGHT SWEEP  (test metrics @ K=20)")
-    log.info("%s", "=" * 90)
-    log.info("%9s | %7s | %7s | %7s | %7s",
-             "cl_weight", "NDCG", "Recall", "HR", "MAP")
-    log.info("%s", "-" * 90)
-    for cl_w, r in summary:
-        if r is None:
-            log.info("%9.4f | FAILED", cl_w)
-            continue
-        log.info("%9.4f | %7.4f | %7.4f | %7.4f | %7.4f",
-                 cl_w, r["NDCG"], r["Recall"], r["HR"], r["MAP"])
-    log.info("%s", "=" * 90)
+    train_ragark(cfg, _device)
