@@ -93,12 +93,15 @@ def train_ragark(cfg: Config, device: torch.device) -> dict:
             model.item_kg_aspects.data.copy_(item_init.to(device))
             log.info("item_kg_aspects initialised from KG SVD")
 
-        user_init = build_user_aspect_init(
-            train_df, kg_adj, n_users, cfg.num_aspects, cfg.embedding_dim
-        )
-        if user_init is not None:
-            model.user_kg_aspects.data.copy_(user_init.to(device))
-            log.info("user_kg_aspects initialised from user×aspect SVD")
+        if cfg.use_user_svd:
+            user_init = build_user_aspect_init(
+                train_df, kg_adj, n_users, cfg.num_aspects, cfg.embedding_dim
+            )
+            if user_init is not None:
+                model.user_kg_aspects.data.copy_(user_init.to(device))
+                log.info("user_kg_aspects initialised from user×aspect SVD")
+        else:
+            log.info("user_kg_aspects stays at xavier init (use_user_svd=False)")
     else:
         log.info("SVD init disabled — both aspect blocks stay at xavier init")
 
@@ -212,36 +215,71 @@ def train_ragark(cfg: Config, device: torch.device) -> dict:
     return test_res
 
 
+def _make_base_cfg() -> Config:
+    cfg = Config()
+    cfg.cl_weight = 0.005
+    cfg.epochs = 80
+    cfg.use_rationale         = True
+    cfg.use_svd_init          = True
+    cfg.use_user_svd          = True
+    cfg.use_acl               = True
+    cfg.use_ucl               = True
+    cfg.use_global_view       = True
+    cfg.rationale_style       = "dot"
+    cfg.rationale_temperature = 0.5
+    cfg.fusion_init_bias      = 5.0
+    cfg.fusion_gate_style     = "mlp"
+    return cfg
+
+
 if __name__ == "__main__":
     _device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     log.info("Device: %s", _device)
 
-    cfg = Config()
-    cfg.cl_weight = 0.005
-    cfg.epochs = 80
+    # ── Bilateral rescue sweep ─────────────────────────────────────────
+    # First single-run came back at NDCG 0.1158 (vs 0.1238 baseline).
+    # Two hypotheses:
+    #   (B) "dot" rationale is too rigid (per-axis only); MLP can learn
+    #       cross-aspect interactions and may rescue.
+    #   (C) Symmetric SVD init on both sides is redundant/over-aligned;
+    #       letting user_kg_aspects start at xavier may be cleaner.
+    runs = [
+        ("A_dot_both_svd",  dict(rationale_style="dot", use_user_svd=True)),
+        ("B_mlp_both_svd",  dict(rationale_style="mlp", use_user_svd=True)),
+        ("C_dot_item_svd",  dict(rationale_style="dot", use_user_svd=False)),
+    ]
 
-    # ── Ablation toggles — flip any flag to False to ablate ────────────
-    cfg.use_rationale         = True
-    cfg.use_svd_init          = True
-    cfg.use_acl               = True
-    cfg.use_ucl               = True
-    cfg.use_global_view       = True
-    cfg.rationale_style       = "dot"           # bilateral: dot | mlp
-    cfg.rationale_temperature = 0.5             # <1 sharpens softmax
-    cfg.fusion_init_bias      = 5.0             # 0 → α≈0.5; 5 → α≈0.993
-    cfg.fusion_gate_style     = "mlp"           # "mlp" | "scalar" (one global α)
-    # ───────────────────────────────────────────────────────────────────
+    summary = []
+    for name, overrides in runs:
+        cfg = _make_base_cfg()
+        for k, v in overrides.items():
+            setattr(cfg, k, v)
+        cfg.model_save_path = f"best_ragark_{name}.pth"
 
-    tag = (
-        f"rat{int(cfg.use_rationale)}-{cfg.rationale_style}"
-        f"_t{cfg.rationale_temperature:.2f}"
-        f"_svd{int(cfg.use_svd_init)}"
-        f"_acl{int(cfg.use_acl)}"
-        f"_ucl{int(cfg.use_ucl)}"
-        f"_gv{int(cfg.use_global_view)}"
-        f"_fb{cfg.fusion_init_bias:.0f}"
-        f"_gate-{cfg.fusion_gate_style}"
-    )
-    cfg.model_save_path = f"best_ragark_{tag}.pth"
+        log.info("\n%s", "=" * 90)
+        log.info("RUN %s | rationale_style=%s  use_user_svd=%s",
+                 name, cfg.rationale_style, cfg.use_user_svd)
+        log.info("%s", "=" * 90)
 
-    train_ragark(cfg, _device)
+        try:
+            test_res = train_ragark(cfg, _device)
+        except Exception as e:
+            log.exception("RUN %s FAILED: %s", name, e)
+            test_res = None
+        summary.append((name, cfg, test_res))
+
+    log.info("\n%s", "=" * 90)
+    log.info("BILATERAL RESCUE SWEEP  (test metrics @ K=20)")
+    log.info("%s", "=" * 90)
+    log.info("%-16s | %-3s | %-5s | %7s | %7s | %7s | %7s",
+             "Run", "rat", "u_svd", "NDCG", "Recall", "HR", "MAP")
+    log.info("%s", "-" * 90)
+    for name, cfg, r in summary:
+        if r is None:
+            log.info("%-16s | %-3s | %-5s | FAILED",
+                     name, cfg.rationale_style, str(cfg.use_user_svd))
+            continue
+        log.info("%-16s | %-3s | %-5s | %7.4f | %7.4f | %7.4f | %7.4f",
+                 name, cfg.rationale_style, str(cfg.use_user_svd),
+                 r["NDCG"], r["Recall"], r["HR"], r["MAP"])
+    log.info("%s", "=" * 90)

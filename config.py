@@ -18,7 +18,8 @@ class Config:
 
     # --- Ablation flags (all default True = full model) ---
     use_rationale: bool = True     # False → uniform mean over aspects
-    use_svd_init: bool = True      # False → xavier init for item_kg_aspects
+    use_svd_init: bool = True      # False → xavier init for *_kg_aspects
+    use_user_svd: bool = True      # False → only item gets KG SVD (user stays xavier)
     use_acl: bool = True           # False → drop aspect-level CL
     use_ucl: bool = True           # False → drop user cross-view CL
     use_global_view: bool = True   # False → skip global pipeline (pure LightGCN)
