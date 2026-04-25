@@ -94,10 +94,7 @@ def train_ragark(cfg: Config, device: torch.device) -> dict:
         log.info("SVD init disabled — item_kg_aspects stays at xavier init")
 
     optimizer = torch.optim.Adam(model.parameters(), lr=cfg.learning_rate)
-    acl_w = cfg.acl_weight if cfg.acl_weight is not None else cfg.cl_weight
-    ucl_w = cfg.ucl_weight if cfg.ucl_weight is not None else cfg.cl_weight
-    log.info("Optimizer: Adam lr=%.1e | acl_w=%.4f ucl_w=%.4f",
-             cfg.learning_rate, acl_w, ucl_w)
+    log.info("Optimizer: Adam lr=%.1e", cfg.learning_rate)
 
     best_val_ndcg, best_epoch, no_improve = 0.0, 0, 0
     header = (
@@ -140,7 +137,7 @@ def train_ragark(cfg: Config, device: torch.device) -> dict:
             else:
                 loss_ucl = torch.zeros((), device=device)
 
-            loss = loss_bpr + acl_w * loss_acl + ucl_w * loss_ucl
+            loss = loss_bpr + cfg.cl_weight * (loss_acl + loss_ucl)
 
             optimizer.zero_grad()
             loss.backward()
@@ -206,66 +203,34 @@ def train_ragark(cfg: Config, device: torch.device) -> dict:
     return test_res
 
 
-def _make_base_cfg() -> Config:
+if __name__ == "__main__":
+    _device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    log.info("Device: %s", _device)
+
     cfg = Config()
+    cfg.cl_weight = 0.005   # confirmed peak by sweep over {0.001…0.02}
     cfg.epochs = 80
+
+    # ── Ablation toggles — flip any flag to False to ablate ────────────
     cfg.use_rationale         = True
     cfg.use_svd_init          = True
     cfg.use_acl               = True
     cfg.use_ucl               = True
     cfg.use_global_view       = True
-    cfg.rationale_style       = "mlp_softmax"
-    cfg.rationale_temperature = 0.5
-    cfg.fusion_init_bias      = 5.0
-    return cfg
+    cfg.rationale_style       = "mlp_softmax"   # mlp_sigmoid | mlp_softmax | dot_softmax
+    cfg.rationale_temperature = 0.5             # <1 sharpens softmax (0.5 = best NDCG)
+    cfg.fusion_init_bias      = 5.0             # 0 → α≈0.5; 5 → α≈0.993
+    # ───────────────────────────────────────────────────────────────────
 
+    tag = (
+        f"rat{int(cfg.use_rationale)}-{cfg.rationale_style}"
+        f"_t{cfg.rationale_temperature:.2f}"
+        f"_svd{int(cfg.use_svd_init)}"
+        f"_acl{int(cfg.use_acl)}"
+        f"_ucl{int(cfg.use_ucl)}"
+        f"_gv{int(cfg.use_global_view)}"
+        f"_fb{cfg.fusion_init_bias:.0f}"
+    )
+    cfg.model_save_path = f"best_ragark_{tag}.pth"
 
-if __name__ == "__main__":
-    _device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    log.info("Device: %s", _device)
-
-    # ── aCL/uCL ratio sweep at fixed total = 0.010 ─────────────────────
-    # Hypothesis from ablation table: −uCL drops NDCG 4.1%, −aCL drops
-    # only 2.5%, so uCL deserves more weight. Keep total constant so we
-    # isolate the *ratio* effect from the *magnitude* effect already
-    # measured in the cl_weight sweep.
-    runs = [
-        ("A_50_50", 0.005,  0.005),   # baseline (matches cl_weight=0.005)
-        ("B_25_75", 0.0025, 0.0075),  # uCL-heavy (ablation-informed)
-        ("C_75_25", 0.0075, 0.0025),  # aCL-heavy (counter-hypothesis)
-        ("D_10_90", 0.001,  0.009),   # extreme uCL (sanity bound)
-    ]
-
-    summary = []
-    for name, acl_w, ucl_w in runs:
-        cfg = _make_base_cfg()
-        cfg.acl_weight = acl_w
-        cfg.ucl_weight = ucl_w
-        cfg.model_save_path = f"best_ragark_{name}.pth"
-
-        log.info("\n%s", "=" * 90)
-        log.info("RUN %s | acl_w=%.4f  ucl_w=%.4f", name, acl_w, ucl_w)
-        log.info("%s", "=" * 90)
-
-        try:
-            test_res = train_ragark(cfg, _device)
-        except Exception as e:
-            log.exception("RUN %s FAILED: %s", name, e)
-            test_res = None
-        summary.append((name, acl_w, ucl_w, test_res))
-
-    # ── Summary table ──────────────────────────────────────────────────
-    log.info("\n%s", "=" * 90)
-    log.info("aCL/uCL RATIO SWEEP  (total CL weight = 0.010, test @ K=20)")
-    log.info("%s", "=" * 90)
-    log.info("%-9s | %7s | %7s | %7s | %7s | %7s | %7s",
-             "Run", "acl_w", "ucl_w", "NDCG", "Recall", "HR", "MAP")
-    log.info("%s", "-" * 90)
-    for name, acl_w, ucl_w, r in summary:
-        if r is None:
-            log.info("%-9s | %7.4f | %7.4f | FAILED", name, acl_w, ucl_w)
-            continue
-        log.info("%-9s | %7.4f | %7.4f | %7.4f | %7.4f | %7.4f | %7.4f",
-                 name, acl_w, ucl_w,
-                 r["NDCG"], r["Recall"], r["HR"], r["MAP"])
-    log.info("%s", "=" * 90)
+    train_ragark(cfg, _device)
