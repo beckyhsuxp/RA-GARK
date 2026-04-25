@@ -34,7 +34,7 @@ from data import (
     load_interactions,
 )
 from evaluate import evaluate
-from losses import bpr_loss, infonce_loss
+from losses import bpr_loss, infonce_loss, sampled_softmax_loss
 from model import RA_GARK
 from train_v1 import set_seed, user_stratified_split
 from train_v6 import aspect_level_cl
@@ -90,7 +90,10 @@ def train_ragark(cfg: Config, device: torch.device) -> dict:
 
     # ── KG SVD initialisation ──────────────────────────────────────────
     if cfg.use_svd_init:
-        kg_init = build_kg_aspect_init(kg_adj, n_items, cfg.num_aspects, cfg.embedding_dim)
+        kg_init = build_kg_aspect_init(
+            kg_adj, n_items, cfg.num_aspects, cfg.embedding_dim,
+            rescale=cfg.svd_rescale,
+        )
         if kg_init is not None:
             model.item_kg_aspects.data.copy_(kg_init.to(device))
             log.info("item_kg_aspects initialised from KG SVD embeddings")
@@ -131,20 +134,39 @@ def train_ragark(cfg: Config, device: torch.device) -> dict:
         model.train()
         total_loss = total_bpr = total_acl = total_ucl = 0.0
 
+        K = cfg.num_negatives
         for users, pos_items, neg_items, _kg_neighbors in loader:
             users = users.to(device)
             pos_items = pos_items.to(device)
             neg_items = neg_items.to(device)
+            B = users.size(0)
 
             # Compute LightGCN propagation ONCE per batch and reuse for pos+neg.
             cached_embs = model._lightgcn_embeddings()
             pos_scores, u_loc, u_glo, i_pos_loc, _ = model(
                 users, pos_items, cached_embs=cached_embs
             )
-            neg_scores, *_ = model(users, neg_items, cached_embs=cached_embs)
 
-            # --- BPR ---
-            loss_bpr = bpr_loss(pos_scores, neg_scores)
+            if K == 1:
+                # --- Original BPR path (1 negative per positive) ---
+                neg_scores, *_ = model(
+                    users, neg_items, cached_embs=cached_embs
+                )
+                loss_bpr = bpr_loss(pos_scores, neg_scores)
+            else:
+                # --- Sampled-softmax with K negatives ---
+                # Reuse the dataset-provided neg as one of the K, sample K-1 more.
+                extra = torch.randint(
+                    0, n_items, (B, K - 1), device=device, dtype=neg_items.dtype,
+                )
+                all_neg = torch.cat([neg_items.unsqueeze(-1), extra], dim=-1)  # [B, K]
+                users_rep = users.repeat_interleave(K)                           # [B*K]
+                neg_flat = all_neg.reshape(-1)                                   # [B*K]
+                neg_scores_flat, *_ = model(
+                    users_rep, neg_flat, cached_embs=cached_embs
+                )
+                neg_scores = neg_scores_flat.view(B, K)
+                loss_bpr = sampled_softmax_loss(pos_scores, neg_scores)
 
             # --- Aspect-level item CL (proj + stop-grad per aspect) ---
             if cfg.use_acl:
@@ -236,34 +258,75 @@ def train_ragark(cfg: Config, device: torch.device) -> dict:
     return test_res
 
 
-if __name__ == "__main__":
-    _device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    log.info("Device: %s", _device)
-
+def _make_base_cfg() -> Config:
     cfg = Config()
     cfg.cl_weight = 0.005
     cfg.epochs = 80
-
-    # ── Ablation toggles — flip any flag to False to ablate ────────────
     cfg.use_rationale         = True
     cfg.use_svd_init          = True
     cfg.use_acl               = True
     cfg.use_ucl               = True
     cfg.use_global_view       = True
-    cfg.rationale_style       = "mlp_softmax"   # mlp_sigmoid | mlp_softmax | dot_softmax
-    cfg.rationale_temperature = 0.5             # <1 sharpens softmax (0.5 = best NDCG)
-    cfg.fusion_init_bias      = 5.0             # 0 → α≈0.5; 5 → α≈0.993
-    # ───────────────────────────────────────────────────────────────────
+    cfg.rationale_style       = "mlp_softmax"
+    cfg.rationale_temperature = 0.5
+    cfg.fusion_init_bias      = 5.0
+    return cfg
 
-    tag = (
-        f"rat{int(cfg.use_rationale)}-{cfg.rationale_style}"
-        f"_t{cfg.rationale_temperature:.2f}"
-        f"_svd{int(cfg.use_svd_init)}"
-        f"_acl{int(cfg.use_acl)}"
-        f"_ucl{int(cfg.use_ucl)}"
-        f"_gv{int(cfg.use_global_view)}"
-        f"_fb{cfg.fusion_init_bias:.0f}"
+
+if __name__ == "__main__":
+    _device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    log.info("Device: %s", _device)
+
+    # ── 4-way ablation: multi-neg × svd_rescale ────────────────────────
+    # A: K=1, rescale=True  (= current main, baseline NDCG ≈ 0.1240)
+    # B: K=4, rescale=True  (multi-neg only)
+    # C: K=1, rescale=False (raw SVD magnitudes only)
+    # D: K=4, rescale=False (both)
+    runs = [
+        ("A_baseline",  dict(num_negatives=1, svd_rescale=True)),
+        ("B_multi_neg", dict(num_negatives=4, svd_rescale=True)),
+        ("C_no_rescale",dict(num_negatives=1, svd_rescale=False)),
+        ("D_both",      dict(num_negatives=4, svd_rescale=False)),
+    ]
+
+    summary = []
+    for name, overrides in runs:
+        cfg = _make_base_cfg()
+        for k, v in overrides.items():
+            setattr(cfg, k, v)
+        cfg.model_save_path = f"best_ragark_{name}.pth"
+
+        log.info("\n%s", "=" * 90)
+        log.info(
+            "RUN %s | num_negatives=%d | svd_rescale=%s",
+            name, cfg.num_negatives, cfg.svd_rescale,
+        )
+        log.info("%s", "=" * 90)
+
+        try:
+            test_res = train_ragark(cfg, _device)
+        except Exception as e:
+            log.exception("RUN %s FAILED: %s", name, e)
+            test_res = None
+        summary.append((name, cfg, test_res))
+
+    # ── Final comparison table ─────────────────────────────────────────
+    log.info("\n%s", "=" * 90)
+    log.info("ABLATION SUMMARY  (test metrics @ K=20)")
+    log.info("%s", "=" * 90)
+    log.info(
+        "%-14s | %5s | %8s | %7s | %7s | %7s | %7s",
+        "Run", "K_neg", "rescale", "NDCG", "Recall", "HR", "MAP",
     )
-    cfg.model_save_path = f"best_ragark_{tag}.pth"
-
-    train_ragark(cfg, _device)
+    log.info("%s", "-" * 90)
+    for name, cfg, r in summary:
+        if r is None:
+            log.info("%-14s | %5d | %8s | FAILED",
+                     name, cfg.num_negatives, str(cfg.svd_rescale))
+            continue
+        log.info(
+            "%-14s | %5d | %8s | %7.4f | %7.4f | %7.4f | %7.4f",
+            name, cfg.num_negatives, str(cfg.svd_rescale),
+            r["NDCG"], r["Recall"], r["HR"], r["MAP"],
+        )
+    log.info("%s", "=" * 90)

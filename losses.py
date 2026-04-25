@@ -8,6 +8,23 @@ def bpr_loss(pos_scores: torch.Tensor, neg_scores: torch.Tensor) -> torch.Tensor
     return -F.logsigmoid(pos_scores - neg_scores).mean()
 
 
+def sampled_softmax_loss(
+    pos_scores: torch.Tensor, neg_scores: torch.Tensor
+) -> torch.Tensor:
+    """Sampled-softmax (a.k.a. SSM / N-pair) loss with K negatives per row.
+
+    pos_scores: [B]      score of the positive item
+    neg_scores: [B, K]   scores of K random negatives
+
+    At K=1 this is mathematically equivalent to BPR (cross-entropy on the
+    two-logit softmax = -log σ(pos − neg) = BPR loss). At K>1 it provides
+    a stronger gradient signal per step.
+    """
+    logits = torch.cat([pos_scores.unsqueeze(-1), neg_scores], dim=-1)  # [B, K+1]
+    labels = torch.zeros(pos_scores.size(0), dtype=torch.long, device=pos_scores.device)
+    return F.cross_entropy(logits, labels)
+
+
 def infonce_loss(
     view1: torch.Tensor, view2: torch.Tensor, temp: float = 0.2
 ) -> torch.Tensor:
