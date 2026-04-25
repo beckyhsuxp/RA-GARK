@@ -47,7 +47,11 @@ class Config:
     early_stop_patience: int = 10   # 0 disables early stopping
 
     # --- Loss weights ---
-    cl_weight: float = 0.01   # InfoNCE contrastive loss
+    cl_weight: float = 0.01   # InfoNCE contrastive loss (shared default)
+    # Optional per-loss override. None → falls back to cl_weight, so the
+    # default behaviour is unchanged (acl_w = ucl_w = cl_weight).
+    acl_weight: float | None = None
+    ucl_weight: float | None = None
     temp: float = 0.2         # InfoNCE temperature
 
     # --- KG pruning ---
