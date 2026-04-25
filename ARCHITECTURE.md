@@ -369,3 +369,26 @@ being a large standalone contribution.
 
 Reproduce with `python run_ablations.py`; raw numbers also land in
 `ablation_results.csv`.
+
+---
+
+## 10. Code Layout
+
+| Module              | Role                                                                     |
+|---------------------|--------------------------------------------------------------------------|
+| `config.py`         | `Config` dataclass with all hyperparameters and ablation flags           |
+| `utils.py`          | `set_seed`, `user_stratified_split`                                       |
+| `data.py`           | `load_interactions`, `build_kg_index`, `build_kg_aspect_init` (KG SVD), `KnowledgeAwareSampler`, `RecDataset`, `build_lightgcn_adj` |
+| `model.py`          | `KGRationaleMasking` (softmax aspect attention), `RA_GARK` (full model with `forward` + `score_all_items`, both accept cached LightGCN embeddings) |
+| `losses.py`         | `bpr_loss`, `infonce_loss`, `aspect_level_cl`                             |
+| `evaluate.py`       | Vectorised full-ranking evaluation (HR / Recall / Precision / F1 / MAP / NDCG @ K) |
+| `train_ragark.py`   | Single-config training entry point. LightGCN propagation is cached once per batch and reused for pos + neg forwards |
+| `run_ablations.py`  | Sweep across ablation presets (writes `ablation_results.csv`)             |
+| `tune_weights.py`   | Optuna search over `cl_weight` and `temp`                                 |
+| `case_study.py`     | Interpretability: per-item softmax aspect weights for sampled users       |
+
+**Loss formulation is fixed.** `L_total = L_BPR + 0.005 · (L_aCL + L_uCL)`
+with one random negative per positive. Optimizer is plain Adam at
+`lr=1e-3`, no weight decay, no LR scheduler — all of which were
+ablated and found to be net-negative or noise on the 905u × 1399i
+split.

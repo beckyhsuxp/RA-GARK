@@ -39,7 +39,7 @@ from data import (
     load_interactions,
 )
 from model import RA_GARK
-from train_v1 import set_seed, user_stratified_split
+from utils import set_seed, user_stratified_split
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 log = logging.getLogger("case")
