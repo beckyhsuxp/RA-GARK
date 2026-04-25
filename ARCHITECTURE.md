@@ -13,12 +13,10 @@ representation into two complementary views:
 
 - **Local View** — collaborative signal from a LightGCN over the
   user–item interaction graph.
-- **Global View** — bilateral KG-aspect representations: both user and
-  item carry `A` aspect slots `[A, d]`, and a *rationale-masking*
-  attention computes a per-(user, item) softmax over aspects that
-  aggregates BOTH sides into `u_glo` / `i_glo`. The same weights drive
-  both aggregations, so the two sides speak the same rationale
-  language by construction.
+- **Global View** — KG-aspect representations passed through a
+  user-conditioned *rationale-masking* attention so that, for each
+  (user, item) pair, only the aspects the user actually cares about
+  contribute to the score.
 
 Both views are combined through independent fusion gates and the final
 score is the dot product `u_final · i_final`.
@@ -35,58 +33,56 @@ score is the dot product `u_final · i_final`.
                │                                 │
        ┌───────┴───────┐                 ┌───────┴───────┐
        ▼               ▼                 ▼               ▼
-  ╔══════════╗   ╔══════════════╗   ╔══════════╗   ╔══════════════╗
-  ║user_local║   ║user_kg_aspect║   ║item_local║   ║item_kg_aspect║
-  ║ Embedding║   ║   [Nu, A, d] ║   ║ Embedding║   ║   [Ni, A, d] ║
-  ║ [Nu, d]  ║   ║ ★ KG SVD init║   ║ [Ni, d]  ║   ║ ★ KG SVD init║
-  ╚════╤═════╝   ╚══════╤═══════╝   ╚════╤═════╝   ╚══════╤═══════╝
-       │                │                 │                │
-       ▼                │                 ▼                │
-  ┌──────────┐          │            ┌──────────┐          │
-  │ LightGCN │          │            │ LightGCN │          │
-  │ K-layer  │          │            │ K-layer  │          │
-  │ D⁻¹ᐟ²AD⁻¹ᐟ²│          │            │ D⁻¹ᐟ²AD⁻¹ᐟ²│         │
-  └────┬─────┘          │            └────┬─────┘          │
-       │                ▼                 │                ▼
-       │       ┌──────────────────────────────────────┐
-       │       │       Bilateral KGRationaleMasking   │
-       │       │  weights[a]=softmax(score(u[a],i[a]))│
-       │       │  u_glo = Σ_a w[a] · u_aspects[a]     │
-       │       │  i_glo = Σ_a w[a] · i_aspects[a]     │
-       │       └──────────┬─────────────┬─────────────┘
-       │                  ▼             ▼
-       │             ┌────────┐    ┌────────┐
-       │             │ u_glo  │    │ i_glo  │
-       │             │ [B, d] │    │ [B, d] │
-       │             └────┬───┘    └────┬───┘
-       ▼                  │             │
-  ┌────────┐              │        ┌────────┐
-  │ u_loc  │              │        │ i_loc  │
-  │ [B, d] │              │        │ [B, d] │
-  └────┬───┘              │        └────┬───┘
-       │                  │             │
-       └────────┬─────────┘             └─────────┬──────────┐
-                │                                 │          │
-                ▼                                 ▼          │
-       ┌─────────────────┐               ┌─────────────────┐ │
-       │user_fusion_gate │               │item_fusion_gate │ │
-       │ α=σ(MLP[u_loc;  │               │ α=σ(MLP[i_loc;  │ │
-       │       u_glo])   │               │       i_glo])   │ │
-       └────────┬────────┘               └────────┬────────┘ │
-                │                                 │          │
-                ▼                                 ▼          │
-        ┌──────────────┐                  ┌──────────────┐   │
-        │   u_final    │                  │   i_final    │   │
-        │ αu_loc+      │                  │ αi_loc+      │◀──┘
-        │ (1-α)u_glo   │                  │ (1-α)i_glo   │
-        └──────┬───────┘                  └──────┬───────┘
-               │                                 │
-               └────────────────┬────────────────┘
-                                ▼
-                        ┌───────────────┐
-                        │     score     │
-                        │ u_final·i_final│
-                        └───────────────┘
+  ╔══════════╗   ╔══════════╗      ╔══════════╗   ╔══════════════╗
+  ║user_local║   ║user_glob ║      ║item_local║   ║item_kg_aspect║
+  ║ Embedding║   ║ Embedding║      ║ Embedding║   ║   [Ni, A, d] ║
+  ║ [Nu, d]  ║   ║ [Nu, d]  ║      ║ [Ni, d]  ║   ║ ★ KG SVD init║
+  ╚════╤═════╝   ╚════╤═════╝      ╚════╤═════╝   ╚══════╤═══════╝
+       │              │                 │                 │
+       │       ┌──────┘                 │                 │
+       │       │                        │                 │
+       ▼       │                        ▼                 ▼
+  ┌──────────┐ │                   ┌──────────┐    ┌────────────┐
+  │ LightGCN │ │                   │ LightGCN │    │ i_aspects  │
+  │ K-layer  │ │                   │ K-layer  │    │  [B, A, d] │
+  │ D⁻¹ᐟ²AD⁻¹ᐟ²│                   │ D⁻¹ᐟ²AD⁻¹ᐟ²│    └─────┬──────┘
+  └────┬─────┘ │                   └────┬─────┘          │
+       │       │                        │                ▼
+       │       ▼                        │       ┌─────────────────┐
+       │  ┌────────┐                    │       │ KGRationale     │
+       │  │ u_glo  │────────────────────┼──────▶│ Masking         │
+       │  │ [B, d] │                    │       │ (user-conditioned│
+       │  └────┬───┘                    │       │  aspect attention)│
+       │       │                        │       └────────┬────────┘
+       ▼       │                        ▼                ▼
+  ┌────────┐  │                   ┌────────┐      ┌──────────┐
+  │ u_loc  │  │                   │ i_loc  │      │  i_glo   │
+  │ [B, d] │  │                   │ [B, d] │      │  [B, d]  │
+  └────┬───┘  │                   └────┬───┘      └─────┬────┘
+       │      │                        │                │
+       │      │                        │                │
+       └──┬───┘                        └────────┬───────┘
+          │                                     │
+          ▼                                     ▼
+  ┌─────────────────┐                 ┌─────────────────┐
+  │user_fusion_gate │                 │item_fusion_gate │
+  │ α=σ(MLP[u_loc;  │                 │ α=σ(MLP[i_loc;  │
+  │       u_glo])   │                 │       i_glo])   │
+  └────────┬────────┘                 └────────┬────────┘
+           │                                   │
+           ▼                                   ▼
+   ┌──────────────┐                    ┌──────────────┐
+   │   u_final    │                    │   i_final    │
+   │ αu_loc+      │                    │ αi_loc+      │
+   │ (1-α)u_glo   │                    │ (1-α)i_glo   │
+   └──────┬───────┘                    └──────┬───────┘
+          │                                   │
+          └────────────────┬──────────────────┘
+                           ▼
+                   ┌───────────────┐
+                   │     score     │
+                   │ u_final·i_final│
+                   └───────────────┘
 ```
 
 ---
@@ -184,15 +180,21 @@ score is the dot product `u_final · i_final`.
 Three novelties to highlight in the figure caption (all % are NDCG@20
 leave-one-out drops measured in Section 9):
 
-1. **★ Bilateral aspect-aligned rationale attention** — both user and
-   item carry `A` aspect slots `[A, d]`, and a single softmax over
-   aspects (computed bilaterally via `(u_aspects[a] · i_aspects[a]) / √d`)
-   yields one weight vector that aggregates BOTH sides. The two views
-   share the same per-(user, item) attention by construction, so the
-   global representation is genuinely user-conditioned rather than
-   item-only. Temperature `τ=0.5` sharpens the softmax to amplify
-   small per-(u, i) score differences and produce visibly differentiated
-   per-item, per-user aspect saliency in Section 9.1.
+1. **★ Softmax-normalised aspect-saliency attention** (−6.4% when
+   reverted to sigmoid) — over the A aspects of an item, conditioned
+   on the user's global embedding. The naive `sigmoid(MLP([u; a]))`
+   formulation produces unnormalised per-aspect weights that saturate,
+   and is not merely neutral but **actively harmful**: sigmoid
+   rationale (0.1152 NDCG) does *worse* than disabling rationale
+   entirely and using a uniform aspect mean (0.1222 NDCG). Replacing
+   the sigmoid with a softmax (with temperature τ=0.5) turns the
+   rationale module into a net-positive contribution (winner 0.1238
+   NDCG) and produces visibly differentiated **item-level aspect
+   saliency** — each item learns which of its A aspect slots carries
+   the strongest recommendation signal (see Section 9.1 case study).
+   Note: attention is primarily **item-conditioned**, with only
+   marginal per-user modulation; stronger user conditioning is left
+   as future work.
 2. **★ Local-biased fusion gate initialisation** (−4.7% when reverted
    to bias 0) — the fusion gate MLP's final Linear bias is initialised
    to `+5` so `α = σ(5) ≈ 0.993` at epoch 0. The model starts
@@ -222,12 +224,12 @@ Supporting design choices:
 
 ### 5.1 Embeddings
 
-| Parameter            | Shape           | Init                        | LR    |
-|----------------------|-----------------|-----------------------------|-------|
-| `user_local_emb`     | `[Nu, d]`       | xavier                      | 1e-3  |
-| `item_local_emb`     | `[Ni, d]`       | xavier                      | 1e-3  |
-| `user_kg_aspects`    | `[Nu, A, d]`    | **user×aspect TF-IDF SVD**  | 1e-3  |
-| `item_kg_aspects`    | `[Ni, A, d]`    | **item×aspect TF-IDF SVD**  | 1e-3  |
+| Parameter            | Shape           | Init        | LR    |
+|----------------------|-----------------|-------------|-------|
+| `user_local_emb`     | `[Nu, d]`       | xavier      | 1e-3  |
+| `item_local_emb`     | `[Ni, d]`       | xavier      | 1e-3  |
+| `user_global_emb`    | `[Nu, d]`       | xavier      | 1e-3  |
+| `item_kg_aspects`    | `[Ni, A, d]`    | **KG SVD**  | 1e-3  |
 
 `Nu=905`, `Ni=1399`, `A=4`, `d=128`. All parameters share a single
 Adam learning rate (1e-3).
@@ -240,40 +242,29 @@ x^(l+1) = D⁻¹ᐟ² A D⁻¹ᐟ² x^(l)
 final  = mean(x⁰, x¹, …, xᴷ)         K = 2
 ```
 
-### 5.3 Bilateral KG Rationale Masking
+### 5.3 KG Rationale Masking
 
-Both user and item carry `[A, d]` aspect slots. Per-aspect alignment
-scores are computed from the matched slot pair, softmax-normalised
-across the aspect axis with temperature `τ`, and applied to BOTH
-sides:
+For each `(user, item)` pair, attention weights are computed across the
+A aspects of the item conditioned on the user's global embedding, then
+**softmax-normalised across the aspect axis** with temperature τ:
 
 ```
-# Two style variants (cfg.rationale_style):
-# style="dot":  score[a] = (u_aspects[a] · i_aspects[a]) / √d   (default, param-free)
-# style="mlp":  score[a] = MLP([u_aspects[a] ; i_aspects[a]])
-
-weights = softmax(score / τ, dim=aspect)         # [B, A]   (sums to 1)
-u_glo   = Σ_a  weights[a] · u_aspects[a]         # [B, d]
+logits  = MLP([u_glo ; i_aspects]).squeeze(-1)   # [B, A]
+weights = softmax(logits / τ, dim=-1)            # [B, A]   (sums to 1)
 i_glo   = Σ_a  weights[a] · i_aspects[a]         # [B, d]
 ```
 
-Three design choices, each tested:
-
-- **Bilateral rather than item-only attention.** The legacy formulation
-  used a single user vector to attend over item aspects, leaving the
-  user side fixed. The bilateral version makes the rationale genuinely
-  user-conditioned: the same per-(u, i) weights aggregate both sides,
-  so KG-aspect alignment shapes the user representation per item too.
-- **Aspect-aligned scoring.** Slot `a` of the user is paired with slot
-  `a` of the item rather than computing a full A×A interaction matrix.
-  The SVD initialisation puts both sides on the same aspect axes, so
-  this slot-aligned form keeps the attention an A-vector and stays
-  cheap.
-- **Temperature τ=0.5.** Raw scores are small in magnitude, so τ=1.0
-  softmax collapses to ≈ uniform weights. Dividing scores by τ<1
-  amplifies small per-(u, i) differences before softmax; τ=0.5 gives
-  the best NDCG and produces visibly differentiated attention in the
-  case study (Section 9.1).
+Two critical choices:
+- **Softmax instead of sigmoid.** The legacy `sigmoid(MLP([u; a]))`
+  treats each aspect weight independently (no cross-aspect
+  competition), empirically saturates near 1 for most aspects, and
+  effectively averages without selecting. Softmax produces a sparse,
+  competitive attention that matches the rationale-masking intuition.
+- **Temperature τ=0.5.** The MLP's raw logits are small in magnitude,
+  so τ=1.0 softmax collapses to ≈ uniform weights. Dividing logits by
+  τ<1 amplifies small differences before softmax; τ=0.5 gives the
+  best NDCG (0.1238) while producing visibly differentiated
+  per-item attention in the case study (Section 9.1).
 
 ### 5.4 Fusion gates (independent for user and item)
 
@@ -354,57 +345,36 @@ Relative improvement of RA-GARK vs the strongest KG-based baseline (KGRec):
 ## 9. Ablation
 
 Each row flips one component of RA-GARK off and retrains from scratch
-(seed=42, 80 epochs, patience=10). `winner` is the bilateral
-configuration: dot rationale + fusion bias 5.0 + MLP fusion gate +
-all CL channels on. `lightgcn_only` is the no-KG floor.
+(seed=42, 80 epochs, patience=10). `winner` = full RA-GARK with softmax
+rationale + fusion bias 5.0 (the new defaults). `old_full` reverts
+both Fix-1 changes (sigmoid rationale + fusion bias 0), giving the
+original broken configuration. `lightgcn_only` is the no-KG floor.
 
-### 9.1 Current architecture (bilateral rationale)
-
-| Preset                 | What it removes                                              |
-|------------------------|--------------------------------------------------------------|
-| **winner**             | full RA-GARK (re-run on bilateral arch to populate the cell) |
-| winner_rat_mlp         | swap dot rationale for MLP variant                           |
-| winner_no_rat          | uniform mean over aspects (no rationale at all)              |
-| winner_no_acl          | drop aspect-level CL                                         |
-| winner_no_ucl          | drop user cross-view CL                                      |
-| winner_no_svd          | xavier init for both `*_kg_aspects` instead of TF-IDF SVD    |
-| winner_fb0             | revert fusion bias (5 → 0); α starts 0.5                     |
-| winner_scalar_gate     | replace per-(u, i) MLP gate with one learnable global α      |
-| no_global_view         | skip the whole global pipeline (CL-only dual-view)           |
-| lightgcn_only          | no KG at all (floor)                                         |
-
-Reproduce with `python run_ablations.py --mode paper`; raw numbers
-land in `ablation_results_paper.csv`.
-
-### 9.2 Historical reference (asymmetric rationale, pre-bilateral)
-
-The numbers below were measured under the original asymmetric
-architecture (single `user_global_emb [Nu, d]` vector + item-only
-aspect attention). They do not transfer literally to the bilateral
-architecture but document the design decisions that motivated the
-current form.
-
-| Preset                 | NDCG       | Δ vs winner | What it removed                                         |
+| Preset                 | NDCG       | Δ vs winner | What it removes                                         |
 |------------------------|------------|-------------|---------------------------------------------------------|
 | **winner (τ=0.5)**     | **0.1238** | —           | softmax rationale + τ=0.5 + fusion_bias=5 + all on      |
 | winner (τ=1.0)         | 0.1231     | −0.6 %      | default temperature — attention ≈ uniform, small dip    |
-| winner_no_rat          | 0.1222     | −1.3 %      | uniform mean over aspects (no rationale at all)         |
-| winner_no_acl          | 0.1207     | −2.5 %      | drop aspect-level CL                                    |
-| winner_no_ucl          | 0.1187     | −4.1 %      | drop user cross-view CL                                 |
-| winner_no_svd          | 0.1173     | −5.3 %      | xavier init for `item_kg_aspects` instead of KG SVD     |
-| winner_fb0             | 0.1173     | −5.3 %      | revert fusion bias (5 → 0); α starts 0.5                |
-| winner_scalar_gate     | 0.1178     | −4.8 %      | replace per-(u,i) MLP gate with one learnable global α  |
-| winner_sigmoid_rat     | 0.1152     | −7.0 %      | revert rationale head (softmax → sigmoid MLP)           |
-| old_full               | 0.1067     | −13.8 %     | both Fix-1 reverts → pre-fix broken full config         |
+| winner_no_rat          | 0.1222     | **−1.3 %**  | uniform mean over aspects (no rationale at all)         |
+| winner_no_acl          | 0.1207     | **−2.5 %**  | drop aspect-level CL                                    |
+| winner_no_ucl          | 0.1187     | **−4.1 %**  | drop user cross-view CL                                 |
+| winner_no_svd          | 0.1173     | **−5.3 %**  | xavier init for `item_kg_aspects` instead of KG SVD     |
+| winner_fb0             | 0.1173     | **−5.3 %**  | revert fusion bias (5 → 0); α starts 0.5                |
+| winner_scalar_gate     | 0.1178     | **−4.8 %**  | replace per-(u,i) MLP gate with one learnable global α  |
+| winner_sigmoid_rat     | 0.1152     | **−7.0 %**  | revert rationale head (softmax → sigmoid MLP)           |
+| old_full               | 0.1067     | **−13.8 %** | both Fix-1 reverts → pre-fix broken full config         |
 | no_global_view         | 0.1214     | −1.9 %      | skip the whole global pipeline (CL-only dual-view)      |
 | lightgcn_only          | 0.1179     | −4.8 %      | no KG at all (floor)                                    |
 
-Three contributions carried the headline novelty, each responsible
-for ≥ 4.7% of NDCG when removed individually under that architecture:
-softmax rationale (vs sigmoid), local-biased fusion init, and KG SVD
-init. The fusion gate's per-(u, i) MLP also passed validation
-(scalar-gate substitution costs −4.8%). The bilateral version below
-inherits these design choices and adds user-side aspect symmetry.
+**Reading the table.** Three contributions carry the headline
+novelty, each responsible for ≥ 4.7% of NDCG when removed individually:
+softmax rationale, local-biased fusion init, and KG SVD init. Below
+them sit the two contrastive channels (uCL −3.6%, aCL −1.9%). Rationale
+*enabled* adds only −0.7%, so the lift from softmax is mostly
+*undoing the harm sigmoid causes* rather than the rationale signal
+being a large standalone contribution.
+
+Reproduce with `python run_ablations.py`; raw numbers also land in
+`ablation_results.csv`.
 
 ---
 
@@ -414,8 +384,8 @@ inherits these design choices and adds user-side aspect symmetry.
 |---------------------|--------------------------------------------------------------------------|
 | `config.py`         | `Config` dataclass with all hyperparameters and ablation flags           |
 | `utils.py`          | `set_seed`, `user_stratified_split`                                       |
-| `data.py`           | `load_interactions`, `build_kg_index`, `build_kg_aspect_init` (item-aspect SVD), `build_user_aspect_init` (user-aspect SVD), `KnowledgeAwareSampler`, `RecDataset`, `build_lightgcn_adj` |
-| `model.py`          | `KGRationaleMasking` (bilateral aspect-aligned softmax), `_make_fusion_gate` / `_ScalarGate`, `RA_GARK` (full model with `forward` + `score_all_items`, both accept cached LightGCN embeddings) |
+| `data.py`           | `load_interactions`, `build_kg_index`, `build_kg_aspect_init` (KG SVD), `KnowledgeAwareSampler`, `RecDataset`, `build_lightgcn_adj` |
+| `model.py`          | `KGRationaleMasking` (softmax aspect attention), `RA_GARK` (full model with `forward` + `score_all_items`, both accept cached LightGCN embeddings) |
 | `losses.py`         | `bpr_loss`, `infonce_loss`, `aspect_level_cl`                             |
 | `evaluate.py`       | Vectorised full-ranking evaluation (HR / Recall / Precision / F1 / MAP / NDCG @ K) |
 | `train_ragark.py`   | Single-config training entry point. LightGCN propagation is cached once per batch and reused for pos + neg forwards |

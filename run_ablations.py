@@ -67,21 +67,23 @@ def make_cfg(**overrides) -> Config:
 
 # All presets are defined once; the --mode flag chooses which subset to run.
 ALL_PRESETS = {
-    "winner":             {},                                                  # bilateral dot rationale, full
-    "winner_rat_mlp":     {"rationale_style": "mlp"},                          # bilateral mlp variant
+    "winner":             {},                                                  # ≈ 0.1231
+    "winner_sigmoid_rat": {"rationale_style": "mlp_sigmoid"},                  # proves softmax ★
     "winner_no_svd":      {"use_svd_init": False},                             # proves KG SVD ★
     "winner_fb0":         {"fusion_init_bias": 0.0},                           # proves fusion bias ★
     "winner_no_acl":      {"use_acl": False},                                  # supporting
     "winner_no_ucl":      {"use_ucl": False},                                  # supporting
     "winner_scalar_gate": {"fusion_gate_style": "scalar"},                     # validates per-(u,i) MLP
     "winner_no_rat":      {"use_rationale": False},                            # rationale off
-    "no_global_view":     {"use_global_view": False},                          # global pipeline off
-    "lightgcn_only":      {"use_global_view": False, "use_rationale": False,   # no-KG floor
+    "old_full":           {"rationale_style": "mlp_sigmoid",                   # ≈ 0.1064
+                           "fusion_init_bias": 0.0},
+    "no_global_view":     {"use_global_view": False},                          # ≈ 0.1218
+    "lightgcn_only":      {"use_global_view": False, "use_rationale": False,   # ≈ 0.1179
                            "use_acl": False, "use_ucl": False},
 
-    # ── Temperature sweep — sharpen the softmax to amplify per-(u,i)
-    # logit differences in the bilateral rationale.
-    "winner_temp_1.0":    {"rationale_temperature": 1.0},
+    # ── Temperature sweep: rescue user-conditioned attention ───────────
+    # Case study showed τ=1 gives near-uniform attention. Sharpen the
+    # softmax to amplify small user-specific logit differences.
     "winner_temp_0.5":    {"rationale_temperature": 0.5},
     "winner_temp_0.1":    {"rationale_temperature": 0.1},
     "winner_temp_0.05":   {"rationale_temperature": 0.05},
@@ -90,22 +92,23 @@ ALL_PRESETS = {
 MODES = {
     "minimal": [
         "winner",
-        "winner_rat_mlp",
+        "winner_sigmoid_rat",
         "winner_no_svd",
         "winner_fb0",
     ],
     "paper": [
         "winner",
-        "winner_rat_mlp",
+        "winner_sigmoid_rat",
         "winner_no_svd",
         "winner_fb0",
         "winner_scalar_gate",
         "winner_no_acl",
         "winner_no_ucl",
+        "old_full",
         "lightgcn_only",
     ],
     "temp": [
-        "winner_temp_1.0",
+        "winner",           # τ=1.0 baseline
         "winner_temp_0.5",
         "winner_temp_0.1",
         "winner_temp_0.05",

@@ -49,12 +49,13 @@ def find_winner_checkpoint() -> str | None:
     """Locate a winner checkpoint regardless of which script trained it.
 
     train_ragark.py format:
-      best_ragark_rat1-dot_t0.50_svd1_acl1_ucl1_gv1_fb5_gate-mlp.pth
+      best_ragark_rat1-mlp_softmax_svd1_acl1_ucl1_gv1_fb5.pth
     run_ablations.py format:
-      best_ragark_rationale1_svd_init1_acl1_ucl1_global_view1_style-dot_..._gate-mlp.pth
+      best_ragark_rationale1_svd_init1_acl1_ucl1_global_view1_style-mlp_softmax_fb5.pth
 
-    Winner signature: bilateral dot rationale + fb5 + mlp gate + every
-    ablation flag ON. Most recently modified match wins.
+    Winner signature: mlp_softmax + fb5 + every flag ON (no 0-valued flag,
+    and no `_no_` in the filename from run_ablations preset names).
+    Most recently modified match wins.
     """
     all_files = glob.glob("best_ragark_*.pth")
     off_markers = (
@@ -63,17 +64,10 @@ def find_winner_checkpoint() -> str | None:
     )
     candidates = [
         f for f in all_files
-        if "style-dot" in f and "fb5" in f and "gate-mlp" in f
+        if "mlp_softmax" in f and "fb5" in f
         and not any(m in f for m in off_markers)
         and "_no_" not in f
     ]
-    if not candidates:
-        # Fallback: any train_ragark.py-style filename that looks like a winner.
-        candidates = [
-            f for f in all_files
-            if "rat1-dot" in f and "fb5" in f and "gate-mlp" in f
-            and not any(m in f for m in off_markers)
-        ]
     if not candidates:
         return None
     candidates.sort(key=os.path.getmtime, reverse=True)
@@ -180,9 +174,9 @@ def main():
             u_idx = torch.LongTensor(users).to(device)
             i_idx = torch.LongTensor([item_idx] * len(users)).to(device)
 
-            u_aspects = model.user_kg_aspects[u_idx]              # [U, A, d]
+            u_glo = model.user_global_emb(u_idx)                  # [U, d]
             i_aspects = model.item_kg_aspects[i_idx]              # [U, A, d]
-            weights = model.rationale_masking._weights(u_aspects, i_aspects)  # [U, A]
+            weights = model.rationale_masking._weights(u_glo, i_aspects).squeeze(-1)   # [U, A]
             weights = weights.cpu().numpy()
 
             for user, w in zip(users, weights):
