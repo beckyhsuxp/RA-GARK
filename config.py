@@ -23,14 +23,16 @@ class Config:
     use_ucl: bool = True           # False → drop user cross-view CL
     use_global_view: bool = True   # False → skip global pipeline (pure LightGCN)
 
-    # --- Rationale masking variants (when use_rationale=True) ---
-    # mlp_sigmoid: legacy — MLP([u; a]) → sigmoid, no cross-aspect normalisation
-    # mlp_softmax: MLP([u; a]) → softmax over aspects (weights sum to 1)  ← default
-    # dot_softmax: (u · a) / √d → softmax over aspects (param-free head)
-    rationale_style: str = "mlp_softmax"
+    # --- Bilateral aspect rationale variants (when use_rationale=True) ---
+    # Both user and item carry [A, d] aspect slots. Per-aspect score is
+    # computed bilaterally, then softmax over aspects yields one weight
+    # vector that aggregates both sides.
+    #   dot — score[a] = (u_aspects[a] · i_aspects[a]) / √d   (param-free, default)
+    #   mlp — score[a] = MLP([u_aspects[a]; i_aspects[a]])    (extra params)
+    rationale_style: str = "dot"
 
-    # --- Softmax temperature (only applies to softmax-style rationale) ---
-    # weights = softmax(logits / τ). 1.0 ≈ uniform; 0.5 sharpens (best NDCG).
+    # --- Softmax temperature ---
+    # weights = softmax(scores / τ). 1.0 ≈ uniform; <1 sharpens.
     rationale_temperature: float = 0.5
 
     # --- Fusion gate init bias ---

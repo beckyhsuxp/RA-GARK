@@ -27,6 +27,7 @@ from data import (
     build_kg_aspect_init,
     build_kg_index,
     build_lightgcn_adj,
+    build_user_aspect_init,
     load_interactions,
 )
 from evaluate import evaluate
@@ -85,14 +86,21 @@ def train_ragark(cfg: Config, device: torch.device) -> dict:
     )
 
     if cfg.use_svd_init:
-        kg_init = build_kg_aspect_init(
+        item_init = build_kg_aspect_init(
             kg_adj, n_items, cfg.num_aspects, cfg.embedding_dim
         )
-        if kg_init is not None:
-            model.item_kg_aspects.data.copy_(kg_init.to(device))
-            log.info("item_kg_aspects initialised from KG SVD embeddings")
+        if item_init is not None:
+            model.item_kg_aspects.data.copy_(item_init.to(device))
+            log.info("item_kg_aspects initialised from KG SVD")
+
+        user_init = build_user_aspect_init(
+            train_df, kg_adj, n_users, cfg.num_aspects, cfg.embedding_dim
+        )
+        if user_init is not None:
+            model.user_kg_aspects.data.copy_(user_init.to(device))
+            log.info("user_kg_aspects initialised from user×aspect SVD")
     else:
-        log.info("SVD init disabled — item_kg_aspects stays at xavier init")
+        log.info("SVD init disabled — both aspect blocks stay at xavier init")
 
     optimizer = torch.optim.Adam(model.parameters(), lr=cfg.learning_rate)
     log.info("Optimizer: Adam lr=%.1e", cfg.learning_rate)
@@ -218,8 +226,8 @@ if __name__ == "__main__":
     cfg.use_acl               = True
     cfg.use_ucl               = True
     cfg.use_global_view       = True
-    cfg.rationale_style       = "mlp_softmax"   # mlp_sigmoid | mlp_softmax | dot_softmax
-    cfg.rationale_temperature = 0.5             # <1 sharpens softmax (0.5 = best NDCG)
+    cfg.rationale_style       = "dot"           # bilateral: dot | mlp
+    cfg.rationale_temperature = 0.5             # <1 sharpens softmax
     cfg.fusion_init_bias      = 5.0             # 0 → α≈0.5; 5 → α≈0.993
     cfg.fusion_gate_style     = "mlp"           # "mlp" | "scalar" (one global α)
     # ───────────────────────────────────────────────────────────────────
