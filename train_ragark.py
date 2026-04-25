@@ -16,6 +16,7 @@ from __future__ import annotations
 import copy
 import logging
 import time
+from statistics import mean, stdev
 
 import torch
 from torch.utils.data import DataLoader
@@ -204,36 +205,119 @@ def train_ragark(cfg: Config, device: torch.device) -> dict:
     return test_res
 
 
-if __name__ == "__main__":
-    _device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    log.info("Device: %s", _device)
-
+def _make_winner_cfg(seed: int) -> Config:
     cfg = Config()
     cfg.cl_weight = 0.005
     cfg.epochs = 80
-
-    # ── Ablation toggles — flip any flag to False to ablate ────────────
+    cfg.seed = seed
     cfg.use_rationale         = True
     cfg.use_svd_init          = True
     cfg.use_acl               = True
     cfg.use_ucl               = True
     cfg.use_global_view       = True
-    cfg.rationale_style       = "mlp_softmax"   # mlp_sigmoid | mlp_softmax | dot_softmax
-    cfg.rationale_temperature = 0.5             # <1 sharpens softmax (0.5 = best NDCG)
-    cfg.fusion_init_bias      = 5.0             # 0 → α≈0.5; 5 → α≈0.993
-    cfg.fusion_gate_style     = "mlp"           # "mlp" | "scalar" (one global α)
-    # ───────────────────────────────────────────────────────────────────
+    cfg.rationale_style       = "mlp_softmax"
+    cfg.rationale_temperature = 0.5
+    cfg.fusion_init_bias      = 5.0
+    cfg.fusion_gate_style     = "mlp"
+    return cfg
 
-    tag = (
-        f"rat{int(cfg.use_rationale)}-{cfg.rationale_style}"
-        f"_t{cfg.rationale_temperature:.2f}"
-        f"_svd{int(cfg.use_svd_init)}"
-        f"_acl{int(cfg.use_acl)}"
-        f"_ucl{int(cfg.use_ucl)}"
-        f"_gv{int(cfg.use_global_view)}"
-        f"_fb{cfg.fusion_init_bias:.0f}"
-        f"_gate-{cfg.fusion_gate_style}"
-    )
-    cfg.model_save_path = f"best_ragark_{tag}.pth"
 
-    train_ragark(cfg, _device)
+def _fmt_pm(values: list[float]) -> str:
+    """Format mean ± std (sample std)."""
+    if len(values) <= 1:
+        return f"{values[0]:.4f}        " if values else "    n/a    "
+    return f"{mean(values):.4f} ± {stdev(values):.4f}"
+
+
+if __name__ == "__main__":
+    _device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    log.info("Device: %s", _device)
+
+    # ── Multi-seed validation: tighten the two key paper findings ──────
+    # * winner_scalar_gate vs winner: claims −4.8% NDCG on a single seed
+    # * no_cl ≈ lightgcn floor:        single-seed coincidence (0.1181 vs 0.1179)
+    # 5 seeds × 3 configs = 15 runs. Paired comparison: same seed across
+    # configs means the only difference is the architectural toggle.
+    seeds = [42, 123, 456, 789, 2024]
+    configs = [
+        ("winner",       {}),
+        ("scalar_gate",  {"fusion_gate_style": "scalar"}),
+        ("no_cl",        {"use_acl": False, "use_ucl": False}),
+    ]
+
+    # results[config_name] = {seed: test_metrics_dict}
+    results: dict[str, dict[int, dict]] = {n: {} for n, _ in configs}
+
+    for seed in seeds:
+        for name, overrides in configs:
+            cfg = _make_winner_cfg(seed)
+            for k, v in overrides.items():
+                setattr(cfg, k, v)
+            cfg.model_save_path = f"best_ragark_{name}_seed{seed}.pth"
+
+            log.info("\n%s", "=" * 90)
+            log.info("RUN seed=%d | config=%s", seed, name)
+            log.info("%s", "=" * 90)
+
+            try:
+                test_res = train_ragark(cfg, _device)
+            except Exception as e:
+                log.exception("seed=%d %s FAILED: %s", seed, name, e)
+                test_res = None
+            results[name][seed] = test_res
+
+    # ── Per-config mean ± std ──────────────────────────────────────────
+    metrics = ("NDCG", "Recall", "HR", "MAP")
+    log.info("\n%s", "=" * 100)
+    log.info("MULTI-SEED VALIDATION  (n=%d seeds: %s)",
+             len(seeds), seeds)
+    log.info("%s", "=" * 100)
+    log.info("%-13s | %16s | %16s | %16s | %16s",
+             "Config", "NDCG", "Recall", "HR", "MAP")
+    log.info("%s", "-" * 100)
+    for name, _ in configs:
+        per_metric = {}
+        for m in metrics:
+            per_metric[m] = [
+                r[m] for r in results[name].values() if r is not None
+            ]
+        log.info(
+            "%-13s | %16s | %16s | %16s | %16s",
+            name,
+            _fmt_pm(per_metric["NDCG"]),
+            _fmt_pm(per_metric["Recall"]),
+            _fmt_pm(per_metric["HR"]),
+            _fmt_pm(per_metric["MAP"]),
+        )
+
+    # ── Paired deltas (winner − comparison, per seed) ──────────────────
+    log.info("\n%s", "-" * 100)
+    log.info("PAIRED DELTAS  (per-seed: winner − comparison)")
+    log.info("%s", "-" * 100)
+    for cmp_name in ("scalar_gate", "no_cl"):
+        deltas = {m: [] for m in metrics}
+        n_pos = 0
+        for seed in seeds:
+            r_w = results["winner"].get(seed)
+            r_c = results[cmp_name].get(seed)
+            if r_w is None or r_c is None:
+                continue
+            ndcg_d = r_w["NDCG"] - r_c["NDCG"]
+            if ndcg_d > 0:
+                n_pos += 1
+            for m in metrics:
+                deltas[m].append(r_w[m] - r_c[m])
+        n = len(deltas["NDCG"])
+        if n == 0:
+            log.info("winner − %-12s : no data", cmp_name)
+            continue
+        log.info(
+            "winner − %-12s : NDCG=%s  Recall=%s  HR=%s  MAP=%s   (winner higher in %d/%d seeds)",
+            cmp_name,
+            _fmt_pm(deltas["NDCG"]),
+            _fmt_pm(deltas["Recall"]),
+            _fmt_pm(deltas["HR"]),
+            _fmt_pm(deltas["MAP"]),
+            n_pos, n,
+        )
+    log.info("%s", "=" * 100)
