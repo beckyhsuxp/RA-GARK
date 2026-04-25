@@ -21,7 +21,6 @@ class Config:
     use_svd_init: bool = True      # False → xavier init for item_kg_aspects
     use_acl: bool = True           # False → drop aspect-level CL
     use_ucl: bool = True           # False → drop user cross-view CL
-    use_kgcl: bool = True          # False → drop KG-neighbor pull CL (L_kgCL)
     use_global_view: bool = True   # False → skip global pipeline (pure LightGCN)
 
     # --- Rationale masking variants (when use_rationale=True) ---
