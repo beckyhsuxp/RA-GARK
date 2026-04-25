@@ -39,6 +39,13 @@ class Config:
     # at start → behaves like LightGCN until the gate earns its way open.
     fusion_init_bias: float = 5.0
 
+    # --- Fusion gate style ---
+    # "mlp"    : per-(user,item) MLP — current default.
+    # "scalar" : one learnable scalar α shared across the dataset; no MLP.
+    #            Used to test whether the MLP's conditional adaptation
+    #            actually contributes beyond a static global α.
+    fusion_gate_style: str = "mlp"
+
     # --- Training ---
     batch_size: int = 128
     learning_rate: float = 1e-3
