@@ -102,17 +102,63 @@ def build_kg_index(
 # Sampler & Dataset
 # ---------------------------------------------------------------------------
 
+def _tfidf_svd_init(
+    M: sp.csr_matrix,
+    num_aspects: int,
+    dim: int,
+    label: str,
+) -> torch.Tensor:
+    """Shared TF-IDF + truncated-SVD + xavier-rescale recipe.
+
+    M: sparse [n_rows × n_cols] co-occurrence matrix.
+    Returns: [n_rows, num_aspects, dim] tensor whose std matches
+    xavier_normal so the init blends with non-SVD parameters.
+    """
+    n_rows = M.shape[0]
+
+    # IDF weighting — downweight columns (aspects) shared by many rows.
+    df = np.asarray(M.sum(axis=0)).flatten()
+    idf = np.log(n_rows / (df + 1.0)) + 1.0
+    M = M.multiply(idf)
+
+    target_k = num_aspects * dim
+    max_k = min(M.shape[0], M.shape[1]) - 1
+    k = min(target_k, max_k)
+
+    from scipy.sparse.linalg import svds
+    U, S, _ = svds(M, k=k)
+
+    order = np.argsort(-S)
+    U, S = U[:, order], S[order]
+    emb = U * np.sqrt(S)[np.newaxis, :]                # [n_rows, k]
+
+    if emb.shape[1] < target_k:
+        rng = np.random.RandomState(42)
+        pad = rng.randn(n_rows, target_k - emb.shape[1]) * 0.01
+        emb = np.concatenate([emb, pad], axis=1)
+    else:
+        emb = emb[:, :target_k]
+
+    xavier_std = float(np.sqrt(2.0 / (num_aspects + dim)))
+    cur_std = float(emb.std())
+    if cur_std > 0:
+        emb *= xavier_std / cur_std
+
+    emb = emb.reshape(n_rows, num_aspects, dim)
+    log.info("%s SVD init: %d components, rescaled std → %.4f",
+             label, k, xavier_std)
+    return torch.FloatTensor(emb)
+
+
 def build_kg_aspect_init(
     kg_adj: Dict[int, List],
     num_items: int,
     num_aspects: int,
     dim: int,
 ) -> torch.Tensor | None:
-    """Initialise item-aspect embeddings from KG co-occurrence via TF-IDF + SVD.
+    """Initialise item-aspect embeddings from item×aspect KG via TF-IDF + SVD.
 
-    Returns a [num_items, num_aspects, dim] tensor, or None if no KG data.
-    The SVD output is rescaled so its std matches xavier_normal, keeping
-    init magnitude consistent with non-SVD parameters.
+    Returns [num_items, num_aspects, dim] or None if KG is empty.
     """
     all_aspects = sorted({a for aspects in kg_adj.values() for a in aspects})
     if not all_aspects:
@@ -122,11 +168,10 @@ def build_kg_aspect_init(
     aspect_to_idx = {a: i for i, a in enumerate(all_aspects)}
     n_kg_aspects = len(all_aspects)
     log.info(
-        "KG SVD init: %d items with KG, %d unique aspects",
+        "Item-aspect init: %d items with KG, %d unique aspects",
         len(kg_adj), n_kg_aspects,
     )
 
-    # Sparse binary co-occurrence matrix [num_items × n_kg_aspects]
     rows, cols = [], []
     for item_idx, aspects in kg_adj.items():
         for asp in aspects:
@@ -137,42 +182,54 @@ def build_kg_aspect_init(
         (np.ones(len(rows), dtype=np.float64), (rows, cols)),
         shape=(num_items, n_kg_aspects),
     )
+    return _tfidf_svd_init(M, num_aspects, dim, label="Item-aspect")
 
-    # IDF weighting — downweight aspects shared by many items
-    df = np.asarray(M.sum(axis=0)).flatten()
-    idf = np.log(num_items / (df + 1.0)) + 1.0
-    M = M.multiply(idf)
 
-    # Truncated SVD
-    target_k = num_aspects * dim                       # e.g. 4 × 128 = 512
-    max_k = min(num_items, n_kg_aspects) - 1
-    k = min(target_k, max_k)
+def build_user_aspect_init(
+    train_df: pd.DataFrame,
+    kg_adj: Dict[int, List],
+    num_users: int,
+    num_aspects: int,
+    dim: int,
+) -> torch.Tensor | None:
+    """Initialise user-aspect embeddings from user×aspect TF-IDF + SVD.
 
-    from scipy.sparse.linalg import svds
-    U, S, _ = svds(M, k=k)
+    M[u, a] = count of training interactions where user u liked an item
+    that has aspect a in the KG. This propagates KG semantics to the
+    user side via observed preferences, so user_kg_aspects starts with
+    a sensible aspect geometry rather than xavier noise.
 
-    # Sort descending by singular value
-    order = np.argsort(-S)
-    U, S = U[:, order], S[order]
+    Returns [num_users, num_aspects, dim] or None if KG is empty.
+    """
+    all_aspects = sorted({a for aspects in kg_adj.values() for a in aspects})
+    if not all_aspects:
+        log.warning("No KG aspects for user-aspect init.")
+        return None
 
-    emb = U * np.sqrt(S)[np.newaxis, :]                # [num_items, k]
+    aspect_to_idx = {a: i for i, a in enumerate(all_aspects)}
+    n_kg_aspects = len(all_aspects)
 
-    # Pad if rank < target_k
-    if emb.shape[1] < target_k:
-        rng = np.random.RandomState(42)
-        pad = rng.randn(num_items, target_k - emb.shape[1]) * 0.01
-        emb = np.concatenate([emb, pad], axis=1)
-    else:
-        emb = emb[:, :target_k]
+    rows, cols = [], []
+    for u, item_idx in zip(
+        train_df["user_idx"].values, train_df["item_idx"].values
+    ):
+        for asp in kg_adj.get(int(item_idx), []):
+            rows.append(int(u))
+            cols.append(aspect_to_idx[asp])
 
-    xavier_std = float(np.sqrt(2.0 / (num_aspects + dim)))
-    cur_std = float(emb.std())
-    if cur_std > 0:
-        emb *= xavier_std / cur_std
+    if not rows:
+        log.warning("No (user, aspect) co-occurrences; falling back to xavier.")
+        return None
 
-    emb = emb.reshape(num_items, num_aspects, dim)
-    log.info("KG SVD init: %d SVD components, rescaled std → %.4f", k, xavier_std)
-    return torch.FloatTensor(emb)
+    M = sp.csr_matrix(
+        (np.ones(len(rows), dtype=np.float64), (rows, cols)),
+        shape=(num_users, n_kg_aspects),
+    )
+    log.info(
+        "User-aspect init: %d (u,a) co-occurrences across %d users",
+        M.nnz, num_users,
+    )
+    return _tfidf_svd_init(M, num_aspects, dim, label="User-aspect")
 
 
 # ---------------------------------------------------------------------------
