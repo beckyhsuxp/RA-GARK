@@ -90,58 +90,63 @@ score is the dot product `u_final · i_final`.
 ## 3. Training Loss Flow (ASCII)
 
 ```
-                     ┌─────────────────────────────┐
-                     │     Sampled Batch (B=128)   │
-                     │       user, pos, neg        │
-                     └──────────────┬──────────────┘
-                                    │
-                  ┌─────────────────┴─────────────────┐
-                  ▼                                   ▼
-             model(u, pos)                       model(u, neg)
-                  │                                   │
-                  ▼                                   ▼
-       ┌──────────────────────┐              ┌───────────────┐
-       │ pos_scores           │              │ neg_scores    │
-       │ u_loc, u_glo         │              │               │
-       │ i_pos_loc            │              │               │
-       └───┬──────┬───────────┘              └───────┬───────┘
-           │      │                                  │
-           │      │                                  │
-           │      │         ┌────────────────────────┘
-           │      │         │
-           │      │         ▼
-           │      │   ┌──────────────────────┐
-           │      │   │   L_BPR              │
-           │      │   │  -logσ(pos - neg)    │
-           │      │   └──────────┬───────────┘
-           │      │              │
-           │      ▼              │
-           │  ┌──────────────────────────┐
-           │  │   L_aCL  (per aspect)    │
-           │  │   1/A Σ InfoNCE(         │
-           │  │     proj(i_pos_loc),     │
-           │  │     i_aspects[a].detach) │
-           │  └──────────┬───────────────┘
-           │             │
-           ▼             │
-   ┌───────────────────────┐
-   │   L_uCL               │
-   │   InfoNCE(            │
-   │     proj(u_loc),      │
-   │     u_glo.detach())   │
-   └──────────┬────────────┘
-              │
-              ▼
-       ┌──────────────────────────────────────────┐
-       │  L_total = L_BPR                         │
-       │          + 0.005 · (L_aCL + L_uCL)       │
-       └──────────────────┬───────────────────────┘
+                ┌───────────────────────────────────────┐
+                │       Sampled Batch (B=128)           │
+                │  user, pos, neg, kg_neighbor(pos)     │
+                └────────────────────┬──────────────────┘
+                                     │
+              ┌────────────┬─────────┴─────────┬────────────┐
+              ▼            ▼                   ▼            ▼
+       model(u, pos)  model(u, neg)     model(u, nbr)
+            │              │                   │
+            ▼              ▼                   ▼
+   ┌──────────────────┐ ┌────────────┐  ┌─────────────┐
+   │ pos_scores       │ │ neg_scores │  │ i_nbr_glo   │
+   │ u_loc, u_glo     │ │            │  │             │
+   │ i_pos_loc,       │ │            │  │             │
+   │ i_pos_glo        │ │            │  │             │
+   └─┬───┬──────┬─────┘ └─────┬──────┘  └──────┬──────┘
+     │   │      │             │                │
+     │   │      │   ┌─────────┘                │
+     │   │      │   │                          │
+     │   │      ▼   ▼                          │
+     │   │  ┌──────────────────┐               │
+     │   │  │   L_BPR          │               │
+     │   │  │ -logσ(pos − neg) │               │
+     │   │  └────────┬─────────┘               │
+     │   │           │                         │
+     │   ▼           │                         │
+     │ ┌──────────────────────────┐            │
+     │ │   L_aCL  (per aspect)    │            │
+     │ │   1/A Σ InfoNCE(         │            │
+     │ │     proj(i_pos_loc),     │            │
+     │ │     i_aspects[a].detach) │            │
+     │ └────────────┬─────────────┘            │
+     │              │                          │
+     ▼              │                          │
+   ┌──────────────────────┐                    │
+   │   L_uCL              │                    │
+   │   InfoNCE(           │                    │
+   │     proj(u_loc),     │                    │
+   │     u_glo.detach())  │                    │
+   └────────┬─────────────┘                    │
+            │      ┌─────────────────────────────────────┐
+            │      │  L_kgCL                             │
+            │      │  InfoNCE(                           │
+            │      │    proj(i_pos_glo),                 │
+            │      │    i_nbr_glo.detach())              │
+            │      └────────────┬────────────────────────┘
+            │                   │
+            ▼                   ▼
+       ┌────────────────────────────────────────────────┐
+       │ L_total = L_BPR                                │
+       │         + 0.005 · (L_aCL + L_uCL + L_kgCL)     │
+       └──────────────────┬─────────────────────────────┘
                           │
                           ▼
               ┌───────────────────────┐
               │       Adam            │
-              │  base lr   = 1e-3     │
-              │  KG aspect = 5e-4     │
+              │  lr = 1e-3            │
               └───────────────────────┘
 ```
 
@@ -289,7 +294,7 @@ interfere with the fusion gates (SimCLR/BYOL-style).
 ## 6. Loss Composition
 
 ```
-L_total = L_BPR + 0.005 · (L_aCL + L_uCL)
+L_total = L_BPR + 0.005 · (L_aCL + L_uCL + L_kgCL)
 ```
 
 | Loss     | Definition                                                              |
@@ -297,6 +302,17 @@ L_total = L_BPR + 0.005 · (L_aCL + L_uCL)
 | `L_BPR`  | `−log σ(pos_score − neg_score)`                                         |
 | `L_aCL`  | `(1/A) Σ_a InfoNCE(proj(i_pos_loc), i_aspects[a].detach())`             |
 | `L_uCL`  | `InfoNCE(proj(u_loc), u_glo.detach())`                                  |
+| `L_kgCL` | `InfoNCE(proj(i_pos_glo), i_nbr_glo.detach())` — KG-neighbor pull       |
+
+**`L_kgCL` (KG-neighbor pull).** For each positive `(user, pos_item)` the
+sampler also draws a *KG neighbor* — a different item that shares at
+least one aspect with `pos_item`. We forward `(user, neighbor)` through
+the same rationale module to obtain `i_nbr_glo`, then InfoNCE-pull the
+projected `i_pos_glo` toward `i_nbr_glo.detach()`. This uses RA-GARK's
+own KG aspect graph as a self-supervision signal: items that share
+aspects should land near each other in the rationale-attended global
+space, **conditioned on the same user**. The KG side is detached so
+gradient flows only into the positive item's path.
 
 ---
 
@@ -387,8 +403,9 @@ Reproduce with `python run_ablations.py`; raw numbers also land in
 | `tune_weights.py`   | Optuna search over `cl_weight` and `temp`                                 |
 | `case_study.py`     | Interpretability: per-item softmax aspect weights for sampled users       |
 
-**Loss formulation is fixed.** `L_total = L_BPR + 0.005 · (L_aCL + L_uCL)`
-with one random negative per positive. Optimizer is plain Adam at
+**Loss formulation is fixed.** `L_total = L_BPR + 0.005 · (L_aCL + L_uCL + L_kgCL)`
+with one random negative per positive and one KG-neighbor per positive
+(sampled by `KnowledgeAwareSampler`). Optimizer is plain Adam at
 `lr=1e-3`, no weight decay, no LR scheduler — all of which were
 ablated and found to be net-negative or noise on the 905u × 1399i
 split.
