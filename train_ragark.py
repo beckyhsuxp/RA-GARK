@@ -98,8 +98,26 @@ def train_ragark(cfg: Config, device: torch.device) -> dict:
         log.info("SVD init disabled — item_kg_aspects stays at xavier init")
     # ───────────────────────────────────────────────────────────────────
 
-    optimizer = torch.optim.Adam(model.parameters(), lr=cfg.learning_rate)
-    log.info("Optimizer: lr=%.1e", cfg.learning_rate)
+    optimizer = torch.optim.Adam(
+        model.parameters(),
+        lr=cfg.learning_rate,
+        weight_decay=cfg.weight_decay,
+    )
+    log.info("Optimizer: lr=%.1e wd=%.1e", cfg.learning_rate, cfg.weight_decay)
+
+    scheduler = None
+    if getattr(cfg, "lr_scheduler", False):
+        scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
+            optimizer,
+            mode="max",
+            factor=cfg.lr_factor,
+            patience=cfg.lr_patience,
+            min_lr=cfg.lr_min,
+        )
+        log.info(
+            "LR scheduler: ReduceLROnPlateau(max NDCG, factor=%.2f, patience=%d, min_lr=%.1e)",
+            cfg.lr_factor, cfg.lr_patience, cfg.lr_min,
+        )
 
     best_val_ndcg, best_epoch, no_improve = 0.0, 0, 0
     header = (
@@ -118,8 +136,12 @@ def train_ragark(cfg: Config, device: torch.device) -> dict:
             pos_items = pos_items.to(device)
             neg_items = neg_items.to(device)
 
-            pos_scores, u_loc, u_glo, i_pos_loc, _ = model(users, pos_items)
-            neg_scores, *_ = model(users, neg_items)
+            # Compute LightGCN propagation ONCE per batch and reuse for pos+neg.
+            cached_embs = model._lightgcn_embeddings()
+            pos_scores, u_loc, u_glo, i_pos_loc, _ = model(
+                users, pos_items, cached_embs=cached_embs
+            )
+            neg_scores, *_ = model(users, neg_items, cached_embs=cached_embs)
 
             # --- BPR ---
             loss_bpr = bpr_loss(pos_scores, neg_scores)
@@ -174,6 +196,13 @@ def train_ragark(cfg: Config, device: torch.device) -> dict:
             note = "* best"
         else:
             no_improve += 1
+
+        if scheduler is not None:
+            prev_lr = optimizer.param_groups[0]["lr"]
+            scheduler.step(val_res["NDCG"])
+            new_lr = optimizer.param_groups[0]["lr"]
+            if new_lr < prev_lr:
+                note = (note + " lr↓").strip()
 
         log.info(
             "%4d | %8.4f | %8.4f | %8.4f | %8.4f | %7.4f | %7.4f | %7.4f | %s",
