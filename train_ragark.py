@@ -77,9 +77,9 @@ def train_ragark(cfg: Config, device: torch.device) -> dict:
         fusion_init_bias=cfg.fusion_init_bias,
     ).to(device)
     log.info(
-        "flags: rat=%s(%s, τ=%.2f) svd=%s acl=%s ucl=%s kgcl=%s global=%s fusion_bias=%.1f",
+        "flags: rat=%s(%s, τ=%.2f) svd=%s acl=%s ucl=%s global=%s fusion_bias=%.1f",
         cfg.use_rationale, cfg.rationale_style, cfg.rationale_temperature,
-        cfg.use_svd_init, cfg.use_acl, cfg.use_ucl, cfg.use_kgcl,
+        cfg.use_svd_init, cfg.use_acl, cfg.use_ucl,
         cfg.use_global_view, cfg.fusion_init_bias,
     )
 
@@ -98,7 +98,7 @@ def train_ragark(cfg: Config, device: torch.device) -> dict:
 
     best_val_ndcg, best_epoch, no_improve = 0.0, 0, 0
     header = (
-        f"{'Ep':>4} | {'Loss':>8} | {'BPR':>8} | {'aCL':>8} | {'uCL':>8} | {'kCL':>8} |"
+        f"{'Ep':>4} | {'Loss':>8} | {'BPR':>8} | {'aCL':>8} | {'uCL':>8} |"
         f" {'vHR':>7} | {'vRecall':>7} | {'vNDCG':>7} | Note"
     )
     sep = "-" * len(header)
@@ -106,16 +106,16 @@ def train_ragark(cfg: Config, device: torch.device) -> dict:
 
     for epoch in range(cfg.epochs):
         model.train()
-        total_loss = total_bpr = total_acl = total_ucl = total_kcl = 0.0
+        total_loss = total_bpr = total_acl = total_ucl = 0.0
 
-        for users, pos_items, neg_items, kg_neighbors in loader:
+        for users, pos_items, neg_items, _kg_neighbors in loader:
             users = users.to(device)
             pos_items = pos_items.to(device)
             neg_items = neg_items.to(device)
 
-            # Compute LightGCN propagation ONCE per batch and reuse across forwards.
+            # Compute LightGCN propagation ONCE per batch and reuse for pos+neg.
             cached_embs = model._lightgcn_embeddings()
-            pos_scores, u_loc, u_glo, i_pos_loc, i_pos_glo = model(
+            pos_scores, u_loc, u_glo, i_pos_loc, _ = model(
                 users, pos_items, cached_embs=cached_embs
             )
             neg_scores, *_ = model(users, neg_items, cached_embs=cached_embs)
@@ -137,21 +137,7 @@ def train_ragark(cfg: Config, device: torch.device) -> dict:
             else:
                 loss_ucl = torch.zeros((), device=device)
 
-            if cfg.use_kgcl and cfg.use_global_view:
-                # KG-neighbor pull: same user, neighbor item under the same
-                # rationale module. Pulls aspect-attended representations of
-                # KG-neighboring items together (stop-grad on neighbor side).
-                kg_neighbors_d = kg_neighbors.to(device)
-                _, _, _, _, i_nbr_glo = model(
-                    users, kg_neighbors_d, cached_embs=cached_embs
-                )
-                loss_kcl = infonce_loss(
-                    model.cl_projector(i_pos_glo), i_nbr_glo.detach(), cfg.temp
-                )
-            else:
-                loss_kcl = torch.zeros((), device=device)
-
-            loss = loss_bpr + cfg.cl_weight * (loss_acl + loss_ucl + loss_kcl)
+            loss = loss_bpr + cfg.cl_weight * (loss_acl + loss_ucl)
 
             optimizer.zero_grad()
             loss.backward()
@@ -161,14 +147,12 @@ def train_ragark(cfg: Config, device: torch.device) -> dict:
             total_bpr += loss_bpr.item()
             total_acl += loss_acl.item()
             total_ucl += loss_ucl.item()
-            total_kcl += loss_kcl.item()
 
         n = len(loader)
         avg_loss = total_loss / n
         avg_bpr = total_bpr / n
         avg_acl = total_acl / n
         avg_ucl = total_ucl / n
-        avg_kcl = total_kcl / n
 
         t0 = time.perf_counter()
         val_res = evaluate(
@@ -188,8 +172,8 @@ def train_ragark(cfg: Config, device: torch.device) -> dict:
             no_improve += 1
 
         log.info(
-            "%4d | %8.4f | %8.4f | %8.4f | %8.4f | %8.4f | %7.4f | %7.4f | %7.4f | %s",
-            epoch + 1, avg_loss, avg_bpr, avg_acl, avg_ucl, avg_kcl,
+            "%4d | %8.4f | %8.4f | %8.4f | %8.4f | %7.4f | %7.4f | %7.4f | %s",
+            epoch + 1, avg_loss, avg_bpr, avg_acl, avg_ucl,
             val_res["HR"], val_res["Recall"], val_res["NDCG"], note,
         )
 
@@ -232,7 +216,6 @@ if __name__ == "__main__":
     cfg.use_svd_init          = True
     cfg.use_acl               = True
     cfg.use_ucl               = True
-    cfg.use_kgcl              = True
     cfg.use_global_view       = True
     cfg.rationale_style       = "mlp_softmax"   # mlp_sigmoid | mlp_softmax | dot_softmax
     cfg.rationale_temperature = 0.5             # <1 sharpens softmax (0.5 = best NDCG)
@@ -245,7 +228,6 @@ if __name__ == "__main__":
         f"_svd{int(cfg.use_svd_init)}"
         f"_acl{int(cfg.use_acl)}"
         f"_ucl{int(cfg.use_ucl)}"
-        f"_kcl{int(cfg.use_kgcl)}"
         f"_gv{int(cfg.use_global_view)}"
         f"_fb{cfg.fusion_init_bias:.0f}"
     )
