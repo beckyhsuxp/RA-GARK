@@ -107,10 +107,16 @@ def build_kg_aspect_init(
     num_items: int,
     num_aspects: int,
     dim: int,
+    rescale: bool = True,
 ) -> torch.Tensor | None:
     """Initialise item-aspect embeddings from KG co-occurrence via TF-IDF + SVD.
 
     Returns a [num_items, num_aspects, dim] tensor, or None if no KG data.
+
+    If `rescale=True` (default) the SVD output is rescaled so its std matches
+    xavier_normal — keeps init magnitude consistent with non-SVD params. If
+    `rescale=False` the raw √S magnitudes are preserved, so directions backed
+    by larger singular values stay larger in the embedding.
     """
     all_aspects = sorted({a for aspects in kg_adj.values() for a in aspects})
     if not all_aspects:
@@ -163,14 +169,19 @@ def build_kg_aspect_init(
     else:
         emb = emb[:, :target_k]
 
-    # Rescale to xavier-normal std
-    xavier_std = float(np.sqrt(2.0 / (num_aspects + dim)))
-    cur_std = float(emb.std())
-    if cur_std > 0:
-        emb *= xavier_std / cur_std
+    if rescale:
+        xavier_std = float(np.sqrt(2.0 / (num_aspects + dim)))
+        cur_std = float(emb.std())
+        if cur_std > 0:
+            emb *= xavier_std / cur_std
+        log.info("KG SVD init: %d SVD components, rescaled std → %.4f", k, xavier_std)
+    else:
+        log.info(
+            "KG SVD init: %d SVD components, raw √S magnitudes (std=%.4f)",
+            k, float(emb.std()),
+        )
 
     emb = emb.reshape(num_items, num_aspects, dim)
-    log.info("KG SVD init: %d SVD components, rescaled std → %.4f", k, xavier_std)
     return torch.FloatTensor(emb)
 
 

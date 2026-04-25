@@ -64,6 +64,17 @@ class Config:
     lr_patience: int = 3            # epochs of no NDCG improvement before decay
     lr_min: float = 1e-5            # floor
 
+    # --- Negative sampling / loss ---
+    # K=1 → BPR (current). K>1 → sampled-softmax loss (SSM / N-pair),
+    # equivalent to BPR at K=1 and typically gives 1–3% NDCG at K=4..16.
+    num_negatives: int = 1
+
+    # --- KG SVD init magnitude ---
+    # True (default) — rescale SVD embeddings to xavier_normal std.
+    # False — keep raw √S magnitudes; preserves the relative importance
+    # of top singular components which the xavier rescale otherwise erases.
+    svd_rescale: bool = True
+
     # --- Loss weights ---
     cl_weight: float = 0.01   # InfoNCE contrastive loss
     temp: float = 0.2         # InfoNCE temperature
