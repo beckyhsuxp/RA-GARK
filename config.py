@@ -48,9 +48,16 @@ class Config:
     # --- Training ---
     batch_size: int = 128
     learning_rate: float = 1e-3
+    weight_decay: float = 1e-4      # L2 reg on Adam (LightGCN canonical)
     epochs: int = 30
     seed: int = 42
     early_stop_patience: int = 10   # 0 disables early stopping
+
+    # --- LR scheduler (ReduceLROnPlateau on val NDCG) ---
+    lr_scheduler: bool = True
+    lr_factor: float = 0.5          # multiply lr by this on plateau
+    lr_patience: int = 3            # epochs of no NDCG improvement before decay
+    lr_min: float = 1e-5            # floor
 
     # --- Loss weights ---
     cl_weight: float = 0.01   # InfoNCE contrastive loss

@@ -167,8 +167,12 @@ class RA_GARK(nn.Module):
         self,
         u_idx: torch.Tensor,
         i_idx: torch.Tensor,
+        cached_embs: Optional[Tuple[torch.Tensor, torch.Tensor]] = None,
     ) -> Tuple[torch.Tensor, ...]:
-        all_u_loc, all_i_loc = self._lightgcn_embeddings()
+        if cached_embs is not None:
+            all_u_loc, all_i_loc = cached_embs
+        else:
+            all_u_loc, all_i_loc = self._lightgcn_embeddings()
         u_loc = all_u_loc[u_idx]
         i_loc = all_i_loc[i_idx]
 
