@@ -200,7 +200,12 @@ leave-one-out drops measured in Section 9):
    to `+5` so `α = σ(5) ≈ 0.993` at epoch 0. The model starts
    LightGCN-like and only opens the gate to the global view when the
    gradient says it helps. Default α≈0.5 lets the noisy KG contaminate
-   the collaborative signal from epoch 1.
+   the collaborative signal from epoch 1. The gate's *per-(user, item)
+   MLP* is also load-bearing: replacing it with a single learnable
+   global α (same `+5` init, no MLP) drops NDCG by 4.8%
+   (`winner_scalar_gate` ablation), confirming that the conditional
+   adaptation — not just the conservative starting point — is what
+   converts the global view into useful score lift.
 3. **★ KG SVD initialisation of `item_kg_aspects`** (−4.7% when
    reverted to xavier) — the global view starts from real KG semantics
    rather than random noise, keeping the KG-pretrained aspect geometry
@@ -354,6 +359,7 @@ original broken configuration. `lightgcn_only` is the no-KG floor.
 | winner_no_ucl          | 0.1187     | **−4.1 %**  | drop user cross-view CL                                 |
 | winner_no_svd          | 0.1173     | **−5.3 %**  | xavier init for `item_kg_aspects` instead of KG SVD     |
 | winner_fb0             | 0.1173     | **−5.3 %**  | revert fusion bias (5 → 0); α starts 0.5                |
+| winner_scalar_gate     | 0.1178     | **−4.8 %**  | replace per-(u,i) MLP gate with one learnable global α  |
 | winner_sigmoid_rat     | 0.1152     | **−7.0 %**  | revert rationale head (softmax → sigmoid MLP)           |
 | old_full               | 0.1067     | **−13.8 %** | both Fix-1 reverts → pre-fix broken full config         |
 | no_global_view         | 0.1214     | −1.9 %      | skip the whole global pipeline (CL-only dual-view)      |

@@ -60,6 +60,7 @@ def make_cfg(**overrides) -> Config:
     tag_bits.append(f"style-{cfg.rationale_style}")
     tag_bits.append(f"t{cfg.rationale_temperature:.2f}")
     tag_bits.append(f"fb{cfg.fusion_init_bias:.0f}")
+    tag_bits.append(f"gate-{cfg.fusion_gate_style}")
     cfg.model_save_path = f"best_ragark_{'_'.join(tag_bits)}.pth"
     return cfg
 
@@ -72,6 +73,7 @@ ALL_PRESETS = {
     "winner_fb0":         {"fusion_init_bias": 0.0},                           # proves fusion bias ★
     "winner_no_acl":      {"use_acl": False},                                  # supporting
     "winner_no_ucl":      {"use_ucl": False},                                  # supporting
+    "winner_scalar_gate": {"fusion_gate_style": "scalar"},                     # validates per-(u,i) MLP
     "winner_no_rat":      {"use_rationale": False},                            # rationale off
     "old_full":           {"rationale_style": "mlp_sigmoid",                   # ≈ 0.1064
                            "fusion_init_bias": 0.0},
@@ -99,6 +101,7 @@ MODES = {
         "winner_sigmoid_rat",
         "winner_no_svd",
         "winner_fb0",
+        "winner_scalar_gate",
         "winner_no_acl",
         "winner_no_ucl",
         "old_full",
@@ -155,6 +158,7 @@ def main():
             row[k] = int(getattr(cfg, k))
         row["rationale_style"] = cfg.rationale_style
         row["rationale_temperature"] = cfg.rationale_temperature
+        row["fusion_gate_style"] = cfg.fusion_gate_style
         for m in ("HR", "Precision", "Recall", "F1", "MAP", "NDCG"):
             row[m] = f"{test_res.get(m, float('nan')):.4f}" if test_res else "NaN"
         results.append(row)

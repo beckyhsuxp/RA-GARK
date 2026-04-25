@@ -204,60 +204,36 @@ def train_ragark(cfg: Config, device: torch.device) -> dict:
     return test_res
 
 
-def _make_base_cfg() -> Config:
+if __name__ == "__main__":
+    _device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    log.info("Device: %s", _device)
+
     cfg = Config()
     cfg.cl_weight = 0.005
     cfg.epochs = 80
+
+    # ── Ablation toggles — flip any flag to False to ablate ────────────
     cfg.use_rationale         = True
     cfg.use_svd_init          = True
     cfg.use_acl               = True
     cfg.use_ucl               = True
     cfg.use_global_view       = True
-    cfg.rationale_style       = "mlp_softmax"
-    cfg.rationale_temperature = 0.5
-    cfg.fusion_init_bias      = 5.0
-    return cfg
+    cfg.rationale_style       = "mlp_softmax"   # mlp_sigmoid | mlp_softmax | dot_softmax
+    cfg.rationale_temperature = 0.5             # <1 sharpens softmax (0.5 = best NDCG)
+    cfg.fusion_init_bias      = 5.0             # 0 → α≈0.5; 5 → α≈0.993
+    cfg.fusion_gate_style     = "mlp"           # "mlp" | "scalar" (one global α)
+    # ───────────────────────────────────────────────────────────────────
 
+    tag = (
+        f"rat{int(cfg.use_rationale)}-{cfg.rationale_style}"
+        f"_t{cfg.rationale_temperature:.2f}"
+        f"_svd{int(cfg.use_svd_init)}"
+        f"_acl{int(cfg.use_acl)}"
+        f"_ucl{int(cfg.use_ucl)}"
+        f"_gv{int(cfg.use_global_view)}"
+        f"_fb{cfg.fusion_init_bias:.0f}"
+        f"_gate-{cfg.fusion_gate_style}"
+    )
+    cfg.model_save_path = f"best_ragark_{tag}.pth"
 
-if __name__ == "__main__":
-    _device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    log.info("Device: %s", _device)
-
-    # SANITY: does the fusion gate's per-(u,i) MLP actually contribute,
-    # or would a single learnable scalar alpha give the same NDCG?
-    runs = [
-        ("mlp_gate",    "mlp"),
-        ("scalar_gate", "scalar"),
-    ]
-
-    summary = []
-    for name, style in runs:
-        cfg = _make_base_cfg()
-        cfg.fusion_gate_style = style
-        cfg.model_save_path = f"best_ragark_{name}.pth"
-
-        log.info("\n%s", "=" * 90)
-        log.info("RUN %s | fusion_gate_style=%s  fusion_init_bias=%.1f",
-                 name, style, cfg.fusion_init_bias)
-        log.info("%s", "=" * 90)
-
-        try:
-            test_res = train_ragark(cfg, _device)
-        except Exception as e:
-            log.exception("RUN %s FAILED: %s", name, e)
-            test_res = None
-        summary.append((name, style, test_res))
-
-    log.info("\n%s", "=" * 90)
-    log.info("FUSION GATE STYLE SANITY  (test metrics @ K=20)")
-    log.info("%s", "=" * 90)
-    log.info("%-13s | %-7s | %7s | %7s | %7s | %7s",
-             "Run", "style", "NDCG", "Recall", "HR", "MAP")
-    log.info("%s", "-" * 90)
-    for name, style, r in summary:
-        if r is None:
-            log.info("%-13s | %-7s | FAILED", name, style)
-            continue
-        log.info("%-13s | %-7s | %7.4f | %7.4f | %7.4f | %7.4f",
-                 name, style, r["NDCG"], r["Recall"], r["HR"], r["MAP"])
-    log.info("%s", "=" * 90)
+    train_ragark(cfg, _device)
