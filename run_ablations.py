@@ -46,7 +46,7 @@ log = logging.getLogger("ablate")
 
 BOOL_FLAGS = (
     "use_rationale", "use_svd_init",
-    "use_acl", "use_ucl", "use_global_view",
+    "use_acl", "use_ucl", "use_kgcl", "use_global_view",
 )
 
 
@@ -72,6 +72,7 @@ ALL_PRESETS = {
     "winner_fb0":         {"fusion_init_bias": 0.0},                           # proves fusion bias ★
     "winner_no_acl":      {"use_acl": False},                                  # supporting
     "winner_no_ucl":      {"use_ucl": False},                                  # supporting
+    "winner_no_kgcl":     {"use_kgcl": False},                                 # KG-pull CL ablation
     "winner_no_rat":      {"use_rationale": False},                            # rationale off
     "old_full":           {"rationale_style": "mlp_sigmoid",                   # ≈ 0.1064
                            "fusion_init_bias": 0.0},
@@ -101,6 +102,7 @@ MODES = {
         "winner_fb0",
         "winner_no_acl",
         "winner_no_ucl",
+        "winner_no_kgcl",
         "old_full",
         "lightgcn_only",
     ],
