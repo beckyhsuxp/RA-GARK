@@ -1,5 +1,5 @@
 """
-RA-GARK — final model.
+RA-GARK — final training script.
 
 Combines:
   - Softmax rationale attention over KG-aspect item representations
@@ -15,12 +15,8 @@ from __future__ import annotations
 
 import copy
 import logging
-import random
 import time
-from typing import Tuple
 
-import numpy as np
-import pandas as pd
 import torch
 from torch.utils.data import DataLoader
 
@@ -34,10 +30,9 @@ from data import (
     load_interactions,
 )
 from evaluate import evaluate
-from losses import bpr_loss, infonce_loss, sampled_softmax_loss
+from losses import aspect_level_cl, bpr_loss, infonce_loss
 from model import RA_GARK
-from train_v1 import set_seed, user_stratified_split
-from train_v6 import aspect_level_cl
+from utils import set_seed, user_stratified_split
 
 logging.basicConfig(
     level=logging.INFO,
@@ -88,39 +83,18 @@ def train_ragark(cfg: Config, device: torch.device) -> dict:
         cfg.use_global_view, cfg.fusion_init_bias,
     )
 
-    # ── KG SVD initialisation ──────────────────────────────────────────
     if cfg.use_svd_init:
         kg_init = build_kg_aspect_init(
-            kg_adj, n_items, cfg.num_aspects, cfg.embedding_dim,
-            rescale=cfg.svd_rescale,
+            kg_adj, n_items, cfg.num_aspects, cfg.embedding_dim
         )
         if kg_init is not None:
             model.item_kg_aspects.data.copy_(kg_init.to(device))
             log.info("item_kg_aspects initialised from KG SVD embeddings")
     else:
         log.info("SVD init disabled — item_kg_aspects stays at xavier init")
-    # ───────────────────────────────────────────────────────────────────
 
-    optimizer = torch.optim.Adam(
-        model.parameters(),
-        lr=cfg.learning_rate,
-        weight_decay=cfg.weight_decay,
-    )
-    log.info("Optimizer: lr=%.1e wd=%.1e", cfg.learning_rate, cfg.weight_decay)
-
-    scheduler = None
-    if getattr(cfg, "lr_scheduler", False):
-        scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
-            optimizer,
-            mode="max",
-            factor=cfg.lr_factor,
-            patience=cfg.lr_patience,
-            min_lr=cfg.lr_min,
-        )
-        log.info(
-            "LR scheduler: ReduceLROnPlateau(max NDCG, factor=%.2f, patience=%d, min_lr=%.1e)",
-            cfg.lr_factor, cfg.lr_patience, cfg.lr_min,
-        )
+    optimizer = torch.optim.Adam(model.parameters(), lr=cfg.learning_rate)
+    log.info("Optimizer: Adam lr=%.1e", cfg.learning_rate)
 
     best_val_ndcg, best_epoch, no_improve = 0.0, 0, 0
     header = (
@@ -134,41 +108,20 @@ def train_ragark(cfg: Config, device: torch.device) -> dict:
         model.train()
         total_loss = total_bpr = total_acl = total_ucl = 0.0
 
-        K = cfg.num_negatives
         for users, pos_items, neg_items, _kg_neighbors in loader:
             users = users.to(device)
             pos_items = pos_items.to(device)
             neg_items = neg_items.to(device)
-            B = users.size(0)
 
             # Compute LightGCN propagation ONCE per batch and reuse for pos+neg.
             cached_embs = model._lightgcn_embeddings()
             pos_scores, u_loc, u_glo, i_pos_loc, _ = model(
                 users, pos_items, cached_embs=cached_embs
             )
+            neg_scores, *_ = model(users, neg_items, cached_embs=cached_embs)
 
-            if K == 1:
-                # --- Original BPR path (1 negative per positive) ---
-                neg_scores, *_ = model(
-                    users, neg_items, cached_embs=cached_embs
-                )
-                loss_bpr = bpr_loss(pos_scores, neg_scores)
-            else:
-                # --- Sampled-softmax with K negatives ---
-                # Reuse the dataset-provided neg as one of the K, sample K-1 more.
-                extra = torch.randint(
-                    0, n_items, (B, K - 1), device=device, dtype=neg_items.dtype,
-                )
-                all_neg = torch.cat([neg_items.unsqueeze(-1), extra], dim=-1)  # [B, K]
-                users_rep = users.repeat_interleave(K)                           # [B*K]
-                neg_flat = all_neg.reshape(-1)                                   # [B*K]
-                neg_scores_flat, *_ = model(
-                    users_rep, neg_flat, cached_embs=cached_embs
-                )
-                neg_scores = neg_scores_flat.view(B, K)
-                loss_bpr = sampled_softmax_loss(pos_scores, neg_scores)
+            loss_bpr = bpr_loss(pos_scores, neg_scores)
 
-            # --- Aspect-level item CL (proj + stop-grad per aspect) ---
             if cfg.use_acl:
                 i_aspects = model.item_kg_aspects[pos_items]   # [B, A, dim]
                 loss_acl = aspect_level_cl(
@@ -177,7 +130,6 @@ def train_ragark(cfg: Config, device: torch.device) -> dict:
             else:
                 loss_acl = torch.zeros((), device=device)
 
-            # --- User cross-view CL (proj + stop-grad) ---
             if cfg.use_ucl:
                 loss_ucl = infonce_loss(
                     model.cl_projector(u_loc), u_glo.detach(), cfg.temp
@@ -218,13 +170,6 @@ def train_ragark(cfg: Config, device: torch.device) -> dict:
             note = "* best"
         else:
             no_improve += 1
-
-        if scheduler is not None:
-            prev_lr = optimizer.param_groups[0]["lr"]
-            scheduler.step(val_res["NDCG"])
-            new_lr = optimizer.param_groups[0]["lr"]
-            if new_lr < prev_lr:
-                note = (note + " lr↓").strip()
 
         log.info(
             "%4d | %8.4f | %8.4f | %8.4f | %8.4f | %7.4f | %7.4f | %7.4f | %s",

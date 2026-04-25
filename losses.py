@@ -1,28 +1,12 @@
 from __future__ import annotations
 
 import torch
+import torch.nn as nn
 import torch.nn.functional as F
 
 
 def bpr_loss(pos_scores: torch.Tensor, neg_scores: torch.Tensor) -> torch.Tensor:
     return -F.logsigmoid(pos_scores - neg_scores).mean()
-
-
-def sampled_softmax_loss(
-    pos_scores: torch.Tensor, neg_scores: torch.Tensor
-) -> torch.Tensor:
-    """Sampled-softmax (a.k.a. SSM / N-pair) loss with K negatives per row.
-
-    pos_scores: [B]      score of the positive item
-    neg_scores: [B, K]   scores of K random negatives
-
-    At K=1 this is mathematically equivalent to BPR (cross-entropy on the
-    two-logit softmax = -log σ(pos − neg) = BPR loss). At K>1 it provides
-    a stronger gradient signal per step.
-    """
-    logits = torch.cat([pos_scores.unsqueeze(-1), neg_scores], dim=-1)  # [B, K+1]
-    labels = torch.zeros(pos_scores.size(0), dtype=torch.long, device=pos_scores.device)
-    return F.cross_entropy(logits, labels)
 
 
 def infonce_loss(
@@ -35,17 +19,29 @@ def infonce_loss(
     return F.cross_entropy(logits, labels)
 
 
-def kg_triplet_loss(
-    anchor: torch.Tensor,
-    positive: torch.Tensor,
-    negative: torch.Tensor,
-    margin: float = 1.0,
+def aspect_level_cl(
+    projector: nn.Module,
+    i_loc: torch.Tensor,
+    i_aspects: torch.Tensor,
+    temp: float,
 ) -> torch.Tensor:
-    """Margin-based triplet loss for KG regularization.
+    """Aspect-level cross-view contrastive loss (L_aCL).
 
-    Pushes KG-neighbor embedding closer to the anchor (positive item)
-    than a random negative item, with a margin.
+    For each aspect a ∈ {1,…,A}, contrast the projected local item
+    embedding against that aspect's KG embedding (stop-grad on KG side).
+
+    Args:
+        projector:  projection head [d → d]
+        i_loc:      local item embeddings        [B, d]
+        i_aspects:  per-aspect KG embeddings     [B, A, d]
+        temp:       InfoNCE temperature
+    Returns:
+        scalar loss averaged over aspects.
     """
-    d_pos = (anchor - positive).pow(2).sum(dim=-1)
-    d_neg = (anchor - negative).pow(2).sum(dim=-1)
-    return F.relu(d_pos - d_neg + margin).mean()
+    num_aspects = i_aspects.size(1)
+    proj_loc = projector(i_loc)
+    loss = torch.zeros((), device=i_loc.device)
+    for a in range(num_aspects):
+        aspect_emb = i_aspects[:, a, :].detach()
+        loss = loss + infonce_loss(proj_loc, aspect_emb, temp)
+    return loss / num_aspects

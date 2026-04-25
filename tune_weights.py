@@ -29,10 +29,9 @@ from data import (
     load_interactions,
 )
 from evaluate import evaluate
-from losses import bpr_loss, infonce_loss
+from losses import aspect_level_cl, bpr_loss, infonce_loss
 from model import RA_GARK
-from train_v1 import set_seed, user_stratified_split
-from train_v6 import aspect_level_cl
+from utils import set_seed, user_stratified_split
 
 # suppress per-trial noise; only show Optuna progress
 logging.basicConfig(
