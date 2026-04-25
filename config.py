@@ -66,13 +66,19 @@ class Config:
 
     # --- Negative sampling / loss ---
     # K=1 → BPR (current). K>1 → sampled-softmax loss (SSM / N-pair),
-    # equivalent to BPR at K=1 and typically gives 1–3% NDCG at K=4..16.
+    # equivalent to BPR at K=1.
+    # Ablation on this 905u × 1399i split: K=4 was a wash on NDCG
+    # (0.1245 vs 0.1243) with marginal HR gain (+1.4%); not worth the
+    # extra forward passes here. Kept as a knob for larger datasets
+    # where SSM commonly outperforms BPR.
     num_negatives: int = 1
 
     # --- KG SVD init magnitude ---
     # True (default) — rescale SVD embeddings to xavier_normal std.
     # False — keep raw √S magnitudes; preserves the relative importance
-    # of top singular components which the xavier rescale otherwise erases.
+    # of top singular components.
+    # Ablation showed rescale=False alone *hurts* NDCG (0.1225 vs 0.1243)
+    # on this split, so keep True by default.
     svd_rescale: bool = True
 
     # --- Loss weights ---
