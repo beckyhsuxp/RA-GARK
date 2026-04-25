@@ -48,13 +48,18 @@ class Config:
     # --- Training ---
     batch_size: int = 128
     learning_rate: float = 1e-3
-    weight_decay: float = 1e-4      # L2 reg on Adam (LightGCN canonical)
+    # weight_decay disabled by default — ablation showed wd=1e-4 drops NDCG
+    # 0.124 → 0.091 on this small (905u × 1399i) split, and wd=1e-5 still
+    # underperforms wd=0 by ~0.4%. Kept as a knob for larger datasets.
+    weight_decay: float = 0.0
     epochs: int = 30
     seed: int = 42
     early_stop_patience: int = 10   # 0 disables early stopping
 
     # --- LR scheduler (ReduceLROnPlateau on val NDCG) ---
-    lr_scheduler: bool = True
+    # Disabled by default — ablation showed it is roughly neutral on this
+    # split (0.1215 vs 0.1240 baseline) so we keep the simpler training loop.
+    lr_scheduler: bool = False
     lr_factor: float = 0.5          # multiply lr by this on plateau
     lr_patience: int = 3            # epochs of no NDCG improvement before decay
     lr_min: float = 1e-5            # floor
