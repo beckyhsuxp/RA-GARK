@@ -91,6 +91,22 @@ def _make_fusion_gate(dim: int, init_bias: float = 0.0) -> nn.Sequential:
     return nn.Sequential(linear_in, nn.Tanh(), linear_out, nn.Sigmoid())
 
 
+class _ScalarGate(nn.Module):
+    """Single learnable alpha; ignores input.
+
+    Sanity-check stand-in for `_make_fusion_gate` to test whether the
+    MLP gate's per-(user, item) conditioning is actually doing work,
+    or whether a single global alpha would yield the same NDCG.
+    """
+
+    def __init__(self, init_bias: float = 0.0) -> None:
+        super().__init__()
+        self.alpha_logit = nn.Parameter(torch.tensor(float(init_bias)))
+
+    def forward(self, _x: torch.Tensor) -> torch.Tensor:
+        return torch.sigmoid(self.alpha_logit)
+
+
 class RA_GARK(nn.Module):
     """
     RA-GARK — Rationale-Aware Gating Network over Review Aspect-Specific Knowledge Graphs.
@@ -118,6 +134,7 @@ class RA_GARK(nn.Module):
         rationale_style: str = "mlp_sigmoid",
         rationale_temperature: float = 1.0,
         fusion_init_bias: float = 0.0,
+        fusion_gate_style: str = "mlp",
     ) -> None:
         super().__init__()
         self.num_users = num_users
@@ -144,8 +161,14 @@ class RA_GARK(nn.Module):
         self.rationale_masking = KGRationaleMasking(
             dim, style=rationale_style, temperature=rationale_temperature,
         )
-        self.user_fusion_gate = _make_fusion_gate(dim, init_bias=fusion_init_bias)
-        self.item_fusion_gate = _make_fusion_gate(dim, init_bias=fusion_init_bias)
+        if fusion_gate_style == "scalar":
+            self.user_fusion_gate = _ScalarGate(init_bias=fusion_init_bias)
+            self.item_fusion_gate = _ScalarGate(init_bias=fusion_init_bias)
+        elif fusion_gate_style == "mlp":
+            self.user_fusion_gate = _make_fusion_gate(dim, init_bias=fusion_init_bias)
+            self.item_fusion_gate = _make_fusion_gate(dim, init_bias=fusion_init_bias)
+        else:
+            raise ValueError(f"unknown fusion_gate_style: {fusion_gate_style}")
 
         # Projection head for contrastive learning (used by v5+)
         self.cl_projector = nn.Sequential(
