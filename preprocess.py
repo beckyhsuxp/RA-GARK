@@ -155,6 +155,22 @@ def iter_kcore(
 # Mode runners
 # ---------------------------------------------------------------------------
 
+def _safe_save(df: pd.DataFrame, out: str, force: bool) -> None:
+    """Refuse to overwrite an existing pkl unless --force is given.
+
+    Defensive: a previous version of this script silently overwrote
+    data/reviews_30_20.pkl (the precious reference) when run in standard
+    mode at item=30 user=20. Never again.
+    """
+    import os
+    if os.path.exists(out) and not force:
+        raise FileExistsError(
+            f"Refusing to overwrite existing file: {out}\n"
+            f"  → pass --force to overwrite, or use --output <other_path> to save elsewhere"
+        )
+    df.to_pickle(out)
+
+
 def run_standard(args: argparse.Namespace) -> None:
     log.info("Mode: standard (full k-core re-filter from raw)")
     log.info("Loading raw reviews from %s", args.input)
@@ -175,12 +191,12 @@ def run_standard(args: argparse.Namespace) -> None:
 
     df = df.astype({"asin": str, "user_id": str}).reset_index(drop=True)
 
-    out = args.output or f"data/reviews_{args.item_threshold}_{args.user_threshold}.pkl"
-    df.to_pickle(out)
+    out = args.output or f"data/reviews_{args.item_threshold}_{args.user_threshold}_v2.pkl"
+    _safe_save(df, out, args.force)
     log.info(
         "✓ saved → %s | rows=%d items=%d users=%d like_ratio=%.3f",
         out, len(df), df["asin"].nunique(), df["user_id"].nunique(),
-        df["like"].mean(),
+        df["like"].mean() if len(df) else float("nan"),
     )
 
 
@@ -247,11 +263,11 @@ def run_fixed_items(args: argparse.Namespace) -> None:
     df = df.astype({"asin": str, "user_id": str}).reset_index(drop=True)
 
     out = args.output or f"data/reviews_30_20items_user{args.user_threshold}.pkl"
-    df.to_pickle(out)
+    _safe_save(df, out, args.force)
     log.info(
         "✓ saved → %s | rows=%d items=%d users=%d like_ratio=%.3f",
         out, len(df), df["asin"].nunique(), df["user_id"].nunique(),
-        df["like"].mean(),
+        df["like"].mean() if len(df) else float("nan"),
     )
 
     # Sanity check: KG coverage of final item set
@@ -299,6 +315,8 @@ def main() -> None:
                    help="Min mean(like) per user (drop pure-haters). Default 0.3.")
     p.add_argument("--like-upper", type=float, default=0.9,
                    help="Max mean(like) per user (drop pure-lovers). Default 0.9.")
+    p.add_argument("--force", action="store_true",
+                   help="Overwrite output file if it already exists.")
     args = p.parse_args()
 
     if args.user_max == 0:
