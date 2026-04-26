@@ -46,9 +46,17 @@ log = logging.getLogger(__name__)
 def train_ragark(cfg: Config, device: torch.device) -> dict:
     set_seed(cfg.seed)
 
-    df, _, _, asin_to_idx, n_users, n_items = load_interactions(cfg.interaction_path)
+    df, user_enc, _, asin_to_idx, n_users, n_items = load_interactions(cfg.interaction_path)
+    user_id_to_idx = (
+        {u: i for i, u in enumerate(user_enc.classes_)}
+        if cfg.use_canonical_kg else None
+    )
     kg_adj, kg_rev_adj, _ = build_kg_index(
-        cfg.kg_path, asin_to_idx, cfg.kg_stopwords, cfg.kg_top_freq_pct
+        cfg.kg_path, asin_to_idx, cfg.kg_stopwords, cfg.kg_top_freq_pct,
+        use_canonical=cfg.use_canonical_kg,
+        canonical_path=cfg.canonical_kg_path,
+        canonical_prune_degree=cfg.canonical_kg_prune_degree,
+        user_id_to_idx=user_id_to_idx,
     )
 
     train_df, val_df, test_df = user_stratified_split(
