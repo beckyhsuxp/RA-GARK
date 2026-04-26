@@ -242,12 +242,12 @@ if __name__ == "__main__":
     _device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     log.info("Device: %s", _device)
 
-    # ── Multi-seed validation: tighten the two key paper findings ──────
-    # * winner_scalar_gate vs winner: claims −4.8% NDCG on a single seed
-    # * no_cl ≈ lightgcn floor:        single-seed coincidence (0.1181 vs 0.1179)
-    # 5 seeds × 3 configs = 15 runs. Paired comparison: same seed across
-    # configs means the only difference is the architectural toggle.
-    seeds = [42, 123, 456, 789, 2024]
+    # ── Direction check: does the canonical KG move NDCG vs 0.124 ceiling? ──
+    # 1 seed × 3 configs paired (winner / scalar_gate / no_cl). If the
+    # canonical KG looks promising on seed=42, scale up to 3 seeds for
+    # paper-grade variance bars later — don't burn 15 runs on a swap that
+    # might regress.
+    seeds = [42]
     configs = [
         ("winner",       {}),
         ("scalar_gate",  {"fusion_gate_style": "scalar"}),
