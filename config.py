@@ -57,7 +57,17 @@ class Config:
     cl_weight: float = 0.01   # InfoNCE contrastive loss
     temp: float = 0.2         # InfoNCE temperature
 
-    # --- KG pruning ---
+    # --- Canonical KG (kg_loader.py) ---
+    # When True, build_kg_index() loads data/kg_canonical.csv (10 canonical
+    # relations, ~57k edges post-prune, includes user-side edges) instead of
+    # data/df_edges_item_aspect1.csv. Legacy interface — relation type stripped
+    # for drop-in compat with the existing model. Set False to keep current
+    # behaviour exactly. See kg_loader.py for full typed-relation API.
+    use_canonical_kg: bool = False
+    canonical_kg_path: str = "data/kg_canonical.csv"
+    canonical_kg_prune_degree: int = 2  # drop tail entities with degree < this
+
+    # --- KG pruning (legacy item-aspect graph; only used when use_canonical_kg=False) ---
     kg_top_freq_pct: float = 0.02
     kg_stopwords: Set[str] = field(default_factory=lambda: {
         "good", "great", "quality", "price", "value", "shipping", "service",

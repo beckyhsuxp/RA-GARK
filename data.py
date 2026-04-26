@@ -61,8 +61,39 @@ def build_kg_index(
     asin_to_idx: Dict,
     stopwords: Set[str],
     top_freq_pct: float,
+    *,
+    use_canonical: bool = False,
+    canonical_path: str = "data/kg_canonical.csv",
+    canonical_prune_degree: int = 2,
+    user_id_to_idx: Dict[str, int] | None = None,
 ) -> Tuple[Dict[int, List], Dict[str, List], Set[str]]:
-    """Build KG adjacency (item→aspects, aspect→items) with graph pruning."""
+    """Build KG adjacency (item→aspects, aspect→items) with graph pruning.
+
+    If ``use_canonical=True``, loads from the canonicalised KG produced by
+    ``kg_clean.py`` via ``kg_loader.build_kg_index_v2`` and returns the
+    legacy-shape aliases (relation type stripped) so the existing model
+    stays drop-in compatible. ``user_id_to_idx`` should be passed when
+    ``use_canonical=True`` to also index the user-side KG (otherwise
+    user-side edges are skipped).
+    """
+    if use_canonical:
+        from kg_loader import build_kg_index_v2
+
+        v2 = build_kg_index_v2(
+            canonical_path,
+            asin_to_idx,
+            user_id_to_idx,
+            prune_degree=canonical_prune_degree,
+        )
+        log.info(
+            "Canonical KG: %d items, %d users, %d bridge entities, %d-entity vocab",
+            len(v2.item_kg_adj), len(v2.user_kg_adj),
+            len(v2.bridge_entities), len(v2.entity_to_idx),
+        )
+        legacy_adj: Dict[int, List] = defaultdict(list, v2.legacy_kg_adj)
+        legacy_rev: Dict[str, List] = defaultdict(list, v2.legacy_kg_rev_adj)
+        return legacy_adj, legacy_rev, v2.legacy_aspect_set
+
     if not os.path.exists(kg_path):
         log.warning("KG file not found at %s — KG features disabled.", kg_path)
         return defaultdict(list), defaultdict(list), set()
