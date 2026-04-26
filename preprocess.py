@@ -201,14 +201,19 @@ def run_fixed_items(args: argparse.Namespace) -> None:
     df = clean_review(df)
     df["like"] = df["rating"] >= 4
 
-    # Lock item set BEFORE any user-side filtering.
+    # IMPORTANT: like_ratio runs on the FULL cleaned Books corpus first
+    # (matches original preprocess.ipynb ordering). If we restricted to the
+    # 1398 reference items first, like_ratio would be computed on tiny
+    # per-user subsets (1-2 reviews) and almost everyone collapses to 0/1
+    # ratio → gets dropped by [0.3, 0.9] band.
+    df = filter_like_ratio(df, args.like_lower, args.like_upper)
+
+    # NOW lock item set.
     df = df[df["asin"].astype(str).isin(fixed_items)].copy()
     log.info(
         "Restricted to reference items: rows=%d items=%d users=%d",
         len(df), df["asin"].nunique(), df["user_id"].nunique(),
     )
-
-    df = filter_like_ratio(df, args.like_lower, args.like_upper)
 
     # item_min=1 → don't drop any reference items mid-iter; only user-side moves.
     df = iter_kcore(df, item_min=1, user_min=args.user_threshold, user_max=args.user_max)
