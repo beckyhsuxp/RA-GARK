@@ -227,7 +227,6 @@ def _make_winner_cfg(seed: int) -> Config:
     cfg.rationale_temperature = 0.5
     cfg.fusion_init_bias      = 5.0
     cfg.fusion_gate_style     = "mlp"
-    cfg.use_canonical_kg      = True   # swap raw aspect graph → kg_canonical.csv
     return cfg
 
 
