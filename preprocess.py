@@ -1,35 +1,39 @@
 """
-Re-filter raw Amazon Books reviews with configurable k-core thresholds.
+preprocess.py — k-core filter for Amazon Books reviews.
 
-Adapted from the original `preprocess.ipynb` (其他 repo)，stripped down to the
-filter pipeline RA-GARK actually consumes (no LDA / negative sampling /
-train-test split — those are handled in `train_ragark.py` via
-`user_stratified_split`).
+Faithful mirror of the original `preprocess.ipynb` pipeline (`filter_reviews`):
 
-Two modes:
-  --mode fixed-items  (default)
-    Lock the item set to an existing reference pkl (`reviews_30_20.pkl`),
-    relax only the user-side threshold. KG (`df_edges_item_aspect1.csv`)
-    stays 100% aligned — single-variable diagnostic for "more users, same
-    items" experiments.
+    clean_review                       (verified_purchase + dedup + has English letter)
+    filter_like_ratio                  (1st pass on full corpus)
+    iter_filter_review_num MAX_COUNT=1 (one pass: drop items <I, drop users <U)
+    apply split_review_text + drop empty
+    iter_filter_review_num MAX_COUNT=10 (full converge)
+    filter_like_ratio                  (2nd pass on iter-filtered data)
 
-  --mode standard
-    Full k-core re-filter from raw `Books.pkl`. Item set will drift relative
-    to 30/20, so any new items lack aspect-KG edges (degenerate SVD init).
-
-Output: `data/reviews_{ITEM}_{USER}.pkl` (standard) or
-        `data/reviews_30_20items_user{USER}.pkl` (fixed-items)
+The MAX_COUNT semantics matter — the original notebook does ONE pass before
+sentence splitting, then full convergence after. Replacing the first call
+with full convergence cascades to 0 rows on this corpus, so we keep both
+calls exactly as the notebook had them.
 
 Usage:
-    python preprocess.py                                  # fixed-items, user≥10
-    python preprocess.py --user-threshold 5               # fixed-items, user≥5
-    python preprocess.py --mode standard                  # full 30/10 re-filter
+
+    # reproduce 30/20 to a new file and validate vs the original
+    python preprocess.py --item 30 --user 20 \\
+        --output data/reviews_30_20_repro.pkl \\
+        --reference data/reviews_30_20.pkl
+
+    # make a 30/10 variant (more users)
+    python preprocess.py --item 30 --user 10
+
+    # make a 30/5 variant (even more users)
+    python preprocess.py --item 30 --user 5
 """
 
 from __future__ import annotations
 
 import argparse
 import logging
+import os
 import re
 
 import pandas as pd
@@ -42,248 +46,233 @@ logging.basicConfig(
 log = logging.getLogger("preprocess")
 
 
-# ---------------------------------------------------------------------------
-# Cleaning steps (preserved from original to keep semantics aligned with 30/20)
-# ---------------------------------------------------------------------------
+_HAS_LETTER = re.compile(r"[a-zA-Z]")
+_SENT_SPLIT = re.compile(r" *[\.\?!][\'\"\)\]]* *")
 
-def _has_letter(text: object) -> bool:
-    return bool(re.search(r"[a-zA-Z]", str(text)))
 
+# ---------------------------------------------------------------------------
+# Filter primitives — each function mirrors a step in the original notebook.
+# ---------------------------------------------------------------------------
 
 def clean_review(df: pd.DataFrame) -> pd.DataFrame:
-    """Verified purchase + drop duplicates + reviews must contain English letters."""
+    """verified_purchase=True + drop_duplicates + must contain an English letter."""
     n0 = len(df)
     df = df[df["verified_purchase"] == True].copy()
     df = df.drop_duplicates()
-    df = df[df["review_text"].apply(_has_letter)]
-    log.info("clean_review: %d → %d rows (dropped %d)", n0, len(df), n0 - len(df))
+    df = df[df["review_text"].apply(lambda t: bool(_HAS_LETTER.search(str(t))))]
+    log.info("clean_review: %d → %d rows", n0, len(df))
     return df
 
 
 def filter_like_ratio(
-    df: pd.DataFrame, like_lower: float, like_upper: float
+    df: pd.DataFrame, lower: float, upper: float
 ) -> pd.DataFrame:
-    """Drop users whose mean(like) ∉ [like_lower, like_upper]."""
+    """Drop users whose mean(like) ∉ [lower, upper].
+
+    Original notebook drops users with ratio < lower (strict) and ratio >
+    upper (strict). Equivalent to keeping ratio ∈ [lower, upper].
+    """
     if "like" not in df.columns:
         df = df.copy()
         df["like"] = df["rating"] >= 4
 
+    n_rows0 = len(df)
+    n_users0 = df["user_id"].nunique()
+
     user_like_mean = df.groupby("user_id")["like"].mean()
     keep = user_like_mean[
-        (user_like_mean >= like_lower) & (user_like_mean <= like_upper)
+        (user_like_mean >= lower) & (user_like_mean <= upper)
     ].index
-
-    n_users_before = user_like_mean.shape[0]
-    n_rows_before = len(df)
     df = df[df["user_id"].isin(keep)].copy()
+
     log.info(
         "filter_like_ratio [%.2f, %.2f]: kept %d/%d users, %d/%d rows",
-        like_lower, like_upper,
-        len(keep), n_users_before,
-        len(df), n_rows_before,
+        lower, upper, len(keep), n_users0, len(df), n_rows0,
     )
     return df
 
 
-_SENTENCE_SPLIT_RE = re.compile(r" *[\.\?!][\'\"\)\]]* *")
-
-
-def _split_review(text: object, min_words: int = 3) -> list[str]:
-    sentences = []
+def split_review_text(text: object, min_words: int = 3) -> list[str]:
+    out: list[str] = []
     for line in str(text).splitlines():
         if line:
-            sentences.extend(_SENTENCE_SPLIT_RE.split(line))
-    return [s for s in sentences if len(s.split()) > min_words]
+            out.extend(_SENT_SPLIT.split(line))
+    return [s for s in out if len(s.split()) > min_words]
 
 
 def drop_empty_review_sentences(df: pd.DataFrame) -> pd.DataFrame:
-    """Mirror原 notebook 的 split_review_text 過濾步驟，砍掉拆完無有效句子的 row."""
+    """Adds split_review_text column, drops rows with no usable sentences."""
     df = df.copy()
-    df["split_review_text"] = df["review_text"].apply(_split_review)
+    df["split_review_text"] = df["review_text"].apply(split_review_text)
     n0 = len(df)
     df = df[df["split_review_text"].apply(len) > 0].copy()
     log.info("drop_empty_review_sentences: %d → %d rows", n0, len(df))
     return df
 
 
-def iter_kcore(
+def iter_filter_review_num(
     df: pd.DataFrame,
-    item_min: int,
-    user_min: int,
-    user_max: int | None = None,
-    max_iters: int = 10,
+    item_threshold: int,
+    user_threshold: int,
+    max_count: int,
 ) -> pd.DataFrame:
-    """Iteratively enforce min(asin count) ≥ item_min and
-    user_min ≤ count(user) ≤ user_max until stable.
+    """Exact mirror of the original notebook's iter_filter_review_num.
 
-    Faster than the original by short-circuiting when len() doesn't change
-    (the original always ran a fixed iteration budget).
+    Outer while loop: at most `max_count` iterations OR until both
+    item_min ≥ item_threshold and user_min ≥ user_threshold.
+
+    Each iteration: drop items <item_threshold, then drop users <user_threshold.
     """
-    for it in range(max_iters):
-        n0 = len(df)
-
+    c = 0
+    item_min, user_min = 0, 0
+    while c < max_count and (
+        item_min < item_threshold or user_min < user_threshold
+    ):
         item_counts = df["asin"].value_counts()
-        df = df[df["asin"].isin(item_counts[item_counts >= item_min].index)]
+        df = df[df["asin"].isin(item_counts[item_counts >= item_threshold].index)]
 
         user_counts = df["user_id"].value_counts()
-        keep = user_counts[user_counts >= user_min]
-        if user_max is not None:
-            keep = keep[keep <= user_max]
-        df = df[df["user_id"].isin(keep.index)]
+        df = df[df["user_id"].isin(user_counts[user_counts >= user_threshold].index)]
 
-        if len(df) == n0:
-            log.info("iter_kcore converged after %d iter(s)", it + 1)
-            break
-    else:
-        log.warning("iter_kcore did not converge in %d iterations", max_iters)
+        item_counts = df["asin"].value_counts()
+        user_counts = df["user_id"].value_counts()
+        item_min = int(item_counts.min()) if len(item_counts) else 0
+        user_min = int(user_counts.min()) if len(user_counts) else 0
+        c += 1
 
-    item_counts = df["asin"].value_counts()
-    user_counts = df["user_id"].value_counts()
     log.info(
-        "iter_kcore result: rows=%d items=%d users=%d "
-        "(item_min=%d user_min=%d user_max=%s actual_item_min=%d user_min=%d max=%d)",
+        "iter_filter [item≥%d user≥%d, max_count=%d]: ran %d iter(s) → "
+        "rows=%d items=%d users=%d (actual item_min=%d user_min=%d)",
+        item_threshold, user_threshold, max_count, c,
         len(df), df["asin"].nunique(), df["user_id"].nunique(),
-        item_min, user_min, user_max if user_max is not None else "∞",
-        int(item_counts.min()) if len(item_counts) else 0,
-        int(user_counts.min()) if len(user_counts) else 0,
-        int(user_counts.max()) if len(user_counts) else 0,
+        item_min, user_min,
     )
     return df
 
 
 # ---------------------------------------------------------------------------
-# Mode runners
+# Full pipeline
+# ---------------------------------------------------------------------------
+
+def filter_reviews(
+    df: pd.DataFrame,
+    item_threshold: int,
+    user_threshold: int,
+    like_lower: float,
+    like_upper: float,
+    ref_users: set | None = None,
+) -> pd.DataFrame:
+    """Run the full pipeline. If ref_users given, log per-step survival count."""
+
+    def survival(label: str) -> None:
+        if ref_users is None:
+            return
+        cur = set(df["user_id"].astype(str).unique())
+        n = len(ref_users & cur)
+        log.info(
+            "  ref-survival [%s]: %d/%d users (%.1f%%)",
+            label, n, len(ref_users), 100.0 * n / max(1, len(ref_users)),
+        )
+
+    log.info(
+        "Raw: rows=%d items=%d users=%d",
+        len(df), df["asin"].nunique(), df["user_id"].nunique(),
+    )
+    survival("raw")
+
+    df = clean_review(df)
+    survival("after clean_review")
+
+    df["like"] = df["rating"] >= 4
+    df = filter_like_ratio(df, like_lower, like_upper)
+    survival("after like_ratio (1st)")
+
+    df = iter_filter_review_num(df, item_threshold, user_threshold, max_count=1)
+    survival("after iter_filter MAX_COUNT=1")
+
+    df = drop_empty_review_sentences(df)
+    survival("after drop_empty_sentences")
+
+    df = iter_filter_review_num(df, item_threshold, user_threshold, max_count=10)
+    survival("after iter_filter MAX_COUNT=10")
+
+    df = filter_like_ratio(df, like_lower, like_upper)
+    survival("after like_ratio (2nd)")
+
+    df = df.astype({"asin": str, "user_id": str}).reset_index(drop=True)
+    return df
+
+
+# ---------------------------------------------------------------------------
+# Validation: compare output to a reference pkl
+# ---------------------------------------------------------------------------
+
+def validate_against(out_df: pd.DataFrame, ref_path: str) -> None:
+    ref = pd.read_pickle(ref_path)
+
+    out_users = set(out_df["user_id"].astype(str).unique())
+    out_items = set(out_df["asin"].astype(str).unique())
+    ref_users = set(ref["user_id"].astype(str).unique())
+    ref_items = set(ref["asin"].astype(str).unique())
+
+    out_pairs = set(zip(out_df["user_id"].astype(str), out_df["asin"].astype(str)))
+    ref_pairs = set(zip(ref["user_id"].astype(str), ref["asin"].astype(str)))
+
+    log.info("=" * 60)
+    log.info("VALIDATION vs %s", ref_path)
+    log.info("=" * 60)
+    log.info(
+        "rows:    out=%d  ref=%d  diff=%+d",
+        len(out_df), len(ref), len(out_df) - len(ref),
+    )
+    log.info(
+        "users:   out=%d  ref=%d  overlap=%d (%.1f%% of ref)",
+        len(out_users), len(ref_users), len(out_users & ref_users),
+        100.0 * len(out_users & ref_users) / max(1, len(ref_users)),
+    )
+    log.info(
+        "items:   out=%d  ref=%d  overlap=%d (%.1f%% of ref)",
+        len(out_items), len(ref_items), len(out_items & ref_items),
+        100.0 * len(out_items & ref_items) / max(1, len(ref_items)),
+    )
+    log.info(
+        "pairs:   out=%d  ref=%d  overlap=%d (%.1f%% of ref)",
+        len(out_pairs), len(ref_pairs), len(out_pairs & ref_pairs),
+        100.0 * len(out_pairs & ref_pairs) / max(1, len(ref_pairs)),
+    )
+    if out_pairs == ref_pairs:
+        log.info("✓ EXACT MATCH on (user_id, asin) pairs")
+    elif out_pairs >= ref_pairs:
+        log.info("✓ output is a SUPERSET of reference (%d extra pairs)",
+                 len(out_pairs - ref_pairs))
+    elif out_pairs <= ref_pairs:
+        log.info("⚠ output is a SUBSET of reference — missing %d ref pairs",
+                 len(ref_pairs - out_pairs))
+    else:
+        log.info(
+            "⚠ partial overlap: out_only=%d  ref_only=%d  shared=%d",
+            len(out_pairs - ref_pairs),
+            len(ref_pairs - out_pairs),
+            len(out_pairs & ref_pairs),
+        )
+
+
+# ---------------------------------------------------------------------------
+# I/O safety
 # ---------------------------------------------------------------------------
 
 def _safe_save(df: pd.DataFrame, out: str, force: bool) -> None:
     """Refuse to overwrite an existing pkl unless --force is given.
 
-    Defensive: a previous version of this script silently overwrote
-    data/reviews_30_20.pkl (the precious reference) when run in standard
-    mode at item=30 user=20. Never again.
+    A previous version of this script silently clobbered
+    data/reviews_30_20.pkl when run at thresholds 30/20. Never again.
     """
-    import os
     if os.path.exists(out) and not force:
         raise FileExistsError(
             f"Refusing to overwrite existing file: {out}\n"
-            f"  → pass --force to overwrite, or use --output <other_path> to save elsewhere"
+            f"  → pass --force to overwrite, or use --output <other_path>"
         )
     df.to_pickle(out)
-
-
-def run_standard(args: argparse.Namespace) -> None:
-    log.info("Mode: standard (full k-core re-filter from raw)")
-    log.info("Loading raw reviews from %s", args.input)
-    df = pd.read_pickle(args.input)
-    log.info(
-        "Raw: rows=%d items=%d users=%d",
-        len(df), df["asin"].nunique(), df["user_id"].nunique(),
-    )
-
-    df = clean_review(df)
-    df["like"] = df["rating"] >= 4
-
-    df = filter_like_ratio(df, args.like_lower, args.like_upper)
-    df = iter_kcore(df, args.item_threshold, args.user_threshold, args.user_max)
-    df = drop_empty_review_sentences(df)
-    df = iter_kcore(df, args.item_threshold, args.user_threshold, args.user_max)
-    df = filter_like_ratio(df, args.like_lower, args.like_upper)
-
-    df = df.astype({"asin": str, "user_id": str}).reset_index(drop=True)
-
-    out = args.output or f"data/reviews_{args.item_threshold}_{args.user_threshold}_v2.pkl"
-    _safe_save(df, out, args.force)
-    log.info(
-        "✓ saved → %s | rows=%d items=%d users=%d like_ratio=%.3f",
-        out, len(df), df["asin"].nunique(), df["user_id"].nunique(),
-        df["like"].mean() if len(df) else float("nan"),
-    )
-
-
-def run_fixed_items(args: argparse.Namespace) -> None:
-    log.info("Mode: fixed-items (lock item set to reference, relax user only)")
-    log.info("Loading reference split from %s", args.reference)
-    ref = pd.read_pickle(args.reference)
-    fixed_items = set(ref["asin"].astype(str).unique())
-    ref_users = set(ref["user_id"].astype(str).unique())
-    log.info("Reference: %d items, %d users", len(fixed_items), len(ref_users))
-
-    def _survival(df: pd.DataFrame, label: str) -> None:
-        """Log how many of the reference 30/20 users survive at this step."""
-        cur = set(df["user_id"].astype(str).unique())
-        surv = ref_users & cur
-        log.info(
-            "  ref-survival [%s]: %d/%d users (%.1f%%)",
-            label, len(surv), len(ref_users),
-            100.0 * len(surv) / max(1, len(ref_users)),
-        )
-
-    log.info("Loading raw reviews from %s", args.input)
-    df = pd.read_pickle(args.input)
-    log.info(
-        "Raw: rows=%d items=%d users=%d",
-        len(df), df["asin"].nunique(), df["user_id"].nunique(),
-    )
-    _survival(df, "raw")
-
-    df = clean_review(df)
-    _survival(df, "after clean_review")
-
-    df["like"] = df["rating"] >= 4
-
-    # IMPORTANT: like_ratio runs on the FULL cleaned Books corpus first
-    # (matches original preprocess.ipynb ordering). If we restricted to the
-    # 1398 reference items first, like_ratio would be computed on tiny
-    # per-user subsets (1-2 reviews) and almost everyone collapses to 0/1
-    # ratio → gets dropped by [0.3, 0.9] band.
-    df = filter_like_ratio(df, args.like_lower, args.like_upper)
-    _survival(df, "after like_ratio (full corpus)")
-
-    # NOW lock item set.
-    df = df[df["asin"].astype(str).isin(fixed_items)].copy()
-    log.info(
-        "Restricted to reference items: rows=%d items=%d users=%d",
-        len(df), df["asin"].nunique(), df["user_id"].nunique(),
-    )
-    _survival(df, "after restrict-to-ref-items")
-
-    # item_min=1 → don't drop any reference items mid-iter; only user-side moves.
-    df = iter_kcore(df, item_min=1, user_min=args.user_threshold, user_max=args.user_max)
-    _survival(df, "after iter_kcore #1 (user≥%d)" % args.user_threshold)
-
-    df = drop_empty_review_sentences(df)
-    _survival(df, "after drop_empty_sentences")
-
-    df = iter_kcore(df, item_min=1, user_min=args.user_threshold, user_max=args.user_max)
-    _survival(df, "after iter_kcore #2")
-
-    df = filter_like_ratio(df, args.like_lower, args.like_upper)
-    _survival(df, "after final like_ratio")
-
-    df = df.astype({"asin": str, "user_id": str}).reset_index(drop=True)
-
-    out = args.output or f"data/reviews_30_20items_user{args.user_threshold}.pkl"
-    _safe_save(df, out, args.force)
-    log.info(
-        "✓ saved → %s | rows=%d items=%d users=%d like_ratio=%.3f",
-        out, len(df), df["asin"].nunique(), df["user_id"].nunique(),
-        df["like"].mean() if len(df) else float("nan"),
-    )
-
-    # Sanity check: KG coverage of final item set
-    kg_path = "data/df_edges_item_aspect1.csv"
-    try:
-        kg = pd.read_csv(kg_path)
-        kg_items = set(kg["node_1"].astype(str).unique())
-        final_items = set(df["asin"].unique())
-        covered = final_items & kg_items
-        log.info(
-            "KG coverage: %d/%d items have aspect edges (%.1f%%)",
-            len(covered), len(final_items),
-            100.0 * len(covered) / max(1, len(final_items)),
-        )
-    except Exception as e:  # pragma: no cover
-        log.warning("Could not check KG coverage: %s", e)
 
 
 # ---------------------------------------------------------------------------
@@ -291,41 +280,79 @@ def run_fixed_items(args: argparse.Namespace) -> None:
 # ---------------------------------------------------------------------------
 
 def main() -> None:
-    p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    p.add_argument(
-        "--mode", choices=["fixed-items", "standard"], default="fixed-items",
-        help="fixed-items: lock to reference item set (KG stays aligned). "
-             "standard: full re-filter from raw (item set drifts).",
+    p = argparse.ArgumentParser(
+        description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     p.add_argument("--input", default="data/Books.pkl",
                    help="Raw review pkl. Required columns: user_id, asin, rating, "
                         "review_text, verified_purchase. (default: data/Books.pkl)")
-    p.add_argument("--reference", default="data/reviews_30_20.pkl",
-                   help="[fixed-items] pkl whose item set is locked.")
     p.add_argument("--output", default=None,
-                   help="Output path. Default auto-named.")
-    p.add_argument("--item-threshold", type=int, default=30,
-                   help="Min reviews per item (standard mode). Default 30.")
-    p.add_argument("--user-threshold", type=int, default=10,
-                   help="Min reviews per user. Default 10.")
-    p.add_argument("--user-max", type=int, default=500,
-                   help="Max reviews per user (drop power-reviewers / bots). "
-                        "Set 0 to disable. Default 500 (matches config.json).")
+                   help="Output pkl. Default: data/reviews_{item}_{user}.pkl")
+    p.add_argument("--item", "--item-threshold", type=int, default=30,
+                   dest="item_threshold",
+                   help="Min reviews per item (default 30 — matches original 30/20).")
+    p.add_argument("--user", "--user-threshold", type=int, default=10,
+                   dest="user_threshold",
+                   help="Min reviews per user (default 10 — relaxed from original 20).")
     p.add_argument("--like-lower", type=float, default=0.3,
                    help="Min mean(like) per user (drop pure-haters). Default 0.3.")
     p.add_argument("--like-upper", type=float, default=0.9,
                    help="Max mean(like) per user (drop pure-lovers). Default 0.9.")
+    p.add_argument("--reference", default=None,
+                   help="Reference pkl (e.g. reviews_30_20.pkl). If given, logs "
+                        "per-step survival of reference users AND validates output "
+                        "(user_id, asin) pairs against this reference at the end.")
     p.add_argument("--force", action="store_true",
                    help="Overwrite output file if it already exists.")
     args = p.parse_args()
 
-    if args.user_max == 0:
-        args.user_max = None
+    log.info("Loading raw from %s", args.input)
+    df = pd.read_pickle(args.input)
 
-    if args.mode == "standard":
-        run_standard(args)
-    else:
-        run_fixed_items(args)
+    ref_users = None
+    if args.reference:
+        ref = pd.read_pickle(args.reference)
+        ref_users = set(ref["user_id"].astype(str).unique())
+        log.info(
+            "Tracking %d reference users from %s",
+            len(ref_users), args.reference,
+        )
+
+    out_df = filter_reviews(
+        df,
+        item_threshold=args.item_threshold,
+        user_threshold=args.user_threshold,
+        like_lower=args.like_lower,
+        like_upper=args.like_upper,
+        ref_users=ref_users,
+    )
+
+    out_path = args.output or (
+        f"data/reviews_{args.item_threshold}_{args.user_threshold}.pkl"
+    )
+    _safe_save(out_df, out_path, args.force)
+    log.info(
+        "✓ saved → %s | rows=%d items=%d users=%d like_ratio=%.3f",
+        out_path, len(out_df), out_df["asin"].nunique(),
+        out_df["user_id"].nunique(),
+        out_df["like"].mean() if len(out_df) else float("nan"),
+    )
+
+    # KG coverage check (only meaningful if items overlap with the KG)
+    kg_path = "data/df_edges_item_aspect1.csv"
+    if os.path.exists(kg_path) and len(out_df):
+        kg = pd.read_csv(kg_path)
+        kg_items = set(kg["node_1"].astype(str).unique())
+        out_items = set(out_df["asin"].astype(str).unique())
+        covered = out_items & kg_items
+        log.info(
+            "KG coverage: %d/%d output items have aspect edges (%.1f%%)",
+            len(covered), len(out_items),
+            100.0 * len(covered) / max(1, len(out_items)),
+        )
+
+    if args.reference:
+        validate_against(out_df, args.reference)
 
 
 if __name__ == "__main__":
