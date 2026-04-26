@@ -1,0 +1,50 @@
+============================================================
+KG canonicalisation report
+============================================================
+Source : df_edges_all_aspect1.csv
+Output : kg_canonical.csv
+
+--- BEFORE ---
+  triples          : 106,926
+  unique relations : 2,687
+  unique entities  : 20,462
+
+--- AFTER  ---
+  triples          : 69,560  (dropped 37,366)
+  unique relations : 10
+  unique entities  : 20,016  (merged 446 via case/space normalisation)
+
+--- Canonical relation distribution ---
+  POSITIVE_PREF     34,991  (50.3%)
+  INTERESTED_IN     10,754  (15.5%)
+  OTHER              8,327  (12.0%)
+  NEGATIVE_PREF      4,935  (7.1%)
+  HAS_PROPERTY       3,297  (4.7%)
+  DEPICTS            2,643  (3.8%)
+  IS_A               2,348  (3.4%)
+  NEUTRAL_PREF       1,365  (2.0%)
+  INFLUENCES           613  (0.9%)
+  SET_IN               287  (0.4%)
+
+--- Top-20 raw relations falling into OTHER ---
+  relates_to                         139
+  concerned_about                     99
+  understands                         84
+  reads                               60
+  enriches                            57
+  provides_context                    55
+  genre                               54
+  expresses                           54
+  familiar_with                       51
+  evokes                              50
+  responds_to                         50
+  accepts                             49
+  disliked                            49
+  connects_with                       48
+  impacts                             48
+  expects_high_quality                48
+  is_type_of                          45
+  creates                             44
+  avoids                              44
+  is_fascinated_by                    44
+  ... (2,604 total raw relations in OTHER)
