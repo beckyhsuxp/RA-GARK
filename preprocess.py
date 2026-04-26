@@ -189,7 +189,18 @@ def run_fixed_items(args: argparse.Namespace) -> None:
     log.info("Loading reference split from %s", args.reference)
     ref = pd.read_pickle(args.reference)
     fixed_items = set(ref["asin"].astype(str).unique())
-    log.info("Reference item set size: %d", len(fixed_items))
+    ref_users = set(ref["user_id"].astype(str).unique())
+    log.info("Reference: %d items, %d users", len(fixed_items), len(ref_users))
+
+    def _survival(df: pd.DataFrame, label: str) -> None:
+        """Log how many of the reference 30/20 users survive at this step."""
+        cur = set(df["user_id"].astype(str).unique())
+        surv = ref_users & cur
+        log.info(
+            "  ref-survival [%s]: %d/%d users (%.1f%%)",
+            label, len(surv), len(ref_users),
+            100.0 * len(surv) / max(1, len(ref_users)),
+        )
 
     log.info("Loading raw reviews from %s", args.input)
     df = pd.read_pickle(args.input)
@@ -197,8 +208,11 @@ def run_fixed_items(args: argparse.Namespace) -> None:
         "Raw: rows=%d items=%d users=%d",
         len(df), df["asin"].nunique(), df["user_id"].nunique(),
     )
+    _survival(df, "raw")
 
     df = clean_review(df)
+    _survival(df, "after clean_review")
+
     df["like"] = df["rating"] >= 4
 
     # IMPORTANT: like_ratio runs on the FULL cleaned Books corpus first
@@ -207,6 +221,7 @@ def run_fixed_items(args: argparse.Namespace) -> None:
     # per-user subsets (1-2 reviews) and almost everyone collapses to 0/1
     # ratio → gets dropped by [0.3, 0.9] band.
     df = filter_like_ratio(df, args.like_lower, args.like_upper)
+    _survival(df, "after like_ratio (full corpus)")
 
     # NOW lock item set.
     df = df[df["asin"].astype(str).isin(fixed_items)].copy()
@@ -214,12 +229,20 @@ def run_fixed_items(args: argparse.Namespace) -> None:
         "Restricted to reference items: rows=%d items=%d users=%d",
         len(df), df["asin"].nunique(), df["user_id"].nunique(),
     )
+    _survival(df, "after restrict-to-ref-items")
 
     # item_min=1 → don't drop any reference items mid-iter; only user-side moves.
     df = iter_kcore(df, item_min=1, user_min=args.user_threshold, user_max=args.user_max)
+    _survival(df, "after iter_kcore #1 (user≥%d)" % args.user_threshold)
+
     df = drop_empty_review_sentences(df)
+    _survival(df, "after drop_empty_sentences")
+
     df = iter_kcore(df, item_min=1, user_min=args.user_threshold, user_max=args.user_max)
+    _survival(df, "after iter_kcore #2")
+
     df = filter_like_ratio(df, args.like_lower, args.like_upper)
+    _survival(df, "after final like_ratio")
 
     df = df.astype({"asin": str, "user_id": str}).reset_index(drop=True)
 
