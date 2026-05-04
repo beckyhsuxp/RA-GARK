@@ -2,5 +2,18 @@ __pycache__/
 *.pth
 *.stackdump
 .DS_Store
-data/
+Code/data/
 .venv/
+
+# LaTeX build artifacts
+*.aux
+*.bbl
+*.blg
+*.fdb_latexmk
+*.fls
+*.log
+*.out
+*.synctex.gz
+*.toc
+*.run.xml
+*.bcf
