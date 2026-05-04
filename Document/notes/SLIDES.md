@@ -29,6 +29,15 @@ KG-aware Recommendation · 稀疏 KG · Graceful Degradation
 | KGRec (2023) | 0.1095 |
 | **純 LightGCN（無 KG）** | **0.1179** |
 
+**為何稀疏 KG 是必須面對的設定？**
+
+- **Review-derived KG**（本文資料集即此類）：邊密度受限於用戶評論的主題覆蓋
+- **Cold-start / 新興領域**：新類別、小語種、利基領域的 KG 必然稀疏，缺乏 Freebase / Wikidata 等成熟知識來源
+- **隱私受限場景**：可用關係訊號被刻意限縮（醫療、金融）
+- **KG completion 並非無痛替代**：補全本身會引入新雜訊，且需要種子訊號才能訓練
+
+→ **稀疏 KG 是 real-world default 而非邊緣案例**；模型在 KG 不可信時的穩健性，比 KG 豐富時的峰值更具實用價值
+
 ---
 
 ## Slide 3 — Research Question
@@ -115,16 +124,18 @@ KG-aware Recommendation · 稀疏 KG · Graceful Degradation
   - 建立在 KGAT-style aggregator 上，rationale 在 CKG 傳遞路徑中生效
   - 本文設定：KGRec = 0.1095 < LightGCN = 0.1179
 
-**本文的四點調整**
+**Rationale-aware 範式的共享與分歧**
 
-| | 調整 |
-|---|---|
-| 粒度 | edge-level → item 的 aspect 槽（A=4），可直接解讀語意 |
-| 機制 | 離散 Bernoulli dropout → 可微分 softmax attention，推論時可匯出權重 |
-| 歸一化 | sigmoid → softmax + τ=0.5，差距達 −7.0% NDCG |
-| 架構 | KGAT-integrated → LightGCN side-channel，稀疏 KG 下協同訊號更純淨 |
+KGRec 確立了「並非所有 KG 邊同等重要」的核心觀察，本文承襲此觀察。但 RA-GARK 的 rationale 設計反映**對 KG 信任度的不同前提**：
 
-→ RA-GARK = 0.1238（+13.1% vs KGRec）
+| 設計面向 | KGRec | RA-GARK |
+|---|---|---|
+| Rationale 粒度 | edge-level（KG 三元組）| item 的 aspect 槽（A=4）|
+| 選擇機制 | 離散 Bernoulli dropout + CL | 可微分 softmax attention |
+| 作用位置 | KGAT aggregator 內部傳遞 | 後期融合的獨立側通道 |
+| 對 KG 的隱含假設 | 有用邊存在，挑出即可 | KG 整體可能不可信，整條管線可被關閉 |
+
+→ 兩者共享 rationale-aware 範式，但 RA-GARK 是基於不同信任前提的**獨立設計**而非 KGRec 的工程改良
 
 ---
 
@@ -168,11 +179,12 @@ KG-aware Recommendation · 稀疏 KG · Graceful Degradation
 
 → **四者皆隱含假設「KG 至少不是負訊號」**，缺乏架構層面的可退化機制；本文觀察到此假設在稀疏 KG 下不成立（KG-aware 全敗給 LightGCN）。
 
-**RA-GARK 的定位：兩個未被合併的設計選擇**
+**RA-GARK 的定位**
 
-- **(a) 將 Highway 式的 bias-init gate 從「網路內部 skip」移植到「異質視角後期融合」**
-- **(b) 在 KG-aware 推薦中首次以 gate 取代 attention/aggregation 作為融合機制**
-- 結果：α₀ ≈ 0.993 起點 = 純 LightGCN，KG 有用才打開；消融顯示此結構貢獻 **−5.3% NDCG**
+- **將 Highway 式的 bias-init gate 從「網路內部 skip」移植到「異質視角後期融合」**
+- **本文檢視的 KG-aware 方法均未採用 bias-initialized gate 作為架構層面的安全退化機制**
+  - CKAN、MKR、KGIN 等使用 attention / cross-feature unit / 意圖分解，皆無「最壞情況退化為純 CF」的結構保證
+- 結果：α₀ ≈ 0.993 起點 ≈ 純 LightGCN，KG 有用才打開；消融顯示此結構貢獻 **−5.3% NDCG**
 
 ---
 
@@ -463,10 +475,10 @@ L_total  =  L_BPR  +  0.005 · ( L_aCL + L_uCL )
 | 本文結果 | NDCG −7.0% | 最佳 |
 
 - **本文 aspect 選擇語意 = 少數選項互相競爭 → softmax 符合需求**
-- 差距 −7.0% NDCG，遠超一般調參所帶來的差異
-- 不主張 softmax 普遍優於 sigmoid
-- **結論：歸一化方式應與 rationale 的語意假設明確對齊**
-  - 此差距在現有 rationale-aware 文獻中尚未被充分討論，值得後續研究驗證
+- 在本資料集設定下差距達 **−7.0% NDCG**，遠超一般調參影響範圍
+- **不主張 softmax 普遍優於 sigmoid**；以下觀察僅基於單一資料集
+- **暫定觀察**：rationale 模組的歸一化選擇應與其語意假設對齊
+- **驗證限制**：此觀察需多資料集 / 多任務複現才能升格為一般 methodological claim；本文將其列為**待驗證的假說**而非定論
 
 ---
 
