@@ -146,27 +146,33 @@ KG-aware Recommendation · 稀疏 KG · Graceful Degradation
 
 ---
 
-## Slide 9 — Related Work: Gating vs Attention for Multi-Signal Fusion
+## Slide 9 — Related Work: Gating for Heterogeneous View Fusion
 
-**整合多個訊號源的兩種主流機制：**
+**與 RA-GARK fusion gate 直接相關的先例**
 
-| | **Attention** | **Gating** |
+| 工作 | Gate 形式 | 與本文的關聯 |
 |---|---|---|
-| 典型文獻 | KGAT / KGRec / DIN | LSTM / MoE / Highway |
-| 權重形式 | 分佈（softmax over candidates）| 標量或向量閘 α ∈ (0, 1) |
-| 語意 | **競爭**（相對重要性）| **開關**（該路徑是否採用）|
-| 優勢 | 富表達力、跨元素競爭 | 可獨立開關、訓練穩定 |
-| 適用情境 | 多個**同類候選**互相比較 | **異質管線**需要選擇性採用 |
+| **Highway Networks** (Srivastava 2015) | T·H(x) + (1−T)·x，**T 的 bias 初始化為負值，使初始接近 skip** | 結構上最接近本文 bias=+5 的安全退化設計，但僅用於單一網路內部以解決深層訓練問題 |
+| **MMoE / PLE** (Ma 2018; Tang 2020) | gate 加權多個 expert | 同為「多管線選擇性採用」，但 expert 為**同質候選**，且 gate **無安全初始化偏置** |
 
-**本文同時使用兩者，但分層：**
+→ **gate 機制本身成熟，但既有用法皆未針對「異質訊號源 + 不確定其是否可信」的情境**
 
-- **Aspect 選擇層級（§3.4.3）** → **Attention**（softmax）
-  - A = 4 個 aspect 槽是「同類候選」，互相競爭誰代表此 item
-- **視角融合層級（§3.5）** → **Gating**（local-biased）
-  - Local / global 是**本質異質的兩條管線**，需要的是「是否採用」而非「誰比較重要」
-  - Gating 的標量閘與「本地偏置初始化」天然相容 → 結構上的**可安全退化**
+**KG-aware 推薦領域：沒有方法以 gate 作為融合機制**
 
-> **核心區分：Attention 用於「選擇」，Gating 用於「開關」**
+| 方法 | KG 整合方式 | 能否在 KG 不可信時關閉？ |
+|---|---|---|
+| KGAT | entity 嵌入直接傳遞 | ✗ KG 必經 |
+| KGCL | KG 擾動 + CL | ✗ KG 必經 |
+| MCCLK | 多視角 CL 對齊 | ✗ KG 必經 |
+| KGRec | edge dropout + CL | ✗ KG 必經（仍走 KGAT-style aggregator）|
+
+→ **四者皆隱含假設「KG 至少不是負訊號」**，缺乏架構層面的可退化機制；本文觀察到此假設在稀疏 KG 下不成立（KG-aware 全敗給 LightGCN）。
+
+**RA-GARK 的定位：兩個未被合併的設計選擇**
+
+- **(a) 將 Highway 式的 bias-init gate 從「網路內部 skip」移植到「異質視角後期融合」**
+- **(b) 在 KG-aware 推薦中首次以 gate 取代 attention/aggregation 作為融合機制**
+- 結果：α₀ ≈ 0.993 起點 = 純 LightGCN，KG 有用才打開；消融顯示此結構貢獻 **−5.3% NDCG**
 
 ---
 
