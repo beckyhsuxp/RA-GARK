@@ -17,3 +17,7 @@ Code/data/
 *.toc
 *.run.xml
 *.bcf
+*.lof
+*.lot
+*.xdv
+Document/thesis/main.pdf
