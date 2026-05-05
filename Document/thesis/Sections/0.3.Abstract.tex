@@ -28,10 +28,13 @@
 
 \normalsize 
   
-Write your abstract here. Through computer vision technologies, ...
+Knowledge-graph-aware (KG-aware) recommender systems augment graph collaborative filtering with item-side semantics drawn from a knowledge graph (KG). When the KG is dense and reliable, this typically improves recommendation accuracy. On a sparse review-derived KG, however---with on average $2.4$ aspect edges per item after filtering---we observe that four representative KG-aware methods (KGAT, KGCL, MCCLK, and KGRec) are uniformly outperformed by pure LightGCN that does not consult the KG at all. We attribute this anomaly to a shared structural property of the four baselines: each injects KG signal into the scoring path as a mandatory component, with no mechanism to disengage when the KG is unreliable.
+
+This thesis proposes RA-GARK (Rationale-Aware Gating over Review-Aspect Knowledge graphs), a dual-view recommendation architecture that treats the KG as an explicitly gated side channel rather than a mandatory pipeline component. RA-GARK retains a pure LightGCN local view and combines it with a global KG view through a local-biased fusion gate whose bias is initialized to $+5$, so that the model begins training as effectively pure LightGCN and opens the KG channel only when gradients indicate it helps. Two further design choices support this gating principle: a softmax aspect-saliency attention that selects per-(user, item) rationales over four aspect slots, and a KG-driven SVD initialization that preserves the semantic geometry of the KG as the optimization starting point.
+
+On the sparse review-derived KG benchmark, RA-GARK reaches NDCG@20 = $0.1238$, exceeding the strongest KG-aware baseline (KGRec) by $+13.1\%$ and pure LightGCN by $+5.0\%$. The latter result demonstrates that the proposed design flips the contribution of KG signal from net-negative to net-positive even when the KG itself is unchanged. Component-wise ablations show that replacing softmax with sigmoid attention costs $7.0\%$ NDCG@20, while removing the bias-initialized fusion gate or the KG-SVD initialization each costs $5.3\%$. We additionally report a single-dataset methodological observation that the choice of attention normalization should be aligned with the semantic assumption of the rationale, and frame this as a hypothesis pending multi-dataset replication rather than a general claim.
 
 
 \vspace{1cm}
 
-% 5-7 Keywords (English) 
-\textbf{Keywords: English, keywords, five to seven, computer vision, IoT.} 
+\textbf{Keywords: knowledge-graph-aware recommendation; graceful degradation; rationale-aware learning; fusion gate; sparse knowledge graph; attention normalization; collaborative filtering.} 
