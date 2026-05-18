@@ -125,7 +125,9 @@ slide 來源：`Document/notes/SLIDES.md`（24 張）
 |---|---|---|---|
 | 6.1 Methodological Insight: Attention Normalization | sigmoid vs softmax 觀察 + DIN/NAIS/AFM 文獻背景 + **單資料集假說 hedging** | Slide 23 | 維持已收斂的措辭 |
 | 6.2 Limitations | 單一稀疏資料集、KG 建構非本文貢獻、KG 豐富設定未驗證、**seed sensitivity** | Slide 24 局限 | 主動點出 |
-| 6.3 Future Work | KG 豐富資料集驗證、其他領域 / 任務、softmax-vs-sigmoid 多資料集複現 | — | **新寫** |
+| 6.3 Future Work | KG 豐富資料集驗證、其他領域 / 任務、softmax-vs-sigmoid 多資料集複現、**反向稀疏情境（CF 稀疏 + KG 豐富）** | — | **新寫** |
+
+**6.3 反向稀疏情境補充說明**：對稱地，當使用者互動圖稀疏而 KG 稠密時（典型冷啟動 / 新用戶 / 新領域場景），本文的 gate 設計需翻轉：$+5$ 偏置內建的安全預設是 LightGCN，但在該 regime 中 LightGCN 才是不可靠的一側，應改為 KG 側為預設（負偏置），且 KG-SVD 的角色可能由初始化提升為主訊號路徑。此 regime 為 KGAT/KGIN 等深度融合方法的傳統主場，與本文主張的「KG 不可靠時要能脫接」是對稱但獨立的問題，需要重新設計區域視角與 gate 方向性，因此留待後續研究，不在本文 scope。
 | 6.4 Conclusion | 主要成果 + 三項設計 + 一句結語 | Slide 24 主成果 | 1 頁 |
 
 ---
