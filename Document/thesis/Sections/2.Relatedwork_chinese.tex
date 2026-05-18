@@ -1,0 +1,120 @@
+\chapter{相關研究}
+\label{ch:relatedwork-zh}
+
+本章從四個面向回顧先前研究，這些面向共同促成 RA-GARK 的設計。第~\ref{sec:rw-foundations-zh}~節介紹我們區域與全域視角所立足的兩項基礎：作為協同過濾骨幹的 LightGCN，與作為深度 KG--CF 融合典範的 KGAT。第~\ref{sec:rw-contrastive-zh}~節回顧那些在不明確閘控下對齊協同與 KG 視角的對比式 KG 方法。第~\ref{sec:rw-kgrec-zh}~節討論與本工作最為相關的合理化感知方法 KGRec，第~\ref{sec:rw-paradigm-zh}~節則以「KG 可信度」為視角，對比我們與 KGRec 的合理化典範。第~\ref{sec:rw-gating-zh}~與~\ref{sec:rw-gating-gap-zh}~節廣泛回顧深度學習中的閘控機制，並觀察到既有 KG-aware 方法皆未採用融合閘以提供架構層級的優雅退化。第~\ref{sec:rw-summary-zh}~節總結 RA-GARK 相對於上述工作的定位。
+
+\section{基礎：LightGCN 與 KGAT}
+\label{sec:rw-foundations-zh}
+
+\textbf{LightGCN}~\cite{he2020lightgcn} 是本研究區域視角的直接前身。建立於「NGCF~\cite{wang2019ngcf} 中的非線性特徵變換對推薦準確率貢獻甚微」這項觀察上，LightGCN 將圖卷積網路精簡至最小骨幹：在使用者—物品二部圖上進行正規化的鄰居聚合 $\mathbf{E}^{(\ell+1)} = \tilde{\mathbf{A}} \mathbf{E}^{(\ell)}$，最終嵌入則取各層平均 $\bar{\mathbf{E}} = \tfrac{1}{K+1}\sum_{\ell=0}^{K} \mathbf{E}^{(\ell)}$。此一簡化在標準推薦基準上一致地優於 NGCF，且訓練更快、更穩定。其後諸多自監督方法，如 SGL~\cite{wu2021sgl} 與 DCCF~\cite{ren2023dccf}，皆在 LightGCN 式骨幹之上疊加額外的對比目標。
+
+在 RA-GARK 中，我們\emph{原封不動}採用 LightGCN（$K=2$）作為區域視角：此分支內不施加任何 KG 相關運算。動機有二。其一，在我們的稀疏評論型 KG 上，純 LightGCN 已達 NDCG@20 = $0.1179$，超越所有我們所評估的 KG-aware 基線。任何偏離此強預設的設計，皆須可被證實能改善而非劣化結果——這是本論文反覆訴諸的硬性設計約束。其二，將 KG 訊號隔離至獨立的全域視角（第~\ref{ch:methodology}~章），可避免 KG 雜訊污染協同表示的梯度流。
+
+\textbf{KGAT}~\cite{wang2019kgat} 代表 KG-aware 推薦中的典範\emph{深度融合}做法。KGAT 將使用者—物品互動圖與知識圖譜合併為一個協同知識圖（Collaborative Knowledge Graph, CKG），並以雙交互聚合器於此統一結構上傳播訊息。KG 實體嵌入因而直接參與使用者與物品表示的形成。當 KG 稠密且品質良好時，此設計相對於 CF 基線可取得顯著提升。
+
+此處的隱含假設是 KG 可被信任，能在傳播路徑所及之處皆注入有用訊號。在我們的稀疏情境下此假設崩解：KGAT 僅達 NDCG@20 = $0.1079$，低於純 LightGCN。其後續工作~\cite{yang2022kgcl, zou2022mcclk, yang2023kgrec} 沿用 KGAT 式聚合器，因此也繼承相同的脆弱性。RA-GARK 反轉此一設計選擇：我們完全不將 KG 與使用者—物品圖合併，而是將 KG 訊號導入一條專用旁路通道，當 KG 被證實不可靠時模型可衰減甚至全然脫接之。
+
+\section{對比式知識圖譜方法}
+\label{sec:rw-contrastive-zh}
+
+\textbf{KGCL}~\cite{yang2022kgcl} 對 KG 引入關係層級的結構擾動，並以 InfoNCE~\cite{oord2018infonce} 對比目標對齊擾動版本與原始版本。直覺是：具資訊量的 KG 結構應對隨機擾動具有不變性，而雜訊邊則不應。KGCL 在稠密 KG 情境下顯著優於 KGAT。然而在我們的稀疏情境中，擾動後的 KG 保留的邊過少，對比目標無法提供可靠監督：NDCG@20 降至 $0.1073$。
+
+\textbf{MCCLK}~\cite{zou2022mcclk} 將對比對齊擴展至三個視角——協同、語意與結構——並對三者兩兩施加對比損失。雖然此多視角設計在稠密 KG 基準上取得 SOTA，但同樣繼承稠密 KG 的假設：在稀疏 KG 下，三個視角中有兩個（語意與結構）訊號不足，對比對齊淪為由雜訊主導而非由結構主導的正則化（$0.1067$ NDCG@20）。
+
+RA-GARK 同樣納入跨視角對比學習，但其角色刻意受限。我們的對比損失（$\mathcal{L}_{\mathrm{aCL}}$ 與 $\mathcal{L}_{\mathrm{uCL}}$，第~\ref{sec:cl}~節）僅作為小權重（$\lambda = 0.005$）的輔助幾何正則化項，並關鍵地在 KG 側施加 stop-gradient，使對比梯度從不反向傳遞至 SVD 初始化的 aspect 嵌入。相較於 KGCL/MCCLK，此處的對比學習是表層的對齊層，而非主要的融合機制；協同與 KG 訊號的實際整合，是由一個明確的閘所執掌（第~\ref{sec:rw-gating-zh}~節）。
+
+\section{合理化感知推薦：KGRec}
+\label{sec:rw-kgrec-zh}
+
+\textbf{KGRec}~\cite{yang2023kgrec} 是與本工作最直接相關的研究。它是第一個將合理化選擇明確化的 KG-aware 推薦器：KGRec 不將每條 KG 三元組視為同等具資訊量，而是對每條 KG 邊計算一個基於注意力的重要性分數，並以 Bernoulli dropout 隨機移除高注意力邊，迫使模型不依賴少數主導邊；其穩健性接著由原始圖與被丟邊版本之間的對比目標來強化。整套合理化機制建立於 KGAT 式聚合器之上，因此合理化作用於使用者—物品—實體統一圖的訊息傳遞路徑之內。在我們的稀疏基準上，KGRec 取得 NDCG@20 = $0.1095$，為四個 KG-aware 基線中最強者，但仍低於純 LightGCN。
+
+RA-GARK 在精神上採納合理化感知典範，但在結構上多處與 KGRec 有別，下節詳述之。
+
+\section{合理化典範：共同前提與分歧的可信度假設}
+\label{sec:rw-paradigm-zh}
+
+KGRec~\cite{yang2023kgrec} 與 RA-GARK 都認同「並非所有 KG 邊都對推薦同等貢獻、需要明確的選擇機制」這項觀察。然而二者對 KG\emph{整體可信度}所作的假設有所不同，此一假設並蔓延至各自分歧的設計選擇。
+
+KGRec 的隱含假設是：具資訊量的邊\emph{存在}於 KG 中，因此合理化任務簡化為將其找出；隨機 dropout 配合對比學習已足以辨識並放大有用子集。KG 整體作為證據體系被假定為可靠的，僅是個別邊的權重需被調整。
+
+RA-GARK 的前提較弱。我們不假設 KG 整體是可靠的。aspect-saliency softmax（第~\ref{sec:softmax}~節）在 KG 具資訊量時選取合理化依據，但具局部偏置的融合閘（第~\ref{sec:gate}~節）可在閘的梯度顯示無益時，另外地\emph{脫接整條 KG 通道}。此可信度差異展現於四項設計分歧上：
+
+\begin{itemize}
+  \item \textbf{合理化粒度。} KGRec 在邊（KG 三元組）層級進行選擇。RA-GARK 將每件物品的 KG 語意聚合為 $A=4$ 個 aspect 槽位，並在槽位層級選擇；粒度雖較粗，但直接產生可解讀的每物品 aspect 偏好。
+  \item \textbf{選擇機制。} KGRec 採用離散 Bernoulli dropout 配合對比學習。RA-GARK 採用可微分的 softmax 注意力，能端到端訓練，並將推論期的權重作為可解釋性產物外露。
+  \item \textbf{作用位置。} KGRec 在 KGAT 訊息傳遞路徑\emph{之內}施加合理化；合理化與聚合糾纏在一起。RA-GARK 將合理化置於與 LightGCN 區域視角分離的旁路通道，僅於後期由閘將兩者結合。
+  \item \textbf{對 KG 可信度的處理。} KGRec 沒有任何架構機制可脫接 KG。RA-GARK 的偏置初始化融合閘正提供此一機制：訓練起始時 $\alpha^{(0)} \approx 0.993$，模型實質上即為純 LightGCN；唯當學習顯示 KG 通道能降低損失時，閘才會被打開。
+\end{itemize}
+
+因此我們不將 RA-GARK 定位為對 KGRec 的工程性改良，而是基於對 KG 可信度不同前提之另一種設計。此一區別在經驗上是否重要，則於第~\ref{ch:evaluation}~章中作答。
+
+\section{深度學習中的閘控機制}
+\label{sec:rw-gating-zh}
+
+RA-GARK 的融合閘有兩個 KG-aware 推薦之外的近親，二者皆啟發本研究設計。
+
+\textbf{Highway Networks}~\cite{srivastava2015highway} 引入可學習的閘 $T(\mathbf{x})$，於變換訊號 $H(\mathbf{x})$ 與恆等跳接間進行插值：$\mathbf{y} = T(\mathbf{x}) \cdot H(\mathbf{x}) + (1 - T(\mathbf{x})) \cdot \mathbf{x}$。其關鍵設計選擇為對 $T$ 的負偏置初始化：訓練之初 $T \approx 0$，網路表現為恆等映射。其後訓練僅在變換有益處之處才打開閘門。此設計原本是為了應對極深網路訓練的困難，但「將閘偏置至已知安全的預設，僅在學習認為合理時才覆寫」此結構性樣式，遠遠超出深度的脈絡而具有普適性。RA-GARK 將此樣式由網路內跳接移植至雙視角融合：融合閘上的 $+5$ 偏置扮演與 Highway 之負偏置相同的角色，對 KG 通道提供優雅退化保證。
+
+\textbf{專家混合（Mixture-of-Experts）閘控}，以多任務推薦中的 MMoE~\cite{ma2018mmoe} 與 PLE~\cite{tang2020ple} 為代表，以閘控網路對多個專家塔加權。雖然概念上類似多管線選擇，但兩項重要性質與 RA-GARK 不同。其一，MMoE/PLE 中的專家為\emph{同質候選者}——皆為相同架構、僅以任務特定目標訓練的實例——因此並無「某專家本質上比另一者較不可靠」的概念。其二，這些架構中的閘採對稱初始化（訓練起始不偏向任何特定專家），適用於對稱專家情境，但不適用於我們不對稱的情境——在我們的設定中，一條通道（LightGCN）已知是強預設，另一條（KG）已知有時並不具資訊量。
+
+另有一條工作線是對比式雙視角推薦器，例如 SGL~\cite{wu2021sgl} 與 DCCF~\cite{ren2023dccf}，這類方法以擾動單一圖（邊 dropout、節點 dropout、隨機漫步）來建構多個視角。此類方法中兩個視角位於\emph{相同訊號空間}，對比對齊已足以整合二者。RA-GARK 的兩個視角則在結構上異質：區域視角為使用者—物品二部圖，全域視角為物品—aspect 的 KG。僅靠對比學習進行隱式對齊，無法調整兩個異質訊號空間的相對權重；明確的閘是必要的。
+
+\section{缺口：KG-Aware 推薦中沒有融合閘}
+\label{sec:rw-gating-gap-zh}
+
+儘管閘控在深度學習中已相當成熟，我們所調研的 KG-aware 推薦文獻中，未見任何方法將融合閘作為協同訊號與 KG 訊號之間的整合機制。表~\ref{tab:rw-gating-gap-zh} 摘要了四個被基準測試的基線與另外三個知名 KG-aware 方法（CKAN~\cite{wang2020ckan}、MKR~\cite{wang2019mkr}、KGIN~\cite{wang2021kgin}）所採用的整合機制。在這個集合中，KG 訊號是透過直接實體傳播、對比對齊、邊層級 dropout、注意力、跨特徵單元或意圖解耦模組來整合。沒有任何機制允許 KG 通道在訊號不可靠時被\emph{結構性地脫接}。
+
+\begin{table}[ht]
+\centering
+\caption{代表性 KG-aware 推薦器所採用的整合機制。皆未提供在不可靠 KG 下的架構優雅退化能力。}
+\label{tab:rw-gating-gap-zh}
+\begin{tabular}{l l c}
+\toprule
+方法 & KG 整合機制 & 可脫接？ \\
+\midrule
+KGAT~\cite{wang2019kgat}      & 直接實體訊息傳播       & 否 \\
+KGCL~\cite{yang2022kgcl}      & 擾動 KG 對比學習       & 否 \\
+MCCLK~\cite{zou2022mcclk}     & 多視角對比對齊         & 否 \\
+KGRec~\cite{yang2023kgrec}    & 邊層級 dropout + KGAT 聚合器 & 否 \\
+CKAN~\cite{wang2020ckan}      & 協同—知識注意力        & 否 \\
+MKR~\cite{wang2019mkr}        & 跨特徵轉移單元         & 否 \\
+KGIN~\cite{wang2021kgin}      & KG 上的意圖解耦        & 否 \\
+\midrule
+\textbf{RA-GARK}（本研究）    & \textbf{偏置初始化的融合閘} & \textbf{是} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+我們刻意作出一個範圍狹義的主張。我們不主張 RA-GARK 是 KG-aware 推薦中首個使用「任何閘」的方法，因 KG-aware 文獻浩繁，無法窮舉列舉。可辯護的主張為：\emph{在我們所檢視的方法中，沒有任何一個以偏置初始化的融合閘於稀疏或不可靠 KG 下提供架構優雅退化}。我們在第~\ref{ch:evaluation}~章的消融將 $5.3\%$ NDCG@20 的貢獻明確歸因於此閘的偏置初始化，支持上述主張在此情境中並非微不足道。
+
+\section{注意力正規化}
+\label{sec:rw-attention-norm-zh}
+
+一個橫跨多領域的相關問題是：在選擇合理化依據時，應對注意力權重套用 sigmoid 或 softmax？文獻並未匯聚於單一答案。DIN~\cite{zhou2018din} 對使用者行為歷史套用 sigmoid 注意力，所基於的假設是每筆歷史行為與候選物品的相關性彼此獨立。NAIS~\cite{he2018nais} 對歷史互動套用 softmax 注意力以衡量物品相似度，AFM~\cite{xiao2017afm} 則對特徵交互套用 softmax。各工作中的選擇皆以其注意力所依附的語意假設為依據。
+
+我們在第~\ref{ch:evaluation}~章報告一項單一資料集的觀察：對於我們的 aspect-saliency 合理化，將 softmax 替換為 sigmoid 會損失 $7.0\%$ NDCG@20——這是我們所量測到單一元件影響最大者。我們將其解讀為支持「正規化應與合理化的語意假設相符」此一設計啟發，但明確將此觀察定位為待多資料集複製驗證的假設（第~\ref{ch:conclusion}~章）。
+
+\section{總結與 RA-GARK 的定位}
+\label{sec:rw-summary-zh}
+
+表~\ref{tab:rw-summary-zh} 從四個設計面向匯整比較。在我們稀疏基準上所評估的方法中，RA-GARK 是唯一同時將純 LightGCN 區域聚合器與閘控後期融合的 KG 訊號相結合者，也是唯一將合理化作用於物品—aspect 粒度而非 KG 邊粒度者。
+
+\begin{table}[ht]
+\centering
+\caption{從四個面向所作的設計比較。NDCG@20 於我們的稀疏評論型 KG 基準上報告。}
+\label{tab:rw-summary-zh}
+\begin{tabular}{l l l l c}
+\toprule
+方法 & 區域聚合器 & KG 整合 & 合理化 & NDCG@20 \\
+\midrule
+KGAT       & 雙交互           & 直接傳播             & ---             & 0.1079 \\
+KGCL       & KGAT 式          & 傳播 + CL            & ---             & 0.1073 \\
+MCCLK      & 多視角           & 多視角 CL            & ---             & 0.1067 \\
+KGRec      & KGAT 式          & 傳播 + 邊 dropout    & 邊 Bernoulli    & 0.1095 \\
+\midrule
+\textbf{RA-GARK} & \textbf{純 LightGCN} & \textbf{閘控後期融合} & \textbf{Aspect softmax} & \textbf{0.1238} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+我們並不將 RA-GARK 定位為相對於四個基線的嚴格改進。RA-GARK 在設計空間中佔據一個不同的位置——其特徵在於將 KG 視為可被明確閘控的旁路通道，而非必要的管線組件。此選擇在我們的稀疏 KG 情境中產出強勁結果，而基於閘控的優雅退化性質，在 KG 品質不均或模型部署於 KG 密度差異各異的多個領域時，或許亦能派上用場。然而，當 KG 稠密且品質一致地可靠時，KGAT 或 KGRec 這類深度融合方法可能仍較佳，因為後期融合的設計犧牲了深度融合架構所具有的部分表徵表達力。

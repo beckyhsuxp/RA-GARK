@@ -1,0 +1,80 @@
+\chapter{緒論}
+\label{ch:intro-zh}
+
+\section{研究背景}
+\label{sec:intro-background-zh}
+
+圖神經網路（GNN）已成為協同過濾的主流架構選擇。其中，LightGCN~\cite{he2020lightgcn} 證明了只要移除 GCN 中的非線性激活與特徵變換、僅保留線性鄰居聚合，便足以在標準推薦基準上超越如 NGCF~\cite{wang2019ngcf} 等更深層的方法。LightGCN 的簡潔與穩定使其成為一個強大且參數高效的骨幹，而後續方法如 SGL~\cite{wu2021sgl} 則在其上疊加額外的自監督目標。
+
+另一條互補的研究路線——知識圖譜感知推薦（KG-aware recommendation）——以知識圖譜（KG）所編碼的物品端語意來擴充協同訊號。具代表性的方法包括：KGAT~\cite{wang2019kgat}，在統一的使用者—物品—實體圖上傳播訊息；KGCL~\cite{yang2022kgcl} 與 MCCLK~\cite{zou2022mcclk}，透過對比學習對齊 KG 視角與協同視角；以及 KGRec~\cite{yang2023kgrec}，引入邊層級的合理化（rationalization）機制以辨識哪些 KG 三元組對推薦負責。當 KG 稠密且品質良好時，這類方法皆能穩定地超越純協同基線。
+
+\section{稀疏 KG 下的經驗異常現象}
+\label{sec:intro-observation-zh}
+
+本研究的起點是一個促使整篇論文展開的經驗觀察。在本研究所使用的、由評論衍生而來的 KG 資料集（Amazon Books 子集，經篩選後每件物品平均僅有 $2.4$ 條 aspect 邊）上，前述四種具代表性的 KG-aware 方法全部都被完全不參考 KG 的純 LightGCN 所超越。表~\ref{tab:intro-baseline-zh} 摘要呈現此一差距。
+
+\begin{table}[ht]
+\centering
+\caption{在我們的稀疏評論型 KG 上，代表性 KG-aware 方法之 NDCG@20 表現，並與純 LightGCN 對照。四種 KG-aware 方法皆不及不使用 KG 的基線。}
+\label{tab:intro-baseline-zh}
+\begin{tabular}{lc}
+\toprule
+方法 & NDCG@20 \\
+\midrule
+MCCLK~\cite{zou2022mcclk}      & 0.1067 \\
+KGCL~\cite{yang2022kgcl}       & 0.1073 \\
+KGAT~\cite{wang2019kgat}       & 0.1079 \\
+KGRec~\cite{yang2023kgrec}     & 0.1095 \\
+\midrule
+純 LightGCN~\cite{he2020lightgcn}（未使用 KG） & \textbf{0.1179} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+我們並非主張上述四種基線本身有缺陷——它們在其原始論文所報告的稠密 KG 資料集上表現皆十分強勁。此觀察反映的，是深度 KG--CF 耦合所共同具有的一種失效模式：當 KG 過於稀疏或雜訊過多以致無法提供可靠的物品語意時，將其直接融入評分路徑會使 KG 雜訊污染本可產生純淨協同訊號的梯度流。
+
+\section{稀疏 KG 作為現實世界的常態}
+\label{sec:intro-sparse-kg-zh}
+
+一個自然的反駁是：將此一經驗異常視為資料集的特殊性，並透過更精緻地策劃稠密 KG 或進行 KG 補全（completion）來填補缺失邊即可。然而，我們主張，稀疏 KG 才是實務推薦系統中更常見的情境，因此「在 KG 訊號不可靠時依然穩健」這項性質本身就值得專門研究，而非以工程繞道方式迴避。
+
+實務上有三個常見的稀疏來源。其一，\emph{評論衍生型 KG}——如本研究所使用者——其密度繼承自使用者實際提及的主題；覆蓋本質上即不均勻。其二，\emph{冷啟動與新興領域}——新品類、低資源語言、利基垂直市場——通常無法取得如 Freebase 或 Wikidata 等等級的人工策劃資源，KG 必須從有限訊號中自舉而來。其三，\emph{隱私受限領域}，如醫療或金融推薦，刻意限制可暴露給模型的關聯訊號。在以上三種情境中，激進的 KG 補全本身亦非易事：補全會引入新的雜訊，且通常需要足夠的種子訊號才能訓練——而這恰恰是稀疏情境中所欠缺的。
+
+由此推論，推薦器在 KG 不可靠時的\emph{穩健性}，至少和它在 KG 稠密時的\emph{峰值效能}同等重要。本論文以此穩健性作為主要設計目標。
+
+\section{研究問題}
+\label{sec:intro-rq-zh}
+
+上述經驗異常與稀疏 KG 情境的實務重要性，引出兩個研究問題：
+
+\begin{itemize}
+  \item \textbf{(RQ1，診斷)} 為何既有 KG-aware 方法在稀疏 KG 下不及純 LightGCN？它們所共同具備的結構性失效模式為何？
+  \item \textbf{(RQ2，處方)} 何種設計原則能讓模型在 KG 訊號有效時加以利用，而在訊號無效時避免 KG 雜訊污染協同過濾？
+\end{itemize}
+
+本論文的主張是：KG 不應如 KGAT 式深度融合那般，成為評分管線中的\emph{必要組件}，而應作為一條可依其訊號是否有用而被\emph{明確閘控}的旁路通道。具體而言，此原則由三項設計選擇實現：以 softmax 為基礎的 aspect-saliency 注意力，用於對每組使用者—物品配對選取 KG 合理化依據；以 KG 驅動的 SVD 初始化，用以保留語意幾何；以及具有局部偏置的融合閘（local-biased fusion gate），其初始化內建了當 KG 訊號終究不具資訊量時優雅退化回純 LightGCN 的能力。
+
+\section{研究貢獻}
+\label{sec:intro-contributions-zh}
+
+本論文之主要貢獻如下：
+
+\begin{enumerate}
+  \item \textbf{經驗性研究}：證明在稀疏評論型 KG 下，四種具代表性的 KG-aware 方法（KGAT、KGCL、MCCLK、KGRec）皆一致地被純 LightGCN 超越。我們將此歸因於這些方法缺乏一個能於 KG 不可靠時將其脫接的架構機制。
+
+  \item \textbf{RA-GARK，一個雙視角架構}：以旁路通道而非深度融合的方式整合協同訊號與 KG 衍生訊號。RA-GARK 由三項核心要素組成，且彼此皆獨立必要：
+    \begin{itemize}
+      \item \textbf{Softmax aspect-saliency 注意力}（第~\ref{sec:softmax}~節）。每件物品的 KG 語意分散儲存於多個 aspect 槽位中；softmax 正規化的注意力為給定的使用者—物品配對選取最足以代表該物品的 aspect。將 softmax 改為 sigmoid 會使 NDCG@20 下降 $7.0\%$，是我們所觀察到單一元件影響最大者。
+      \item \textbf{具局部偏置的融合閘}（第~\ref{sec:gate}~節）。融合閘以 $+5$ 的正偏置初始化，使 $\alpha^{(0)} \approx 0.993$。因此模型在訓練之初幾乎等同於純 LightGCN，僅當梯度顯示 KG 通道有幫助時，閘門才會被打開。此設計提供了四種基線所缺乏的、結構性的\emph{優雅退化}保證。若移除此偏置初始化，NDCG@20 會損失 $5.3\%$。
+      \item \textbf{KG-SVD 初始化}（第~\ref{sec:kgsvd}~節）。aspect 槽位的嵌入由 IDF 加權的物品—aspect 矩陣之截斷 SVD 初始化而來，將 KG 的語意幾何保留為最佳化的起點。將其換為隨機初始化會損失 $5.3\%$ NDCG@20。
+    \end{itemize}
+
+  \item \textbf{經驗驗證}：在稀疏評論型 KG 基準上，RA-GARK 達到 NDCG@20 $= 0.1238$，較最強的 KG-aware 基線（KGRec）高出 $+13.1\%$，更重要的是，較純 LightGCN 也高出 $+5.0\%$。後者的差距顯示，所提出的設計原則能在 KG 本身不變的情況下，把 KG 訊號的貢獻由\emph{淨負}（四種基線之情況）翻轉為\emph{淨正}。
+
+  \item \textbf{關於合理化感知設計中注意力正規化的方法論觀察}。在我們的情境中，softmax 與 sigmoid 之間異常顯著的差距，暗示正規化的選擇應與合理化的語意假設相一致。我們將此視為單一資料集上的假設而非通用主張，留待後續多資料集複製驗證（第~\ref{ch:conclusion}~章）。
+\end{enumerate}
+
+\section{論文組織}
+\label{sec:intro-organization-zh}
+
+本論文後續組織如下。第~\ref{ch:relatedwork}~章從四個面向回顧相關文獻：圖協同過濾、KG-aware 推薦、深度學習中的閘控機制，以及注意力正規化。第~\ref{ch:architecture}~章呈現 RA-GARK 的整體架構並形式化推薦問題。第~\ref{ch:methodology}~章詳述各模組，包括區域視角、含兩項創新（KG-SVD 初始化與 softmax aspect-saliency 注意力）的全域 KG 視角、具局部偏置的融合閘，以及跨視角對比正則化。第~\ref{ch:evaluation}~章報告實驗結果、消融研究、敏感性分析與個案研究。第~\ref{ch:conclusion}~章討論關於注意力正規化的方法論啟示，承認單一資料集驗證與種子敏感性的限制，並作結。
