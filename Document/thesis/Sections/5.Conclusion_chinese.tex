@@ -1,0 +1,37 @@
+\chapter{結論與未來工作}
+\label{ch:conclusion-zh}
+
+\section{結論}
+\label{sec:conclude-main-zh}
+
+% TODO: 內文
+% - 摘要經驗異常與設計原則之回應
+% - 三項設計選擇與各自消融貢獻
+% - 主要結果：NDCG@20 = 0.1238、+13.1\% vs KGRec、+5.0\% vs LightGCN
+
+\section{方法論啟示：注意力正規化}
+\label{sec:conclude-insight-zh}
+
+% TODO: 內文
+% - softmax vs sigmoid：−7.0\% NDCG 觀察
+% - 與 DIN/NAIS/AFM 文獻之關聯
+% - 明確之單一資料集 hedging — 定位為待複製驗證之假說
+
+\section{限制}
+\label{sec:conclude-limits-zh}
+
+% TODO: 內文
+% - 單一稀疏評論衍生資料集
+% - KG 建構 pipeline 為前作，非本文貢獻
+% - seed 敏感性
+% - 稠密 KG 情境未驗證
+
+\section{未來工作}
+\label{sec:conclude-future-zh}
+
+% TODO: 內文
+% - softmax-vs-sigmoid 主張之多資料集複製
+% - 稠密 KG 情境之驗證
+% - 反向稀疏情境（CF 稀疏 + KG 稠密）：閘需翻向 KG
+%   - 偏置需為負，KG-SVD 之角色可能由初始化轉為主訊號路徑
+%   - 此為對稱但架構獨立之問題；不在本論文 scope
