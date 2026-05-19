@@ -1,44 +1,114 @@
-\chapter{System Model}
+\chapter{Proposed Approach}
 \label{ch:architecture}
 
-如果想在latex裡面插入表格, 可以搜尋latex table generator, 有很多線上網站可以參考. 我個人都是使用線上網站去產生大致的語法, 然後再根據個人喜好去做微調, wikibook有很多資料可以參考, 網址在這邊: https://en.wikibooks.org/wiki/LaTeX/Tables
+This chapter presents the overall design of RA-GARK at the architectural level. Section~\ref{sec:approach-principle} states the central design principle that distinguishes RA-GARK from the deep-fusion baselines surveyed in Chapter~\ref{ch:relatedwork}. Section~\ref{sec:approach-overview} gives a swim-lane overview of the architecture and the data flow at inference time. Section~\ref{sec:approach-notation} fixes notation used throughout the remainder of the thesis. Section~\ref{sec:approach-problem} formalizes the recommendation task and the training objective. Section~\ref{sec:approach-modules} concludes with a brief summary of each module and forward references to Chapter~\ref{ch:methodology}, where the modules are presented in full mathematical detail.
 
-如果要引用表格, 記得在table裡加上label的語法, 然後就可以呼叫 Tab~\ref{tab1}, 寫中文的就是表~\ref{tab1}. 通常Table的caption是寫在表格的上面, 圖片則是放在下面.
+\section{Design Principle: KG as a Gateable Side Channel}
+\label{sec:approach-principle}
 
-\begin{table}[!ht]
-    \centering
-    \caption{This is a table.}
-    \label{tab1}
-    \begin{tabular}{|l|l|l|l|}
-    \hline
-        A & 1 & 4 & 7 \\ \hline
-        B & 2 & 5 & 8 \\ \hline
-        C & 3 & 6 & 9 \\ \hline
-    \end{tabular}
-\end{table}
+The empirical observation in Chapter~\ref{ch:intro} is that four representative KG-aware methods (KGAT, KGCL, MCCLK, KGRec) are uniformly outperformed by pure LightGCN on our sparse review-derived knowledge graph (KG). The structural cause shared by these baselines is that the KG is wired into the scoring pipeline as a \emph{mandatory} component: KG entity embeddings participate in message passing, and there is no architectural switch by which the model can disengage the KG when it turns out to be unreliable. KG noise therefore enters the same gradient flow that produces the collaborative representation.
 
-後來在圖書館的``2022 研究攻略營 論文寫作實戰技巧(顏安孜老師)''看到另一種作法，網址: http://bit.ly/3yE06Hx
+RA-GARK is organized around a single design principle that addresses this failure mode directly:
 
-裡面的講義有提到Excel2LaTeX，細節可以去看圖書館的連結，裡面有放講義，下方是顏安孜老師的講義截圖
+\begin{quote}
+\emph{The KG should not be a mandatory component of the scoring pipeline. It should be a side channel whose contribution to the final score is determined by a learned gate, biased at initialization toward a safe default (pure collaborative filtering) and opened only when training signal indicates that the KG channel reduces loss.}
+\end{quote}
 
-\begin{figure}[htb]
-	\centering
-	\includegraphics[width=0.8\textwidth]{img/excel2latex.png}
-	\caption{Excel2LaTeX.}
-	\label{fig:excel2latex}
+Three architectural consequences follow from this principle and define RA-GARK:
+
+\begin{enumerate}
+  \item \textbf{Two parallel views.} A \emph{local view} produces a purely collaborative representation $(u_{\mathrm{loc}}, i_{\mathrm{loc}})$ via LightGCN over the user--item interaction graph, with no KG involvement. A \emph{global view} produces a KG-derived representation $(u_{\mathrm{glo}}, i_{\mathrm{glo}})$ from a separate user embedding table and the per-item latent aspect slots, with no collaborative signal involvement. The two views remain structurally disjoint up to the fusion stage.
+  \item \textbf{Late, gated fusion.} The two views are combined only at the final scoring stage by a fusion gate that produces a per-(user, item) mixing weight $\alpha \in (0, 1)$. The gate is bias-initialized so that $\alpha^{(0)} \approx 0.993$, placing the model essentially at pure LightGCN at training start. The KG channel is opened only insofar as gradients drive $\alpha$ downward during training.
+  \item \textbf{Rationale-aware item-side aggregation.} Each item's KG semantics are stored in $A=4$ \emph{latent} aspect slots produced by truncated SVD of an IDF-weighted item--aspect matrix; a softmax aspect-saliency attention selects, per (user, item) pair, which latent slot represents the item in the global view.
+\end{enumerate}
+
+Each consequence is mathematized in Chapter~\ref{ch:methodology}. The rest of this chapter sets up notation and problem statement at the level of detail needed to make Chapter~\ref{ch:methodology} self-contained.
+
+\section{Architectural Overview}
+\label{sec:approach-overview}
+
+Figure~\ref{fig:architecture} sketches the data flow at inference time. The model is laid out as two horizontal lanes corresponding to the local and global views, joined at the right by the fusion stage.
+
+\begin{figure}[ht]
+\centering
+\includegraphics[width=\textwidth]{img/architecture.png}
+\caption{RA-GARK architecture. The local view (top lane) applies LightGCN to the user--item interaction graph to obtain $(u_{\mathrm{loc}}, i_{\mathrm{loc}})$. The global view (bottom lane) reads the user's global embedding $u_{\mathrm{glo}}$ by direct lookup, and obtains $i_{\mathrm{glo}}$ by applying softmax rationale masking over the $A=4$ latent aspect slots of the item (the slots are SVD-initialized, indicated by the dashed annotation). The two views are mixed by independent user-side and item-side fusion gates, each bias-initialized to $+5$. The final score is the inner product $\langle u_{\mathrm{final}}, i_{\mathrm{final}} \rangle$. Cross-view contrastive paths are omitted for clarity; see Section~\ref{sec:cl}.}
+\label{fig:architecture}
 \end{figure}
 
+Two structural properties are worth highlighting before the formal presentation. First, $u_{\mathrm{glo}}$ does not pass through the rationale masking module: it is obtained by a direct embedding lookup, and feeds straight into the user-side fusion gate. The rationale masking applies only on the item side, consistent with the semantic that the rationale answers ``which aspect of \emph{this item} matters to \emph{this user}.'' Second, the KG-SVD step is an initialization, not a forward-pass operation: the SVD is computed once before training and used to set the values of the aspect-slot parameters, after which the slots are updated by gradient descent like any other parameter.
 
-\begin{table} [h]
+\section{Notation}
+\label{sec:approach-notation}
+
+Throughout the remainder of the thesis we use the symbols listed in Table~\ref{tab:notation}.
+
+\begin{table}[ht]
 \centering
-\caption{Comparison on model efficiency and model size.}
-\begin{tabular}{c|c|c}
-\toprule[1.25pt]
-Model   & {Training \& Test }  & {Model Size }      \\ 
+\caption{Notation used in this and subsequent chapters.}
+\label{tab:notation}
+\begin{tabular}{ll}
+\toprule
+Symbol & Meaning \\
 \midrule
-LTD-GCN   & \textbf{11ms}    \& \textbf{4.5ms}       & 2.50M             \& 2.50M     \\ 
-LTD-GCN-i & \underline{13ms} \& \underline{4.6ms}    & 2.75M             \& 2.76M     \\  
-\bottomrule[1.25pt]
+$\mathcal{U}, \mathcal{I}$           & sets of users and items \\
+$\mathcal{R} \subseteq \mathcal{U} \times \mathcal{I}$ & observed user--item interactions \\
+$\mathcal{G}_{\mathrm{KG}}$          & item--aspect knowledge graph (review-derived) \\
+$\mathcal{A}$                        & set of unique aspect tags appearing in $\mathcal{G}_{\mathrm{KG}}$ \\
+$A$                                  & number of latent aspect slots per item ($A=4$) \\
+$d$                                  & embedding dimension ($d=64$ unless stated otherwise) \\
+$K$                                  & number of LightGCN propagation layers ($K=2$) \\
+$u_{\mathrm{loc}}, i_{\mathrm{loc}} \in \mathbb{R}^d$ & local-view (LightGCN) embeddings \\
+$u_{\mathrm{glo}} \in \mathbb{R}^d$   & global-view user embedding (direct lookup) \\
+$\mathbf{a}_i \in \mathbb{R}^{A \times d}$ & latent aspect slots of item $i$ (SVD-initialized) \\
+$i_{\mathrm{glo}} \in \mathbb{R}^d$    & global-view item embedding (rationale-masked) \\
+$\alpha_u, \alpha_i \in (0,1)$        & user- and item-side fusion gate outputs \\
+$\hat{y}(u, i) \in \mathbb{R}$         & predicted preference score for pair $(u, i)$ \\
+\bottomrule
 \end{tabular}
-\label{table:model_com}
 \end{table}
+
+\section{Problem Formulation}
+\label{sec:approach-problem}
+
+\paragraph{Task.} We address top-$K$ recommendation in the implicit-feedback regime. Given $\mathcal{U}$, $\mathcal{I}$, observed interactions $\mathcal{R}$, and the item--aspect KG $\mathcal{G}_{\mathrm{KG}}$, the goal is to produce for each user $u \in \mathcal{U}$ a ranked list of items from $\mathcal{I} \setminus \{i : (u, i) \in \mathcal{R}\}$, evaluated by ranking metrics (NDCG@$K$, Recall@$K$, Hit@$K$) against a held-out test interaction set.
+
+\paragraph{Scoring function.} RA-GARK assigns to each $(u, i)$ pair the inner-product score
+\begin{equation}
+\label{eq:score}
+\hat{y}(u, i) = \langle u_{\mathrm{final}},\ i_{\mathrm{final}} \rangle,
+\end{equation}
+where $u_{\mathrm{final}}$ and $i_{\mathrm{final}}$ are produced by gated fusion of the local and global representations:
+\begin{equation}
+\label{eq:fusion}
+u_{\mathrm{final}} = \alpha_u\, u_{\mathrm{loc}} + (1 - \alpha_u)\, u_{\mathrm{glo}}, \qquad
+i_{\mathrm{final}} = \alpha_i\, i_{\mathrm{loc}} + (1 - \alpha_i)\, i_{\mathrm{glo}}.
+\end{equation}
+The gate outputs $\alpha_u, \alpha_i$ are computed by independent MLPs (Section~\ref{sec:gate}). With the bias initialization used throughout this thesis, $\alpha_u^{(0)}, \alpha_i^{(0)} \approx 0.993$, so $\hat{y}^{(0)}(u, i) \approx \langle u_{\mathrm{loc}}, i_{\mathrm{loc}} \rangle$ at the start of training, i.e.\ the score is essentially that of pure LightGCN until the gate learns otherwise.
+
+\paragraph{Training objective.} We optimize a Bayesian Personalized Ranking (BPR)~\cite{rendle2009bpr} loss with two auxiliary cross-view contrastive regularizers:
+\begin{equation}
+\label{eq:total-loss}
+\mathcal{L} = \mathcal{L}_{\mathrm{BPR}} + \lambda_{\mathrm{CL}} \bigl( \mathcal{L}_{\mathrm{aCL}} + \mathcal{L}_{\mathrm{uCL}} \bigr),
+\end{equation}
+where for each observed pair $(u, i^+) \in \mathcal{R}$ and a sampled negative item $i^- \notin \mathcal{R}_u$,
+\begin{equation}
+\label{eq:bpr}
+\mathcal{L}_{\mathrm{BPR}} = - \log \sigma\bigl( \hat{y}(u, i^+) - \hat{y}(u, i^-) \bigr),
+\end{equation}
+and $\mathcal{L}_{\mathrm{aCL}}, \mathcal{L}_{\mathrm{uCL}}$ are InfoNCE-style alignment losses between $(i_{\mathrm{loc}}, i_{\mathrm{glo}})$ and $(u_{\mathrm{loc}}, u_{\mathrm{glo}})$ respectively, with a stop-gradient applied on the global side to prevent the contrastive gradient from disturbing the SVD-initialized aspect slots (Section~\ref{sec:cl}). The contrastive weight $\lambda_{\mathrm{CL}}$ is fixed at $0.005$, keeping the contrastive role auxiliary rather than primary.
+
+\section{Module Summary}
+\label{sec:approach-modules}
+
+The remainder of the model is detailed in Chapter~\ref{ch:methodology}. For ease of cross-reference we list the modules here and where they are formalized.
+
+\begin{itemize}
+  \item \textbf{Local view (Section~\ref{sec:local}).} Two-layer LightGCN over $\mathcal{U} \cup \mathcal{I}$, no KG involvement; produces $u_{\mathrm{loc}}, i_{\mathrm{loc}}$.
+  \item \textbf{Aspect slots and KG-SVD initialization (Section~\ref{sec:kgsvd}).} Per-item parameter tensor $\mathbf{a}_i \in \mathbb{R}^{A \times d}$, initialized from a truncated SVD of the IDF-weighted item--aspect co-occurrence matrix.
+  \item \textbf{Softmax rationale masking (Section~\ref{sec:softmax}).} User-conditioned softmax attention over the $A$ slots of item $i$, producing $i_{\mathrm{glo}}$ as a weighted sum.
+  \item \textbf{Local-biased fusion gate (Section~\ref{sec:gate}).} Independent user-side and item-side MLP gates, each producing a scalar $\alpha \in (0, 1)$; the bias of the final linear layer is initialized to $+5$.
+  \item \textbf{Cross-view contrastive regularization (Section~\ref{sec:cl}).} InfoNCE-style alignment with stop-gradient on the global side; small fixed weight $\lambda_{\mathrm{CL}} = 0.005$.
+\end{itemize}
+
+With the design principle, architectural sketch, notation, and problem statement in place, Chapter~\ref{ch:methodology} presents each module in full.
