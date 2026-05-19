@@ -1,6 +1,23 @@
 \chapter{Performance Evaluation}
 \label{ch:evaluation}
 
+\section{Dataset and KG Construction}
+\label{sec:eval-dataset}
+
+% TODO: prose for §5.1 dataset and KG construction
+% - Amazon Books subset stats (users, items, interactions)
+% - KG construction pipeline: ResNet + Qwen-VL (image features), BART + Mistral (text/review aspect extraction), aspect filtering rules
+% - resulting KG density: 2.4 aspect edges per item after filtering
+% - cite the prior work that built the pipeline
+
+\begin{figure}[ht]
+  \centering
+  % \includegraphics[width=\textwidth]{img/kg_pipeline.png}  % TODO: insert figure (e)
+  \fbox{\parbox[c][4.5cm][c]{0.95\textwidth}{\centering\itshape Placeholder: KG construction pipeline\\(book cover $\to$ ResNet + Qwen-VL visual aspects; reviews $\to$ BART summarization + Mistral aspect extraction; merge $\to$ aspect filtering $\to$ item--aspect KG with avg.\ 2.4 edges/item).}}
+  \caption{Review-derived KG construction pipeline. Visual features are extracted from book covers via ResNet and Qwen-VL; textual aspects are extracted from reviews via BART summarization and Mistral; the resulting aspects are filtered for frequency and ambiguity before forming the final item--aspect knowledge graph used throughout the experiments.}
+  \label{fig:kg-pipeline}
+\end{figure}
+
 In this section, 整理效能評估.
 
 下面是subfigure的範例 (其實我個人不常用這個語法, 我都直接在繪圖工具上把圖片整合在一起 XD)
