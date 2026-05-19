@@ -1,0 +1,49 @@
+% Chinese preview wrapper — compiles only the Chinese versions of
+% Chapter 1 and Chapter 2 for review.
+% Build:  latexmk -xelatex main_zh_preview.tex
+%
+% This file reuses the NYCU template's load_env.tex so fonts / Chinese
+% rendering behave the same as main.tex. It skips covers / front matter
+% / bibliography / appendix to keep preview compilation fast.
+
+\input{covers/load_env.tex}
+
+\toggletrue{toc-use-cn}
+\toggletrue{iamphd}
+
+% Dummy values for variables referenced by load_env / shared macros.
+\newcommand{\chineseTitle}{RA-GARK 中文預覽}
+\newcommand{\englishTitle}{RA-GARK Chinese Preview}
+\newcommand{\studentCnName}{預覽用}
+\newcommand{\studentEnName}{Preview}
+\newcommand{\studentEnNameA}{Preview}
+\newcommand{\advisorCnName}{預覽用}
+\newcommand{\advisorEnName}{Preview}
+\newcommand{\advisorEnNamex}{Preview}
+\newcommand{\ThesisDate}{May 2026}
+\newcommand{\ThesisDateTW}{中華民國~ 一一五年五月}
+\newcommand{\NameofCollegeCN}{資訊學院}
+\newcommand{\NameofCollegeEN}{College of Computer Science}
+\newcommand{\NameofDepartmentInstituteCN}{資訊學院碩士在職專班}
+\newcommand{\NameofDepartmentInstituteEN}{Degree Program of Computer Science}
+\newcommand{\NameofDegree}{Master of Science}
+\newcommand{\ResearchTopic}{Computer Science}
+
+\begin{document}
+
+\frontmatter
+\pagenumbering{roman}
+
+\tableofcontents
+\newpage
+
+\mainmatter
+\pagenumbering{arabic}
+
+\input{Sections/1.Introduction_chinese} \newpage
+\input{Sections/2.Relatedwork_chinese} \newpage
+
+\bibliographystyle{IEEEtran}
+\bibliography{ref}
+
+\end{document}
