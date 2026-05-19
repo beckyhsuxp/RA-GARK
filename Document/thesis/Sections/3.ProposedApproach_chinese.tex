@@ -1,0 +1,114 @@
+\chapter{方法}
+\label{ch:architecture-zh}
+
+本章從架構層次呈現 RA-GARK 的整體設計。第~\ref{sec:approach-principle-zh}~節說明使 RA-GARK 有別於第~\ref{ch:relatedwork}~章所回顧之深度融合基線的核心設計原則。第~\ref{sec:approach-overview-zh}~節以泳道圖（swim-lane）呈現推論時的整體資料流。第~\ref{sec:approach-notation-zh}~節固定後續章節所使用的符號。第~\ref{sec:approach-problem-zh}~節形式化推薦任務與訓練目標。第~\ref{sec:approach-modules-zh}~節以模組摘要作結，並前向引用第~\ref{ch:methodology}~章——各模組之完整數學細節於該章呈現。
+
+\section{設計原則：KG 作為可被閘控的旁路通道}
+\label{sec:approach-principle-zh}
+
+第~\ref{ch:intro}~章的經驗觀察是：在本研究稀疏的評論衍生知識圖譜（KG）上，四種具代表性的 KG-aware 方法（KGAT、KGCL、MCCLK、KGRec）皆被純 LightGCN 一致地超越。這些基線所共有的結構性失因在於：KG 被當作評分管線的\emph{必要組件}串接進來——KG 實體嵌入直接參與訊息傳遞，且無任何架構性的開關能在 KG 被證實不可靠時將其脫接。因此 KG 雜訊與協同表示共享同一條梯度流。
+
+RA-GARK 圍繞一個直接面對此失效模式的核心設計原則：
+
+\begin{quote}
+\emph{KG 不應為評分管線的必要組件，而應為一條旁路通道；其對最終分數的貢獻由一個學習得到的閘決定，閘在初始化時偏置至一個安全預設（純協同過濾），僅在訓練訊號顯示 KG 通道能降低損失時才被打開。}
+\end{quote}
+
+此原則衍生三項架構層級的後果，並共同定義 RA-GARK：
+
+\begin{enumerate}
+  \item \textbf{雙條平行視角。} \emph{區域視角}透過在使用者—物品互動圖上運行 LightGCN 產生純協同表示 $(u_{\mathrm{loc}}, i_{\mathrm{loc}})$，過程中完全不涉及 KG。\emph{全域視角}則由獨立的使用者嵌入表與物品端的潛在面向槽產生 KG 表示 $(u_{\mathrm{glo}}, i_{\mathrm{glo}})$，過程中亦不涉及協同訊號。直至融合階段之前，兩條視角在結構上完全分離。
+  \item \textbf{後期、閘控的融合。} 兩條視角僅在最終評分階段被融合閘合併；該閘針對每組（使用者, 物品）配對輸出一個混合權重 $\alpha \in (0, 1)$。閘以偏置初始化使 $\alpha^{(0)} \approx 0.993$，模型訓練起點實質等同於純 LightGCN，KG 通道僅在梯度將 $\alpha$ 推低時逐步開啟。
+  \item \textbf{合理化感知的物品端聚合。} 每件物品的 KG 語意儲存於 $A=4$ 個\emph{潛在}面向槽中，槽位內容由 IDF 加權商品—面向矩陣之截斷 SVD 產生；softmax aspect-saliency 注意力依（使用者, 物品）配對選取代表該物品的潛在槽。
+\end{enumerate}
+
+每項後果均於第~\ref{ch:methodology}~章中數學化。本章其餘部分將符號與問題陳述定位至足以使第~\ref{ch:methodology}~章自洽所需之細節層級。
+
+\section{架構概覽}
+\label{sec:approach-overview-zh}
+
+圖~\ref{fig:architecture-zh} 勾勒了推論時的資料流。模型被布置為對應區域與全域視角的兩條水平泳道，於右側由融合階段匯合。
+
+\begin{figure}[ht]
+\centering
+\includegraphics[width=\textwidth]{img/architecture.png}
+\caption{RA-GARK 架構。區域視角（上方泳道）對使用者—物品互動圖套用 LightGCN，得到 $(u_{\mathrm{loc}}, i_{\mathrm{loc}})$。全域視角（下方泳道）直接以查表得到使用者的全域嵌入 $u_{\mathrm{glo}}$，並對物品的 $A=4$ 個潛在面向槽（以虛線標註的 KG-SVD 初始化）施加 softmax 合理化遮罩以得 $i_{\mathrm{glo}}$。兩條視角由獨立的使用者側與物品側融合閘混合，每個閘的偏置初始化為 $+5$。最終分數為內積 $\langle u_{\mathrm{final}}, i_{\mathrm{final}} \rangle$。為求清晰，跨視角對比學習路徑於圖中省略，詳見第~\ref{sec:cl}~節。}
+\label{fig:architecture-zh}
+\end{figure}
+
+兩項結構性質值得在形式化呈現之前先點明。其一，$u_{\mathrm{glo}}$ 並不經過合理化遮罩模組，而是由直接查表得到，並逕送至使用者側融合閘；合理化遮罩僅作用於物品側，符合「合理化回答的是『此物品的哪個面向對此使用者重要』」這一語意。其二，KG-SVD 步驟為初始化而非前向運算：SVD 於訓練前計算一次以設定面向槽參數的初值，其後槽位即如其他參數般以梯度下降更新。
+
+\section{符號}
+\label{sec:approach-notation-zh}
+
+本論文後續使用之符號列於表~\ref{tab:notation-zh}。
+
+\begin{table}[ht]
+\centering
+\caption{本章與後續章節所使用之符號。}
+\label{tab:notation-zh}
+\begin{tabular}{ll}
+\toprule
+符號 & 意義 \\
+\midrule
+$\mathcal{U}, \mathcal{I}$           & 使用者集合與物品集合 \\
+$\mathcal{R} \subseteq \mathcal{U} \times \mathcal{I}$ & 已觀察到的使用者—物品互動 \\
+$\mathcal{G}_{\mathrm{KG}}$          & 物品—面向知識圖譜（評論衍生） \\
+$\mathcal{A}$                        & $\mathcal{G}_{\mathrm{KG}}$ 中出現之 unique 面向標籤集合 \\
+$A$                                  & 每件物品的潛在面向槽數（$A=4$） \\
+$d$                                  & 嵌入維度（除另行指定，$d=64$） \\
+$K$                                  & LightGCN 傳播層數（$K=2$） \\
+$u_{\mathrm{loc}}, i_{\mathrm{loc}} \in \mathbb{R}^d$ & 區域視角（LightGCN）嵌入 \\
+$u_{\mathrm{glo}} \in \mathbb{R}^d$   & 全域視角使用者嵌入（直接查表） \\
+$\mathbf{a}_i \in \mathbb{R}^{A \times d}$ & 物品 $i$ 之潛在面向槽（SVD 初始化） \\
+$i_{\mathrm{glo}} \in \mathbb{R}^d$    & 全域視角物品嵌入（合理化遮罩後） \\
+$\alpha_u, \alpha_i \in (0,1)$        & 使用者側與物品側融合閘輸出 \\
+$\hat{y}(u, i) \in \mathbb{R}$         & 對配對 $(u, i)$ 之預測偏好分數 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{問題定式}
+\label{sec:approach-problem-zh}
+
+\paragraph{任務。} 本文處理隱式回饋設定下的 top-$K$ 推薦。給定 $\mathcal{U}$、$\mathcal{I}$、已觀察到的互動 $\mathcal{R}$，以及物品—面向 KG $\mathcal{G}_{\mathrm{KG}}$，目標是為每位使用者 $u \in \mathcal{U}$ 從 $\mathcal{I} \setminus \{i : (u, i) \in \mathcal{R}\}$ 中產生一個排序清單，並以排序指標（NDCG@$K$、Recall@$K$、Hit@$K$）對保留之測試互動集進行評估。
+
+\paragraph{評分函數。} RA-GARK 對每組 $(u, i)$ 配對指派內積分數
+\begin{equation}
+\label{eq:score-zh}
+\hat{y}(u, i) = \langle u_{\mathrm{final}},\ i_{\mathrm{final}} \rangle,
+\end{equation}
+其中 $u_{\mathrm{final}}$ 與 $i_{\mathrm{final}}$ 由區域與全域表示的閘控融合產生：
+\begin{equation}
+\label{eq:fusion-zh}
+u_{\mathrm{final}} = \alpha_u\, u_{\mathrm{loc}} + (1 - \alpha_u)\, u_{\mathrm{glo}}, \qquad
+i_{\mathrm{final}} = \alpha_i\, i_{\mathrm{loc}} + (1 - \alpha_i)\, i_{\mathrm{glo}}.
+\end{equation}
+閘輸出 $\alpha_u, \alpha_i$ 分別由獨立的 MLP 計算（第~\ref{sec:gate}~節）。在本論文採用的偏置初始化下，$\alpha_u^{(0)}, \alpha_i^{(0)} \approx 0.993$，因此 $\hat{y}^{(0)}(u, i) \approx \langle u_{\mathrm{loc}}, i_{\mathrm{loc}} \rangle$，即訓練起點之分數實質為純 LightGCN 之分數，直至閘藉學習而調整。
+
+\paragraph{訓練目標。} 我們以 Bayesian Personalized Ranking（BPR）~\cite{rendle2009bpr} 損失為主體，並輔以兩條跨視角對比正則化：
+\begin{equation}
+\label{eq:total-loss-zh}
+\mathcal{L} = \mathcal{L}_{\mathrm{BPR}} + \lambda_{\mathrm{CL}} \bigl( \mathcal{L}_{\mathrm{aCL}} + \mathcal{L}_{\mathrm{uCL}} \bigr),
+\end{equation}
+其中對每組已觀察配對 $(u, i^+) \in \mathcal{R}$ 與一個取樣的負例物品 $i^- \notin \mathcal{R}_u$，
+\begin{equation}
+\label{eq:bpr-zh}
+\mathcal{L}_{\mathrm{BPR}} = - \log \sigma\bigl( \hat{y}(u, i^+) - \hat{y}(u, i^-) \bigr),
+\end{equation}
+而 $\mathcal{L}_{\mathrm{aCL}}, \mathcal{L}_{\mathrm{uCL}}$ 分別為 $(i_{\mathrm{loc}}, i_{\mathrm{glo}})$ 與 $(u_{\mathrm{loc}}, u_{\mathrm{glo}})$ 之間的 InfoNCE 式對齊損失；全域側施加 stop-gradient 以避免對比梯度擾動 SVD 初始化之面向槽（第~\ref{sec:cl}~節）。對比權重 $\lambda_{\mathrm{CL}}$ 固定為 $0.005$，使對比的角色為輔助而非主要。
+
+\section{模組摘要}
+\label{sec:approach-modules-zh}
+
+模型其餘細節於第~\ref{ch:methodology}~章詳述。為方便交叉引用，此處列出各模組及其形式化所在之節：
+
+\begin{itemize}
+  \item \textbf{區域視角（第~\ref{sec:local}~節）。} 於 $\mathcal{U} \cup \mathcal{I}$ 上之兩層 LightGCN，不涉及 KG；產生 $u_{\mathrm{loc}}, i_{\mathrm{loc}}$。
+  \item \textbf{面向槽與 KG-SVD 初始化（第~\ref{sec:kgsvd}~節）。} 每件物品之參數張量 $\mathbf{a}_i \in \mathbb{R}^{A \times d}$，由 IDF 加權商品—面向共現矩陣之截斷 SVD 初始化。
+  \item \textbf{Softmax 合理化遮罩（第~\ref{sec:softmax}~節）。} 於物品 $i$ 之 $A$ 個槽上施加使用者條件 softmax 注意力，以加權求和得 $i_{\mathrm{glo}}$。
+  \item \textbf{區域偏置融合閘（第~\ref{sec:gate}~節）。} 獨立之使用者側與物品側 MLP 閘，各輸出一純量 $\alpha \in (0, 1)$；最後一層線性層之偏置初始化為 $+5$。
+  \item \textbf{跨視角對比正則化（第~\ref{sec:cl}~節）。} InfoNCE 式對齊配合全域側 stop-gradient；小固定權重 $\lambda_{\mathrm{CL}} = 0.005$。
+\end{itemize}
+
+在設計原則、架構勾勒、符號與問題陳述就位後，第~\ref{ch:methodology}~章將呈現各模組之完整內容。
