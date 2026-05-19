@@ -102,45 +102,210 @@ i_{\mathrm{final}} = \alpha_i\, i_{\mathrm{loc}} + (1 - \alpha_i)\, i_{\mathrm{g
 \section{區域視角：LightGCN}
 \label{sec:local-zh}
 
-% TODO: 區域視角內文
-% - K=2 LightGCN 傳播 + 各層平均
-% - 不涉及 KG；作為協同訊號純淨化錨點
-% - 引用 he2020lightgcn
+區域視角僅由使用者—物品互動圖產生純協同表示 $(u_{\mathrm{loc}}, i_{\mathrm{loc}})$；此分支內部完全不施加任何 KG 運算。其架構與 LightGCN~\cite{he2020lightgcn} 完全相同。
 
-\section{全域視角——KG-SVD 初始化}
+\subsection{動機}
+\label{sec:local-motivation-zh}
+
+選擇 LightGCN 作為區域視角骨幹的理由有三。其一，在本論文所使用之稀疏評論衍生 KG 上，純 LightGCN 已超越我們所評估的全部四個 KG-aware 基線（第~\ref{ch:intro}~章），故為任何後續設計必須可被證實能改善的最強無 KG 起點。其二，其參數化極為精簡——僅有使用者與物品的嵌入表，傳播過程中無任何學習權重——這限制了兩條視角後續耦合時 KG 雜訊得以滲入協同梯度流的接觸面。其三，傳播為純線性，故每層對最終表示的貢獻可由閉式之層平均直接讀出，從而能在不受非線性干擾的前提下，理性化關於閘的放置（第~\ref{sec:gate-zh}~節）與對比對齊（第~\ref{sec:cl-zh}~節）的設計決策。
+
+\subsection{圖的建構}
+\label{sec:local-graph-zh}
+
+令 $\mathbf{R} \in \{0,1\}^{|\mathcal{U}| \times |\mathcal{I}|}$ 為由 $\mathcal{R}$ 衍生的使用者—物品互動矩陣，其中 $\mathbf{R}_{u,i} = 1$ 當且僅當 $(u,i) \in \mathcal{R}$。據此建構二部圖鄰接矩陣
+\begin{equation}
+\label{eq:bipartite-A-zh}
+\mathbf{A} = \begin{bmatrix} \mathbf{0} & \mathbf{R} \\ \mathbf{R}^{\top} & \mathbf{0} \end{bmatrix} \in \mathbb{R}^{(|\mathcal{U}| + |\mathcal{I}|) \times (|\mathcal{U}| + |\mathcal{I}|)},
+\end{equation}
+並施加對稱歸一化
+\begin{equation}
+\label{eq:normalized-A-zh}
+\tilde{\mathbf{A}} = \mathbf{D}^{-1/2}\, \mathbf{A}\, \mathbf{D}^{-1/2}, \qquad \mathbf{D} = \mathrm{diag}\!\left(\mathbf{A}\,\mathbf{1}\right).
+\end{equation}
+此歸一化降低了與高度使用者或熱門物品相鄰之邊的權重，於實務上有助於穩定長尾互動分布下的訓練。
+
+\subsection{傳播}
+\label{sec:local-prop-zh}
+
+令 $\mathbf{E}^{(0)} \in \mathbb{R}^{(|\mathcal{U}| + |\mathcal{I}|) \times d}$ 為初始嵌入表，前 $|\mathcal{U}|$ 列為使用者嵌入，其餘 $|\mathcal{I}|$ 列為物品嵌入；兩區塊皆以 Xavier-normal 初始化。第 $\ell$ 層由單次歸一化鄰居聚合得到：
+\begin{equation}
+\label{eq:lightgcn-prop-zh}
+\mathbf{E}^{(\ell+1)} = \tilde{\mathbf{A}}\, \mathbf{E}^{(\ell)}, \qquad \ell = 0, 1, \dots, K-1.
+\end{equation}
+過程中無任何可學習權重矩陣、無非線性、無自迴圈偏置——整個區域視角所有可學習參數即為 $\mathbf{E}^{(0)}$ 的 $|\mathcal{U}|d + |\mathcal{I}|d$ 個元素。
+
+\subsection{層平均與輸出}
+\label{sec:local-output-zh}
+
+採用 LightGCN 標準的層平均
+\begin{equation}
+\label{eq:lightgcn-avg-zh}
+\bar{\mathbf{E}} = \frac{1}{K+1} \sum_{\ell=0}^{K} \mathbf{E}^{(\ell)},
+\end{equation}
+並由 $\bar{\mathbf{E}}$ 對應列讀出 $u_{\mathrm{loc}}$ 與 $i_{\mathrm{loc}}$。本論文使用 $K = 2$，與原始 LightGCN 論文一致，亦為我們純區域驗證損失趨於平台的深度。
+
+如此得到的嵌入對僅由使用者—物品互動圖提供資訊；區域視角僅透過第~\ref{sec:gate-zh}~節之融合階段參與最終分數 $\hat{y}(u,i)$，訓練過程中不容許任何 KG 訊號改變 $u_{\mathrm{loc}}$ 或 $i_{\mathrm{loc}}$。
+
+\section{全域視角：KG-SVD 初始化}
 \label{sec:kgsvd-zh}
 
-% TODO: KG-SVD 初始化內文
-% - 物品—面向共現矩陣 M
-% - IDF 加權動機
-% - 截斷 SVD，k = A * d
-% - reshape 至 [N_i, A, d]
-% - xavier 等量縮放
-% - 消融：移除 SVD init → −5.3% NDCG@20
+全域視角引入一獨立的使用者側嵌入 $u_{\mathrm{glo}}$（直接查表，見下文）與一物品側參數張量以儲存各物品之 KG 語意。此物品側張量為 RA-GARK 中唯一容許 KG 內容進入模型之處。本節說明該張量之參數化方式及其值如何初始化。
+
+\subsection{面向槽作為物品側 KG 表示}
+\label{sec:kgsvd-slots-zh}
+
+每件物品 $i$ 在全域視角中由面向槽張量
+\begin{equation}
+\label{eq:aspect-slots-def-zh}
+\mathbf{a}_i \in \mathbb{R}^{A \times d}, \qquad A = 4
+\end{equation}
+表示，將所有物品的張量集合為一可學習參數 $\mathbf{A}_{\mathrm{KG}} \in \mathbb{R}^{|\mathcal{I}| \times A \times d}$。初始化（下節說明）之後，$\mathbf{A}_{\mathrm{KG}}$ 即如其他參數般以梯度下降更新。
+
+此處有一關鍵釐清：槽位數 $A = 4$ 為模型超參數，\emph{不}對應於每件物品的固定原始面向標籤數。在本論文使用的評論衍生 KG 中，每件物品平均僅持有 $2.4$ 條面向邊，全域面向標籤詞彙遠大於 $A$（$|\mathcal{A}| \gg A$）。此四個槽位為面向誘導語意子空間中的\emph{潛在}方向，跨全體物品共同學習，而非綁定於特定標籤。
+
+\subsection{共現矩陣}
+\label{sec:kgsvd-cooc-zh}
+
+從二值物品—面向共現矩陣 $\mathbf{M} \in \{0,1\}^{|\mathcal{I}| \times |\mathcal{A}|}$ 出發：
+\begin{equation}
+\label{eq:cooc-zh}
+\mathbf{M}_{i,a} = \begin{cases} 1, & (i, a) \in \mathcal{G}_{\mathrm{KG}}, \\ 0, & \text{否則}。 \end{cases}
+\end{equation}
+$\mathbf{M}$ 的每一列因此是一個稀疏指示向量：每件物品至多只有少數幾個非零項；經剪枝後（第~\ref{sec:eval-dataset}~節）全域密度對應於每列平均 $2.4$ 個 $1$。
+
+\subsection{IDF 加權}
+\label{sec:kgsvd-idf-zh}
+
+部分面向標籤橫跨許多物品（如「文筆優美」、「引人入勝」），其他則高度特定（如某個利基類型或主題）。若不修正，後續 SVD 將由高頻標籤主導，所產生的潛在方向實質上只是熱門度先驗。我們以標準的逆文件頻率（IDF）重新加權緩解此問題：
+\begin{equation}
+\label{eq:idf-zh}
+\mathrm{idf}(a) = \log\!\left( \frac{|\mathcal{I}|}{|\{i : \mathbf{M}_{i,a} = 1\}| + 1} \right) + 1,
+\end{equation}
+並依 IDF 重新縮放 $\mathbf{M}$ 各行：
+\begin{equation}
+\label{eq:idf-rescale-zh}
+\tilde{\mathbf{M}}_{i,a} = \mathrm{idf}(a) \cdot \mathbf{M}_{i,a}.
+\end{equation}
+分母中之 $+1$ 避免對所有物品支持已被剪除之面向除以零；對數外之 $+1$ 防止最大頻率面向的 IDF 退化為零。兩項調整皆為標準作法。
+
+\subsection{截斷 SVD}
+\label{sec:kgsvd-svd-zh}
+
+對 $\tilde{\mathbf{M}}$ 計算秩 $k$ 之截斷 SVD：
+\begin{equation}
+\label{eq:svd-zh}
+\tilde{\mathbf{M}} \;\approx\; \mathbf{U}_k\, \boldsymbol{\Sigma}_k\, \mathbf{V}_k^{\top}, \qquad \mathbf{U}_k \in \mathbb{R}^{|\mathcal{I}| \times k},
+\end{equation}
+其中 $k = A \cdot d$。左奇異矩陣 $\mathbf{U}_k$ 每件物品一列；各列位於一 $k$ 維潛在子空間，於其中 IDF 加權的面向共現於秩 $k$ 下被最佳解釋。
+
+接著形成每件物品的潛在嵌入，將每個分量以對應奇異值之平方根縮放：
+\begin{equation}
+\label{eq:svd-embed-zh}
+\mathbf{E}_{\mathrm{KG}} = \mathbf{U}_k\, \boldsymbol{\Sigma}_k^{1/2} \in \mathbb{R}^{|\mathcal{I}| \times k}.
+\end{equation}
+此平方根縮放使譜能量均勻分布於左右因子，為標準選擇，所得嵌入之兩兩內積近似 IDF 加權共現內容。
+
+\subsection{重塑為槽位與量值縮放}
+\label{sec:kgsvd-reshape-zh}
+
+寬度為 $k = A d$ 的展平嵌入 $\mathbf{E}_{\mathrm{KG}}$ 被重塑為每件物品 $A$ 個寬度 $d$ 的槽：
+\begin{equation}
+\label{eq:reshape-zh}
+\mathbf{A}_{\mathrm{KG}}^{(0)}[i, k, :] = \mathbf{E}_{\mathrm{KG}}[i, k d : (k+1) d], \qquad k = 0, \dots, A-1.
+\end{equation}
+槽因此是 SVD 輸出中互不相交的連續區塊；它們不對應於可獨立解讀的面向標籤。
+
+由於 $\mathbf{E}_{\mathrm{KG}}$ 之量值依賴於 $|\mathcal{I}|$、$|\mathcal{A}|$ 與 $\tilde{\mathbf{M}}$ 的譜，未經縮放的 SVD 輸出與模型他處 Xavier 初始化參數不在同一量級。我們因此將整個 $\mathbf{A}_{\mathrm{KG}}^{(0)}$ 重新縮放，使其經驗標準差匹配 Xavier-normal 目標 $\sigma = \sqrt{2 / (A + d)}$。此縮放保留 SVD 輸出的角度幾何——也正是我們想注入的——同時使槽位量值與其餘最佳化過程相容。
+
+\subsection{演算法}
+\label{sec:kgsvd-algo-zh}
+
+完整初始化可總結為五步：
+
+\begin{enumerate}
+  \item 由 $\mathcal{G}_{\mathrm{KG}}$ 建構二值共現矩陣 $\mathbf{M}$（式~\eqref{eq:cooc-zh}）。
+  \item 套用 IDF 列加權得 $\tilde{\mathbf{M}}$（式~\eqref{eq:idf-rescale-zh}）。
+  \item 計算秩 $k = A d$ 之截斷 SVD：$\tilde{\mathbf{M}} \approx \mathbf{U}_k \boldsymbol{\Sigma}_k \mathbf{V}_k^{\top}$（式~\eqref{eq:svd-zh}）。
+  \item 形成 $\mathbf{E}_{\mathrm{KG}} = \mathbf{U}_k \boldsymbol{\Sigma}_k^{1/2}$ 並重塑為 $\mathbf{A}_{\mathrm{KG}}^{(0)} \in \mathbb{R}^{|\mathcal{I}| \times A \times d}$（式~\eqref{eq:reshape-zh}）。
+  \item 整體重新縮放使標準差匹配 Xavier-normal 目標。
+\end{enumerate}
+
+若 $|\mathcal{A}| < A d$，SVD 秩被限制為 $|\mathcal{A}| - 1$，剩餘槽維度於縮放前以小量高斯雜訊（標準差 $0.01$）填補；在我們的實驗中 $|\mathcal{A}| \gg A d$，故此降階路徑不被觸發。
+
+\subsection{此初始化所帶來的效益}
+\label{sec:kgsvd-effect-zh}
+
+KG-SVD 初始化的貢獻於第~\ref{sec:ablation-svd}~節以消融衡量：將其替換為相同張量形狀之 Xavier-normal 隨機初始化會損失 $5.3\%$ NDCG@20。其解釋是：SVD 初始化在訓練起點即保留了面向誘導語意子空間的角度幾何；其後梯度下降可微調此幾何，但在我們的稀疏 KG 條件下，難以由隨機初始化恢復——能恢復此幾何的梯度訊號需流經對比損失（$\lambda_{\mathrm{CL}} = 0.005$），訊號微弱。
 
 \begin{figure}[ht]
   \centering
   % \includegraphics[width=0.9\textwidth]{img/kgsvd_init.png}  % TODO: 插入圖 (b)
-  \fbox{\parbox[c][4cm][c]{0.9\textwidth}{\centering\itshape 佔位：KG-SVD 初始化流程\\(物品—面向矩陣 $\to$ IDF 加權 $\to$ 截斷 SVD $\to$ reshape 至 $[N_i, A, d]$)。}}
+  \fbox{\parbox[c][4cm][c]{0.9\textwidth}{\centering\itshape 佔位：KG-SVD 初始化流程\\(物品—面向矩陣 $\to$ IDF 加權 $\to$ 截斷 SVD $\to$ reshape 至 $[|\mathcal{I}|, A, d]$)。}}
   \caption{KG-SVD 初始化流程。}
   \label{fig:kgsvd-zh}
 \end{figure}
 
-\section{全域視角——Softmax 合理化遮罩}
+\section{全域視角：Softmax 合理化遮罩}
 \label{sec:softmax-zh}
 
-% TODO: softmax 合理化遮罩內文
-% - MLP([u_glo; a_{i,k}]) 每槽位的 logit
-% - 對 A 個槽位的 softmax，溫度 τ=0.5
-% - 加權求和形成 i_glo
-% - 合理化 = 此物品的哪個潛在槽位代表給定的使用者—物品配對
-% - softmax vs sigmoid 的設計理由（競爭 vs 獨立）
-% - 消融：sigmoid → −7.0% NDCG@20
+給定物品的面向槽張量 $\mathbf{a}_i \in \mathbb{R}^{A \times d}$ 與使用者側全域嵌入 $u_{\mathrm{glo}} \in \mathbb{R}^d$，合理化遮罩模組選取 $A$ 個潛在槽中最能在該使用者下代表該物品者，得到全域視角物品嵌入 $i_{\mathrm{glo}}$。使用者側全域嵌入本身為直接查表
+\begin{equation}
+\label{eq:uglo-lookup-zh}
+u_{\mathrm{glo}} = \mathbf{E}^{\mathrm{glo}}_u, \qquad \mathbf{E}^{\mathrm{glo}} \in \mathbb{R}^{|\mathcal{U}| \times d},
+\end{equation}
+其中 $\mathbf{E}^{\mathrm{glo}}$ 為與區域視角使用者表分離的可學習參數；使用者側不施加任何合理化運算。
+
+\subsection{動機}
+\label{sec:softmax-motivation-zh}
+
+每件物品的 KG 語意分散儲存於 $\mathbf{a}_i$ 的 $A$ 個潛在槽中；不同槽位編碼 SVD 可見之不同語意面向。然而給定使用者並非「同時透過物品之全部語意面向」與物品互動——其偏好通常由一或兩個面向主導。合理化模組的職責即在每組（使用者, 物品）配對中，挑出與該使用者表示 $u_{\mathrm{glo}}$ 最一致的槽。
+
+\subsection{使用者條件之注意力 logits}
+\label{sec:softmax-logit-zh}
+
+對每個槽 $k \in \{1, \dots, A\}$，計算一純量 logit
+\begin{equation}
+\label{eq:logit-zh}
+\ell_{u, i, k} = \mathrm{MLP}\!\left( [u_{\mathrm{glo}} \,\Vert\, \mathbf{a}_{i,k}] \right) \in \mathbb{R},
+\end{equation}
+其中 $\Vert$ 表沿嵌入維度串接，MLP 參數於所有槽與物品間共享。MLP 為兩層前饋區塊：
+\begin{equation}
+\label{eq:mlp-zh}
+\mathrm{MLP}(\mathbf{z}) = \mathbf{w}^{\top} \cdot \mathrm{LeakyReLU}\!\left(\mathbf{W}\, \mathbf{z}\right),
+\end{equation}
+其中 $\mathbf{W} \in \mathbb{R}^{d \times 2d}$、$\mathbf{w} \in \mathbb{R}^{d}$。跨槽共享參數至關重要：它迫使 MLP 學到一個與槽無關的「此槽與此使用者契合程度」概念，而非為每個槽記憶各自的評分函數。
+
+\subsection{Softmax 歸一化}
+\label{sec:softmax-softmax-zh}
+
+$A$ 個 logit 透過溫度 $\tau$ 之 softmax 歸一化為槽位之機率分布：
+\begin{equation}
+\label{eq:softmax-w-zh}
+w_{u, i, k} = \frac{\exp(\ell_{u, i, k} / \tau)}{\sum_{k' = 1}^{A} \exp(\ell_{u, i, k'} / \tau)}.
+\end{equation}
+依建構 $\sum_k w_{u, i, k} = 1$，$A$ 個槽位權重彼此競爭：增加某槽相對權重必使其餘槽位下降。我們使用 $\tau = 0.5$，相對於無資訊先驗（$\tau = 1$ 在 logit $= 0$ 時得完全均勻）銳化分布，將質量集中於對使用者最相關之槽。溫度掃描見第~\ref{sec:sens-tau}~節。
+
+\subsection{加權聚合}
+\label{sec:softmax-agg-zh}
+
+全域視角物品嵌入為槽加權平均
+\begin{equation}
+\label{eq:iglo-zh}
+i_{\mathrm{glo}} = \sum_{k=1}^{A} w_{u, i, k} \cdot \mathbf{a}_{i, k} \;\in\; \mathbb{R}^{d}.
+\end{equation}
+實作上即為「合理化遮罩」步驟：softmax 權重作為槽維度上的軟遮罩，被遮罩之槽位再加總回單一 $d$ 維向量。雖然式~\eqref{eq:softmax-w-zh} 與 \eqref{eq:iglo-zh} 概念上為兩步，但在程式中於單一模組（\texttt{KGRationaleMasking}）內以一次前向呼叫完成。
+
+\subsection{為何使用 Softmax 而非 Sigmoid}
+\label{sec:softmax-vs-sigmoid-zh}
+
+一個自然的替代是對每個槽獨立以 sigmoid 評分：$w_{u,i,k} = \sigma(\ell_{u,i,k})$，不施加跨槽歸一化。這表達了不同的語意假設：每個槽對使用者獨立地相關或不相關；多個槽可同時「開啟」而不相互競爭。
+
+實證上 sigmoid 變體會使本基準 NDCG@20 下降 $7.0\%$（第~\ref{sec:ablation-softmax}~節）——是我們所觀察到單一元件影響最大者。我們解讀為：對於面向顯著性合理化而言，正確的語意假設是競爭而非獨立——在 $A$ 個潛在槽中，合理化回答的是「哪一個」最具代表性，而答案近似為 one-hot。Softmax 直接編碼此假設，sigmoid 則否。我們在第~\ref{ch:conclusion}~章對此發現作更謹慎之討論，並明確將其定位為單一資料集觀察，需多資料集複製驗證。
 
 \begin{figure}[ht]
   \centering
   % \includegraphics[width=0.9\textwidth]{img/softmax_attention.png}  % TODO: 插入圖 (c)
-  \fbox{\parbox[c][4cm][c]{0.9\textwidth}{\centering\itshape 佔位：Softmax aspect-saliency 注意力前向流程\\($u_{\mathrm{glo}}$, $\{a_{i,k}\}_{k=1}^A$ $\to$ MLP logits $\to$ softmax 權重 $\to$ 加權求和 $\to$ $i_{\mathrm{glo}}$)。}}
+  \fbox{\parbox[c][4cm][c]{0.9\textwidth}{\centering\itshape 佔位：Softmax 合理化遮罩前向流程\\($u_{\mathrm{glo}}$, $\{\mathbf{a}_{i,k}\}_{k=1}^A$ $\to$ MLP logits $\to$ softmax 權重 $w_{u,i,k}$ $\to$ 加權求和 $\to$ $i_{\mathrm{glo}}$)。}}
   \caption{Softmax 合理化遮罩。}
   \label{fig:softmax-zh}
 \end{figure}
@@ -148,12 +313,68 @@ i_{\mathrm{final}} = \alpha_i\, i_{\mathrm{loc}} + (1 - \alpha_i)\, i_{\mathrm{g
 \section{區域偏置融合閘}
 \label{sec:gate-zh}
 
-% TODO: 融合閘內文
-% - 獨立之 user_fusion_gate 與 item_fusion_gate
-% - MLP([x_loc; x_glo]) → tanh → linear → sigmoid → α
-% - 最後線性層偏置初始化 +5; α₀ ≈ σ(5) ≈ 0.993
-% - 優雅退化：模型起點 ≈ 純 LightGCN
-% - 消融：bias=0 → −5.3% NDCG@20
+融合閘是將 RA-GARK 設計原則（KG 為可被閘控之旁路通道）落實為具體運算的架構機制。它將區域與全域表示結合為最終嵌入，並由其產生分數。
+
+\subsection{雙側獨立閘}
+\label{sec:gate-perside-zh}
+
+RA-GARK 使用兩個獨立融合閘，使用者側與物品側各一。兩者皆為純量閘，以該側區域與全域嵌入之串接為條件：
+\begin{equation}
+\label{eq:gate-u-zh}
+\alpha_u = \mathrm{Gate}_{u}\!\left([u_{\mathrm{loc}} \,\Vert\, u_{\mathrm{glo}}]\right) \in (0, 1),
+\end{equation}
+\begin{equation}
+\label{eq:gate-i-zh}
+\alpha_i = \mathrm{Gate}_{i}\!\left([i_{\mathrm{loc}} \,\Vert\, i_{\mathrm{glo}}]\right) \in (0, 1).
+\end{equation}
+兩閘參數獨立；經驗上共享參數會劣化結果，因為在稀疏 KG 下 KG 訊號對使用者側與物品側嵌入的邊際資訊量不同。
+
+最終各側嵌入為凸組合
+\begin{equation}
+\label{eq:gate-mix-zh}
+u_{\mathrm{final}} = \alpha_u\, u_{\mathrm{loc}} + (1 - \alpha_u)\, u_{\mathrm{glo}}, \qquad
+i_{\mathrm{final}} = \alpha_i\, i_{\mathrm{loc}} + (1 - \alpha_i)\, i_{\mathrm{glo}},
+\end{equation}
+最終分數為內積 $\hat{y}(u,i) = \langle u_{\mathrm{final}}, i_{\mathrm{final}} \rangle$，如式~\eqref{eq:score-zh} 已述。
+
+\subsection{閘的結構}
+\label{sec:gate-structure-zh}
+
+每個 $\mathrm{Gate}$ 為一帶 sigmoid 頭之小型 MLP：
+\begin{equation}
+\label{eq:gate-mlp-zh}
+\mathrm{Gate}(\mathbf{z}) = \sigma\!\left( \mathbf{w}^{\top} \tanh\!\left( \mathbf{W} \mathbf{z} \right) + b \right),
+\end{equation}
+其中 $\mathbf{W} \in \mathbb{R}^{d \times 2d}$、$\mathbf{w} \in \mathbb{R}^{d}$、$b$ 為純量偏置、$\sigma$ 為邏輯函數。隱藏層寬度與嵌入維度一致。第一層權重 $\mathbf{W}$ 以 Xavier-uniform 初始化、偏置為零；第二層權重 $\mathbf{w}$ 同樣以 Xavier-uniform 初始化；第二層偏置 $b$ 即下節要特別初始化者。
+
+\subsection{區域偏置初始化}
+\label{sec:gate-bias-zh}
+
+關鍵設計選擇為式~\eqref{eq:gate-mlp-zh} 中純量偏置 $b$ 的初始化。當 $b = 0$，訓練起點之閘輸出約為 $\sigma(0) = 0.5$，即區域與全域 50/50 混合。由於全域視角部分由帶雜訊之 KG 初始化，50/50 起點將使區域表示整個訓練過程中皆暴露於 KG 雜訊；而第~\ref{ch:intro}~章已觀察到此正是深度融合基線的失效模式。
+
+我們改將兩個閘的偏置皆初始化為 $b = +5$。訓練起點之閘輸出因此為
+\begin{equation}
+\label{eq:alpha-init-zh}
+\alpha^{(0)} \approx \sigma(b) = \sigma(5) \approx 0.993,
+\end{equation}
+初始混合約為
+\begin{equation}
+\label{eq:mix-init-zh}
+u_{\mathrm{final}}^{(0)} \approx 0.993\, u_{\mathrm{loc}}^{(0)} + 0.007\, u_{\mathrm{glo}}^{(0)},
+\end{equation}
+物品側類似。換言之，RA-GARK 訓練起點實質為純 LightGCN。KG 通道起初僅開啟 $0.7\%$；唯當 BPR 損失對 $b$ 之梯度將 $b$ 向下推動時——亦即拓寬 KG 通道能降低損失時——通道才會被擴大。偏置作為一個學習得到的、傾向安全預設之先驗。
+
+\subsection{優雅退化}
+\label{sec:gate-degrade-zh}
+
+區域偏置初始化提供結構性保證：若 KG 結果為完全無資訊，閘將維持於 $\alpha \approx 1$ 附近，KG 項對分數的貢獻被上界約為 $0.007 \cdot \|\mathbf{a}\| \cdot \|\mathbf{u}\|$，模型於經驗上與純 LightGCN 無從區分。第~\ref{ch:intro}~章所列之四個基線皆無此性質：每個都強制 KG 實體嵌入無論其是否具資訊量皆參與傳播路徑。
+
+此即 Highway Networks~\cite{srivastava2015highway} 嚴格架構意義下的優雅退化性質，自網路內部跳接移植至視角間融合。據我們所知，尚無 KG-aware 推薦器採此設計。
+
+\subsection{為何選 $+5$ 而非 $+\infty$}
+\label{sec:gate-bias-magnitude-zh}
+
+偏置量值之選擇依單一原則：大到使初始閘輸出絕對偏向區域、小到使 $b$ 之梯度非零而能於訓練中調整閘。於 $b = +5$，$\sigma'(5) = \sigma(5)(1 - \sigma(5)) \approx 0.007$——雖小但未消失。$b = +10$ 之後 $b$ 上之梯度於數值上可忽略，閘無法學會開啟。$b = +5$ 為使 $\alpha^{(0)} > 0.99$ 同時保持 $\sigma'(b) > 10^{-3}$ 之最小整數，並通過敏感性掃描不需進一步調整（第~\ref{sec:sens-bias}~節）。完全移除偏置初始化（設 $b = 0$）會損失 $5.3\%$ NDCG@20（第~\ref{sec:ablation-gate}~節）。
 
 \begin{figure}[ht]
   \centering
@@ -166,16 +387,94 @@ i_{\mathrm{final}} = \alpha_i\, i_{\mathrm{loc}} + (1 - \alpha_i)\, i_{\mathrm{g
 \section{跨視角對比正則化}
 \label{sec:cl-zh}
 
-% TODO: 對比學習內文
-% - L_aCL between (i_loc, i_glo); L_uCL between (u_loc, u_glo)
-% - InfoNCE 形式 + cl_projector 投影頭
-% - 全域側 stop-gradient
-% - 小固定權重 λ_CL = 0.005（輔助角色）
+區域與全域視角於結構上異質：一者為來自互動的協同表示，另一者為 KG 衍生表示，二者位於不同歸納子空間。若無任何明確對齊，兩表示在訓練過程中可能漂移至 $\mathbb{R}^d$ 中彼此不相容之區域，此時融合閘所合併的向量並非直接可比。跨視角對比正則化即在處理此幾何錯位。
+
+\subsection{在架構中的角色}
+\label{sec:cl-role-zh}
+
+於 RA-GARK 中，對比損失扮演刻意受限之角色。它們並非主要整合機制——此角色由融合閘擔任（第~\ref{sec:gate-zh}~節）——而是將兩視角推向共享角度幾何的正則化項。具體而言，我們刻意不使用對比學習讓 KG 通道「掙得」其進入模型之資格，如 KGCL~\cite{yang2022kgcl} 與 MCCLK~\cite{zou2022mcclk} 所為；那將重新引入「將 KG 訊號視為必經主融合路徑」的失效模式。
+
+\subsection{面向層級對比損失}
+\label{sec:cl-acl-zh}
+
+對訓練批次中每件物品 $i$，將其投影後的區域嵌入與其 $A$ 個面向槽分別對比：
+\begin{equation}
+\label{eq:lacl-zh}
+\mathcal{L}_{\mathrm{aCL}} = \frac{1}{A} \sum_{k=1}^{A} \mathrm{InfoNCE}\!\left( g(i_{\mathrm{loc}}),\ \mathrm{sg}\!\left[\mathbf{a}_{i,k}\right] \right),
+\end{equation}
+其中 $g : \mathbb{R}^d \to \mathbb{R}^d$ 為可學習投影頭（兩層 MLP 加 ReLU），僅施加於區域側輸入；$\mathrm{sg}[\cdot]$ 表示 stop-gradient；InfoNCE 為標準對比目標
+\begin{equation}
+\label{eq:infonce-zh}
+\mathrm{InfoNCE}(\mathbf{x}, \mathbf{y}) = -\log \frac{\exp(\langle \mathbf{x}, \mathbf{y} \rangle / \tau_{\mathrm{CL}})}{\sum_{j=1}^{B} \exp(\langle \mathbf{x}, \mathbf{y}_j \rangle / \tau_{\mathrm{CL}})},
+\end{equation}
+$\tau_{\mathrm{CL}} = 0.2$、$B$ 為批次大小（負例為批次內其餘物品）。向量於內積之前皆作 $\ell_2$ 歸一化。
+
+\subsection{使用者層級對比損失}
+\label{sec:cl-ucl-zh}
+
+對稱之使用者層級損失對齊區域與全域使用者嵌入：
+\begin{equation}
+\label{eq:lucl-zh}
+\mathcal{L}_{\mathrm{uCL}} = \mathrm{InfoNCE}\!\left( g(u_{\mathrm{loc}}),\ \mathrm{sg}\!\left[u_{\mathrm{glo}}\right] \right).
+\end{equation}
+投影頭 $g$ 與 $\mathcal{L}_{\mathrm{aCL}}$ 共享，因兩損失皆作用於區域側輸入，且我們希望投影編碼單一之「區域視角如何映射至全域視角角度幾何」變換。
+
+\subsection{全域側 Stop-Gradient}
+\label{sec:cl-stopgrad-zh}
+
+式~\eqref{eq:lacl-zh} 與 \eqref{eq:lucl-zh} 中 KG 側之 stop-gradient 在結構上至關重要。若無，對比梯度會反向傳遞至 SVD 初始化的面向槽與全域使用者表，逐漸破壞 KG-SVD 初始化所安裝之角度幾何（第~\ref{sec:kgsvd-zh}~節）。配合 stop-gradient 後，對比損失作用不對稱：能將區域視角拉向全域視角已有之幾何，但無法把全域視角向任何方向推動。KG 衍生語意子空間被保留為外部參照，由區域視角承擔對齊代價。
+
+\subsection{損失權重}
+\label{sec:cl-lambda-zh}
+
+式~\eqref{eq:total-loss-zh} 中對比權重 $\lambda_{\mathrm{CL}}$ 固定為 $0.005$。此值小到使對比損失於總梯度中貢獻一非主導比例（BPR 仍為主要訊號），亦與第~\ref{sec:cl-role-zh}~節所賦予對比正則化之角色一致：幾何先驗，非主要學習目標。我們不對 $\lambda_{\mathrm{CL}}$ 作資料集相關調參。
 
 \section{訓練與計算複雜度}
 \label{sec:method-train-zh}
 
-% TODO: 訓練與複雜度內文
-% - Adam, lr, batch size, early stopping
-% - 各模組複雜度
-% - 全項目排序之推論成本
+\subsection{總目標}
+\label{sec:train-objective-zh}
+
+完整訓練損失已於式~\eqref{eq:total-loss-zh} 給出，此處為完整性重述：
+\begin{equation}
+\label{eq:total-loss-repeat-zh}
+\mathcal{L} = \mathcal{L}_{\mathrm{BPR}} + \lambda_{\mathrm{CL}} \bigl( \mathcal{L}_{\mathrm{aCL}} + \mathcal{L}_{\mathrm{uCL}} \bigr).
+\end{equation}
+BPR 損失提供主要排序訊號；對比項提供跨視角幾何對齊。
+
+\subsection{最佳化}
+\label{sec:train-opt-zh}
+
+以 Adam（預設 $\beta_1 = 0.9, \beta_2 = 0.999, \epsilon = 10^{-8}$）最佳化式~\eqref{eq:total-loss-repeat-zh}，學習率 $10^{-3}$、批次大小 $128$，最多訓練 $30$ epochs。以驗證集 NDCG@20 之耐心 $10$ 早停。每批次包含 $128$ 組三元組 $(u, i^+, i^-)$，其中 $i^-$ 自 $\mathcal{R}_u$ 之外的物品均勻取樣。式~\eqref{eq:lightgcn-prop-zh}--\eqref{eq:lightgcn-avg-zh} 之 LightGCN 傳播於每批次重新計算一次，並於該批次內正負例評分時共用。
+
+\subsection{推論}
+\label{sec:train-inference-zh}
+
+推論時，於評估開始時計算 LightGCN 傳播一次並快取 $\bar{\mathbf{E}}$。對每個查詢使用者 $u$，以單次批次矩陣乘法計算全部物品集合之分數：面向槽、合理化權重、$i_{\mathrm{glo}}$、物品閘以及與 $u_{\mathrm{final}}$ 之內積，皆於整個物品集合上以向量化形式同時評估。
+
+\subsection{計算複雜度}
+\label{sec:train-complexity-zh}
+
+令 $B$ 為批次大小、$|\mathcal{E}_{\mathcal{U}\mathcal{I}}|$ 為已觀察使用者—物品互動數、$|\mathcal{I}|$ 為物品數、$A$ 為槽位數、$d$ 為嵌入維度、$K$ 為 LightGCN 層數。每批次訓練成本分解如下：
+
+\begin{table}[ht]
+\centering
+\caption{各模組每批次訓練成本。}
+\label{tab:complexity-zh}
+\begin{tabular}{ll}
+\toprule
+模組 & 成本 \\
+\midrule
+LightGCN 傳播             & $O(|\mathcal{E}_{\mathcal{U}\mathcal{I}}|\, d\, K)$ \\
+$u_{\mathrm{glo}}$ 查表    & $O(B\, d)$ \\
+面向槽讀取                 & $O(B\, A\, d)$ \\
+合理化遮罩                 & $O(B\, A\, d)$ \\
+使用者與物品融合閘         & $O(B\, d^2)$ \\
+BPR 與對比損失             & $O(B\, d)$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+LightGCN 傳播項主導訓練成本，與純 LightGCN 基線完全一致。KG 側之新增（面向讀取、合理化遮罩、融合閘）貢獻為 $A$ 與 $d$ 之線性項，皆相對於傳播為小。RA-GARK 之每 epoch 牆鐘時間因此於純 LightGCN 之小常數倍以內，並於同一硬體與相同嵌入維度下與 KGRec 大致相等（精確牆鐘數字見第~\ref{sec:eval-cost}~節）。
+
+全集合推論由使用者條件之物品側合理化遮罩步驟 $O(B \cdot |\mathcal{I}| \cdot A \cdot d)$ 主導，於本論文使用之資料集規模下可行。
