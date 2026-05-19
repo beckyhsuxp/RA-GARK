@@ -18,10 +18,12 @@
 % 如果論文標題太長的話, 可以修改下面的標題字型大小
 % 預設是LARGE, 可以換成其他比較小的語法
 % 大小依序為: LARGE > Large > large > normalsize
-    \begin{minipage}[t][3cm][t]{\textwidth}
-        \centering \LARGE \chineseTitle \\
-        \centering \LARGE \englishTitle \\
+    \begin{minipage}[t][4.2cm][t]{\textwidth}
+        \centering
+        {\LARGE \parbox{0.9\textwidth}{\centering \chineseTitle}} \\[0.6em]
+        {\large \parbox{0.9\textwidth}{\centering \englishTitle}}
     \end{minipage}
+    \vspace{0.4cm}
   
     \fontsize{14}{14}\selectfont{
     \begin{tabular}{r l c r l}
