@@ -1,7 +1,8 @@
 \chapter{方法}
+\label{ch:methodology-zh}
 \label{ch:architecture-zh}
 
-本章從架構層次呈現 RA-GARK 的整體設計。第~\ref{sec:approach-principle-zh}~節說明使 RA-GARK 有別於第~\ref{ch:relatedwork}~章所回顧之深度融合基線的核心設計原則。第~\ref{sec:approach-overview-zh}~節以泳道圖（swim-lane）呈現推論時的整體資料流。第~\ref{sec:approach-notation-zh}~節固定後續章節所使用的符號。第~\ref{sec:approach-problem-zh}~節形式化推薦任務與訓練目標。第~\ref{sec:approach-modules-zh}~節以模組摘要作結，並前向引用第~\ref{ch:methodology}~章——各模組之完整數學細節於該章呈現。
+本章呈現 RA-GARK 之完整方法。第~\ref{sec:approach-principle-zh}~節說明使 RA-GARK 有別於第~\ref{ch:relatedwork}~章所回顧之深度融合基線的核心設計原則。第~\ref{sec:approach-overview-zh}~節以泳道圖（swim-lane）呈現推論時的整體資料流。第~\ref{sec:approach-notation-zh}~節固定符號。第~\ref{sec:approach-problem-zh}~節形式化推薦任務與訓練目標。第~\ref{sec:local-zh}~至~\ref{sec:cl-zh}~節依模組於前向傳遞中的順序逐一詳述各模組；第~\ref{sec:method-train-zh}~節說明訓練程序與計算複雜度。
 
 \section{設計原則：KG 作為可被閘控的旁路通道}
 \label{sec:approach-principle-zh}
@@ -98,17 +99,83 @@ i_{\mathrm{final}} = \alpha_i\, i_{\mathrm{loc}} + (1 - \alpha_i)\, i_{\mathrm{g
 \end{equation}
 而 $\mathcal{L}_{\mathrm{aCL}}, \mathcal{L}_{\mathrm{uCL}}$ 分別為 $(i_{\mathrm{loc}}, i_{\mathrm{glo}})$ 與 $(u_{\mathrm{loc}}, u_{\mathrm{glo}})$ 之間的 InfoNCE 式對齊損失；全域側施加 stop-gradient 以避免對比梯度擾動 SVD 初始化之面向槽（第~\ref{sec:cl}~節）。對比權重 $\lambda_{\mathrm{CL}}$ 固定為 $0.005$，使對比的角色為輔助而非主要。
 
-\section{模組摘要}
-\label{sec:approach-modules-zh}
+\section{區域視角：LightGCN}
+\label{sec:local-zh}
 
-模型其餘細節於第~\ref{ch:methodology}~章詳述。為方便交叉引用，此處列出各模組及其形式化所在之節：
+% TODO: 區域視角內文
+% - K=2 LightGCN 傳播 + 各層平均
+% - 不涉及 KG；作為協同訊號純淨化錨點
+% - 引用 he2020lightgcn
 
-\begin{itemize}
-  \item \textbf{區域視角（第~\ref{sec:local}~節）。} 於 $\mathcal{U} \cup \mathcal{I}$ 上之兩層 LightGCN，不涉及 KG；產生 $u_{\mathrm{loc}}, i_{\mathrm{loc}}$。
-  \item \textbf{面向槽與 KG-SVD 初始化（第~\ref{sec:kgsvd}~節）。} 每件物品之參數張量 $\mathbf{a}_i \in \mathbb{R}^{A \times d}$，由 IDF 加權商品—面向共現矩陣之截斷 SVD 初始化。
-  \item \textbf{Softmax 合理化遮罩（第~\ref{sec:softmax}~節）。} 於物品 $i$ 之 $A$ 個槽上施加使用者條件 softmax 注意力，以加權求和得 $i_{\mathrm{glo}}$。
-  \item \textbf{區域偏置融合閘（第~\ref{sec:gate}~節）。} 獨立之使用者側與物品側 MLP 閘，各輸出一純量 $\alpha \in (0, 1)$；最後一層線性層之偏置初始化為 $+5$。
-  \item \textbf{跨視角對比正則化（第~\ref{sec:cl}~節）。} InfoNCE 式對齊配合全域側 stop-gradient；小固定權重 $\lambda_{\mathrm{CL}} = 0.005$。
-\end{itemize}
+\section{全域視角——KG-SVD 初始化}
+\label{sec:kgsvd-zh}
 
-在設計原則、架構勾勒、符號與問題陳述就位後，第~\ref{ch:methodology}~章將呈現各模組之完整內容。
+% TODO: KG-SVD 初始化內文
+% - 物品—面向共現矩陣 M
+% - IDF 加權動機
+% - 截斷 SVD，k = A * d
+% - reshape 至 [N_i, A, d]
+% - xavier 等量縮放
+% - 消融：移除 SVD init → −5.3% NDCG@20
+
+\begin{figure}[ht]
+  \centering
+  % \includegraphics[width=0.9\textwidth]{img/kgsvd_init.png}  % TODO: 插入圖 (b)
+  \fbox{\parbox[c][4cm][c]{0.9\textwidth}{\centering\itshape 佔位：KG-SVD 初始化流程\\(物品—面向矩陣 $\to$ IDF 加權 $\to$ 截斷 SVD $\to$ reshape 至 $[N_i, A, d]$)。}}
+  \caption{KG-SVD 初始化流程。IDF 加權的物品—面向共現矩陣 $\mathbf{M}$ 經截斷 SVD 分解為 $A \cdot d$ 個潛在成分，再 reshape 為每件物品 $A$ 個維度為 $d$ 的潛在面向槽。}
+  \label{fig:kgsvd-zh}
+\end{figure}
+
+\section{全域視角——Softmax 合理化遮罩}
+\label{sec:softmax-zh}
+
+% TODO: softmax 合理化遮罩內文
+% - MLP([u_glo; a_{i,k}]) 每槽位的 logit
+% - 對 A 個槽位的 softmax，溫度 τ=0.5
+% - 加權求和形成 i_glo
+% - 合理化 = 此物品的哪個潛在槽位代表給定的使用者—物品配對
+% - softmax vs sigmoid 的設計理由（競爭 vs 獨立）
+% - 消融：sigmoid → −7.0% NDCG@20
+
+\begin{figure}[ht]
+  \centering
+  % \includegraphics[width=0.9\textwidth]{img/softmax_attention.png}  % TODO: 插入圖 (c)
+  \fbox{\parbox[c][4cm][c]{0.9\textwidth}{\centering\itshape 佔位：Softmax aspect-saliency 注意力前向流程\\($u_{\mathrm{glo}}$, $\{a_{i,k}\}_{k=1}^A$ $\to$ MLP logits $\to$ softmax 權重 $\to$ 加權求和 $\to$ $i_{\mathrm{glo}}$)。}}
+  \caption{Softmax 合理化遮罩。使用者側全域嵌入 $u_{\mathrm{glo}}$ 與物品的 $A$ 個潛在面向槽分別串接後，由一個共享 MLP 產生每槽的 logit，並以溫度 $\tau$ 的 softmax 正規化。其結果為 $A$ 個槽位互相競爭的權重，並以加權求和得 $i_{\mathrm{glo}}$。}
+  \label{fig:softmax-zh}
+\end{figure}
+
+\section{區域偏置融合閘}
+\label{sec:gate-zh}
+
+% TODO: 融合閘內文
+% - 獨立之 user_fusion_gate 與 item_fusion_gate
+% - MLP([x_loc; x_glo]) → tanh → linear → sigmoid → α
+% - 最後線性層偏置初始化 +5; α₀ ≈ σ(5) ≈ 0.993
+% - 優雅退化：模型起點 ≈ 純 LightGCN
+% - 消融：bias=0 → −5.3% NDCG@20
+
+\begin{figure}[ht]
+  \centering
+  % \includegraphics[width=0.9\textwidth]{img/fusion_gate.png}  % TODO: 插入圖 (d)
+  \fbox{\parbox[c][4cm][c]{0.9\textwidth}{\centering\itshape 佔位：融合閘訊號流\\($x_{\mathrm{loc}}$, $x_{\mathrm{glo}}$ $\to$ 偏置初始化最後線性層 ($b=+5$) 之 MLP $\to$ sigmoid $\to$ $\alpha$ $\to$ $x_{\mathrm{final}} = \alpha\, x_{\mathrm{loc}} + (1-\alpha)\, x_{\mathrm{glo}}$)。使用者與物品各一個獨立閘。}}
+  \caption{區域偏置融合閘。獨立的使用者側與物品側閘各接收區域與全域嵌入的串接，並產生一純量 $\alpha \in (0, 1)$。最後線性層之偏置初始化為 $+5$，使 $\alpha^{(0)} \approx 0.993$，模型訓練起點實質等同於純 LightGCN。}
+  \label{fig:gate-zh}
+\end{figure}
+
+\section{跨視角對比正則化}
+\label{sec:cl-zh}
+
+% TODO: 對比學習內文
+% - L_aCL between (i_loc, i_glo); L_uCL between (u_loc, u_glo)
+% - InfoNCE 形式 + cl_projector 投影頭
+% - 全域側 stop-gradient
+% - 小固定權重 λ_CL = 0.005（輔助角色）
+
+\section{訓練與計算複雜度}
+\label{sec:method-train-zh}
+
+% TODO: 訓練與複雜度內文
+% - Adam, lr, batch size, early stopping
+% - 各模組複雜度
+% - 全項目排序之推論成本

@@ -1,7 +1,8 @@
-\chapter{Proposed Approach}
+\chapter{Methodology}
+\label{ch:methodology}
 \label{ch:architecture}
 
-This chapter presents the overall design of RA-GARK at the architectural level. Section~\ref{sec:approach-principle} states the central design principle that distinguishes RA-GARK from the deep-fusion baselines surveyed in Chapter~\ref{ch:relatedwork}. Section~\ref{sec:approach-overview} gives a swim-lane overview of the architecture and the data flow at inference time. Section~\ref{sec:approach-notation} fixes notation used throughout the remainder of the thesis. Section~\ref{sec:approach-problem} formalizes the recommendation task and the training objective. Section~\ref{sec:approach-modules} concludes with a brief summary of each module and forward references to Chapter~\ref{ch:methodology}, where the modules are presented in full mathematical detail.
+This chapter presents RA-GARK in full. Section~\ref{sec:approach-principle} states the central design principle that distinguishes RA-GARK from the deep-fusion baselines surveyed in Chapter~\ref{ch:relatedwork}. Section~\ref{sec:approach-overview} gives a swim-lane overview of the architecture and the data flow at inference time. Section~\ref{sec:approach-notation} fixes notation. Section~\ref{sec:approach-problem} formalizes the recommendation task and the training objective. Sections~\ref{sec:local}--\ref{sec:cl} then detail each module in the order it participates in the forward pass, and Section~\ref{sec:method-train} describes training and computational complexity.
 
 \section{Design Principle: KG as a Gateable Side Channel}
 \label{sec:approach-principle}
@@ -98,17 +99,83 @@ where for each observed pair $(u, i^+) \in \mathcal{R}$ and a sampled negative i
 \end{equation}
 and $\mathcal{L}_{\mathrm{aCL}}, \mathcal{L}_{\mathrm{uCL}}$ are InfoNCE-style alignment losses between $(i_{\mathrm{loc}}, i_{\mathrm{glo}})$ and $(u_{\mathrm{loc}}, u_{\mathrm{glo}})$ respectively, with a stop-gradient applied on the global side to prevent the contrastive gradient from disturbing the SVD-initialized aspect slots (Section~\ref{sec:cl}). The contrastive weight $\lambda_{\mathrm{CL}}$ is fixed at $0.005$, keeping the contrastive role auxiliary rather than primary.
 
-\section{Module Summary}
-\label{sec:approach-modules}
+\section{Local View: LightGCN}
+\label{sec:local}
 
-The remainder of the model is detailed in Chapter~\ref{ch:methodology}. For ease of cross-reference we list the modules here and where they are formalized.
+% TODO: prose for Local View
+% - K=2 LightGCN propagation, layer-wise average
+% - no KG involvement; serves as collaborative-purity anchor
+% - cite he2020lightgcn
 
-\begin{itemize}
-  \item \textbf{Local view (Section~\ref{sec:local}).} Two-layer LightGCN over $\mathcal{U} \cup \mathcal{I}$, no KG involvement; produces $u_{\mathrm{loc}}, i_{\mathrm{loc}}$.
-  \item \textbf{Aspect slots and KG-SVD initialization (Section~\ref{sec:kgsvd}).} Per-item parameter tensor $\mathbf{a}_i \in \mathbb{R}^{A \times d}$, initialized from a truncated SVD of the IDF-weighted item--aspect co-occurrence matrix.
-  \item \textbf{Softmax rationale masking (Section~\ref{sec:softmax}).} User-conditioned softmax attention over the $A$ slots of item $i$, producing $i_{\mathrm{glo}}$ as a weighted sum.
-  \item \textbf{Local-biased fusion gate (Section~\ref{sec:gate}).} Independent user-side and item-side MLP gates, each producing a scalar $\alpha \in (0, 1)$; the bias of the final linear layer is initialized to $+5$.
-  \item \textbf{Cross-view contrastive regularization (Section~\ref{sec:cl}).} InfoNCE-style alignment with stop-gradient on the global side; small fixed weight $\lambda_{\mathrm{CL}} = 0.005$.
-\end{itemize}
+\section{Global View — KG-SVD Initialization}
+\label{sec:kgsvd}
 
-With the design principle, architectural sketch, notation, and problem statement in place, Chapter~\ref{ch:methodology} presents each module in full.
+% TODO: prose for KG-SVD initialization
+% - item--aspect co-occurrence matrix M
+% - IDF weighting motivation
+% - truncated SVD with k = A * d components
+% - reshape to [N_i, A, d]
+% - xavier-magnitude rescaling
+% - ablation: −5.3% NDCG@20 without SVD init
+
+\begin{figure}[ht]
+  \centering
+  % \includegraphics[width=0.9\textwidth]{img/kgsvd_init.png}  % TODO: insert figure (b)
+  \fbox{\parbox[c][4cm][c]{0.9\textwidth}{\centering\itshape Placeholder: KG-SVD initialization flow\\(item--aspect matrix $\to$ IDF weighting $\to$ truncated SVD $\to$ reshape to $[N_i, A, d]$).}}
+  \caption{KG-SVD initialization pipeline. The IDF-weighted item--aspect co-occurrence matrix $\mathbf{M}$ is decomposed by truncated SVD into $A \cdot d$ latent components, which are reshaped into $A$ latent aspect slots of dimension $d$ per item.}
+  \label{fig:kgsvd}
+\end{figure}
+
+\section{Global View — Softmax Rationale Masking}
+\label{sec:softmax}
+
+% TODO: prose for softmax rationale masking
+% - MLP([u_glo; a_{i,k}]) logit per slot
+% - softmax over A slots with temperature τ=0.5
+% - weighted sum to form i_glo
+% - rationale = which latent slot represents item i for user u
+% - design rationale for softmax over sigmoid (competition vs independence)
+% - ablation: −7.0% NDCG@20 with sigmoid
+
+\begin{figure}[ht]
+  \centering
+  % \includegraphics[width=0.9\textwidth]{img/softmax_attention.png}  % TODO: insert figure (c)
+  \fbox{\parbox[c][4cm][c]{0.9\textwidth}{\centering\itshape Placeholder: Softmax aspect-saliency attention forward pass\\($u_{\mathrm{glo}}$, $\{a_{i,k}\}_{k=1}^A$ $\to$ MLP logits $\to$ softmax weights $\to$ weighted sum $\to$ $i_{\mathrm{glo}}$).}}
+  \caption{Softmax rationale masking. The user-side global embedding $u_{\mathrm{glo}}$ is concatenated with each of the item's $A$ latent aspect slots; a shared MLP produces a logit per slot, which is normalized by softmax with temperature $\tau$. The resulting weights compete over the $A$ slots and produce $i_{\mathrm{glo}}$ as a weighted sum.}
+  \label{fig:softmax}
+\end{figure}
+
+\section{Local-Biased Fusion Gate}
+\label{sec:gate}
+
+% TODO: prose for fusion gate
+% - independent user_fusion_gate and item_fusion_gate
+% - MLP([x_loc; x_glo]) → tanh → linear → sigmoid → α
+% - bias init = +5 on final linear; α₀ ≈ σ(5) ≈ 0.993
+% - graceful degradation: model starts ≈ pure LightGCN
+% - ablation: −5.3% NDCG@20 with bias=0
+
+\begin{figure}[ht]
+  \centering
+  % \includegraphics[width=0.9\textwidth]{img/fusion_gate.png}  % TODO: insert figure (d)
+  \fbox{\parbox[c][4cm][c]{0.9\textwidth}{\centering\itshape Placeholder: Fusion gate signal flow\\($x_{\mathrm{loc}}$, $x_{\mathrm{glo}}$ $\to$ MLP with bias-initialized final linear ($b=+5$) $\to$ sigmoid $\to$ $\alpha$ $\to$ $x_{\mathrm{final}} = \alpha\, x_{\mathrm{loc}} + (1-\alpha)\, x_{\mathrm{glo}}$). Two independent gates: one for $u$, one for $i$.}}
+  \caption{Local-biased fusion gate. Independent user- and item-side gates each take the concatenation of their local and global embeddings and produce a scalar $\alpha \in (0, 1)$. The bias of the final linear layer is initialized to $+5$, so that $\alpha^{(0)} \approx 0.993$ and the model begins training as effectively pure LightGCN.}
+  \label{fig:gate}
+\end{figure}
+
+\section{Cross-View Contrastive Regularization}
+\label{sec:cl}
+
+% TODO: prose for contrastive learning
+% - L_aCL between (i_loc, i_glo); L_uCL between (u_loc, u_glo)
+% - InfoNCE form with cl_projector head
+% - stop-gradient on global side
+% - small fixed weight λ_CL = 0.005 (auxiliary role)
+
+\section{Training and Complexity}
+\label{sec:method-train}
+
+% TODO: prose for training & complexity
+% - Adam, lr, batch size, early stopping
+% - complexity breakdown per module
+% - inference cost for full-item ranking
