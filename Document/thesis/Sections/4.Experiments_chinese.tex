@@ -1,0 +1,122 @@
+\chapter{實驗}
+\label{ch:experiments-zh}
+\label{ch:evaluation-zh}
+
+\section{資料集與 KG 建構}
+\label{sec:eval-dataset-zh}
+
+% TODO: 內文
+% - Amazon Books 子集統計（使用者數、物品數、互動數）
+% - KG 建構 pipeline：ResNet + Qwen-VL（影像特徵）、BART + Mistral（評論面向抽取）、面向過濾規則
+% - 過濾後密度：每件物品平均 2.4 條面向邊
+% - 引用建構 pipeline 之前作
+
+\begin{figure}[ht]
+  \centering
+  % \includegraphics[width=\textwidth]{img/kg_pipeline.png}  % TODO: 插入圖 (e)
+  \fbox{\parbox[c][4.5cm][c]{0.95\textwidth}{\centering\itshape 佔位：KG 建構 pipeline\\(書封 $\to$ ResNet + Qwen-VL 視覺面向；評論 $\to$ BART 摘要 + Mistral 面向抽取；合併 $\to$ 面向過濾 $\to$ 物品—面向 KG，平均 2.4 邊/物品)。}}
+  \caption{評論衍生 KG 建構 pipeline。}
+  \label{fig:kg-pipeline-zh}
+\end{figure}
+
+\section{實驗設定}
+\label{sec:eval-setup-zh}
+
+% TODO: 內文
+% - baseline 重現設定：使用何種程式碼、是否重新調參
+% - 評估協議：全項目排序、訓練/驗證/測試切分
+% - 指標定義：NDCG@K、Recall@K、Hit@K
+% - 硬體、軟體版本、隨機種子
+
+\section{主要結果}
+\label{sec:eval-main-zh}
+
+% TODO: 內文
+% - 主表：NDCG@20 + Recall@20 + Hit@20 across all baselines + RA-GARK
+% - +13.1\% vs KGRec, +5.0\% vs LightGCN
+% - 解讀：所提之設計將 KG 貢獻自 net-negative 翻轉為 net-positive
+
+\section{消融研究}
+\label{sec:eval-ablation-zh}
+
+% TODO: 內文
+% - 消融結構：一次移除一個元件
+% - 消融表
+
+\subsection{KG-SVD 初始化}
+\label{sec:ablation-svd-zh}
+
+% TODO: 內文
+% - 替換 KG-SVD init 為 Xavier-normal 隨機初始化
+% - 代價：−5.3\% NDCG@20
+
+\subsection{Softmax 合理化遮罩}
+\label{sec:ablation-softmax-zh}
+
+% TODO: 內文
+% - 替換 softmax 為 sigmoid 注意力頭
+% - 代價：−7.0\% NDCG@20（單一元件影響最大）
+
+\subsection{區域偏置融合閘}
+\label{sec:ablation-gate-zh}
+
+% TODO: 內文
+% - 替換 bias=+5 init 為 bias=0
+% - 代價：−5.3\% NDCG@20
+% - 額外：scalar gate vs per-(u,i) MLP gate
+
+\section{敏感性分析}
+\label{sec:eval-sensitivity-zh}
+
+% TODO: 內文
+% - 每個掃描的超參數一段
+
+\subsection{Softmax 溫度 $\tau$}
+\label{sec:sens-tau-zh}
+
+% TODO: 內文
+% - 掃描 τ ∈ {0.1, 0.25, 0.5, 1.0, 2.0}
+% - 最佳於 τ=0.5
+
+\subsection{面向槽數 $A$}
+\label{sec:sens-A-zh}
+
+% TODO: 內文
+% - 掃描 A ∈ {2, 4, 8, 16}
+% - 於 A=4 附近趨於平台
+
+\subsection{融合閘偏置}
+\label{sec:sens-bias-zh}
+
+% TODO: 內文
+% - 掃描 bias ∈ {0, +2, +5, +10}
+% - 最佳於 +5；於 (0, +10] 之外崩壞
+
+\subsection{對比權重 $\lambda_{\mathrm{CL}}$}
+\label{sec:sens-lambda-zh}
+
+% TODO: 內文
+% - 掃描 λ ∈ {0, 0.001, 0.005, 0.01, 0.05}
+% - 最佳於 0.005 附近
+
+\section{種子穩定性}
+\label{sec:eval-seed-zh}
+
+% TODO: 內文
+% - 多 seed 主結果與消融之 mean ± std
+% - 老實討論變異來源
+
+\section{個案研究}
+\label{sec:eval-case-zh}
+
+% TODO: 內文
+% - 取樣 (使用者, 物品) 配對與 RA-GARK 所選面向槽
+% - 展示合理化權重之可解釋性
+
+\section{計算成本}
+\label{sec:eval-cost-zh}
+
+% TODO: 內文
+% - 每 epoch 時間 vs 基線（~1.5s ≈ KGRec）
+% - 全項目排序之推論成本
+% - 參數量
