@@ -1,31 +1,85 @@
-\chapter{Data Fusion Algorithm}
-\label{ch:method}
+\chapter{Methodology}
+\label{ch:methodology}
 
-這個是插入圖片的範例, 圖片都放在img資料夾裡面. 檔案格式有支援: JPG, PNG, PDF, EPS. 就使用自己習慣的繪圖工具, 比較常見的應該就是power point!? power point可以把繪圖區另存成JPG, PNG, 還有SVG (新版才有, 我用的office 2016沒有這選項 QQ). SVG可以再轉成PDF, 這樣圖片縮放還是會很清楚, 可以把範例的兩張圖片都放大來看, 應該可以看出差別. 我個人都是用visio來畫圖, 可是都找不到替代工具, 如果有好用的繪圖工具麻煩分享交流一下 QQ 也看過蠻多人用draw.io, 只是這個用起來不太順手. orz
-圖片出現的位置是由latex去決定, 有時候會出現在奇怪的地方, 這時候只能多爬文、嘗試各種參數, 或者把整段圖片code放在前面試試看.
+This chapter details each module of RA-GARK in the order they participate in the forward pass: the local view (Section~\ref{sec:local}), the global view's two innovations --- KG-SVD initialization (Section~\ref{sec:kgsvd}) and softmax rationale masking (Section~\ref{sec:softmax}) --- the local-biased fusion gate (Section~\ref{sec:gate}), and the cross-view contrastive regularization (Section~\ref{sec:cl}). Section~\ref{sec:method-train} describes the training procedure and computational complexity. Notation follows Table~\ref{tab:notation}.
 
-overleaf上有插入圖片的介紹: https://www.overleaf.com/learn/latex/Inserting\_Images
+\section{Local View: LightGCN}
+\label{sec:local}
 
+% TODO: prose for §4.1 Local View
+% - K=2 LightGCN propagation, layer-wise average
+% - no KG involvement; serves as collaborative-purity anchor
+% - cite he2020lightgcn
 
-\begin{figure}[htb]
+\section{Global View — KG-SVD Initialization}
+\label{sec:kgsvd}
+
+% TODO: prose for §4.2 KG-SVD initialization
+% - item--aspect co-occurrence matrix M
+% - IDF weighting motivation
+% - truncated SVD with k = A * d components
+% - reshape to [N_i, A, d]
+% - xavier-magnitude rescaling
+% - ablation: −5.3% NDCG@20 without SVD init
+
+\begin{figure}[ht]
   \centering
-  \includegraphics[width=0.9\columnwidth]{img/1.system_architecture.pdf}
-  \caption{PDF Figure Example.} 
-  \label{fig:system_architecture}
+  % \includegraphics[width=0.9\textwidth]{img/kgsvd_init.png}  % TODO: insert figure (b)
+  \fbox{\parbox[c][4cm][c]{0.9\textwidth}{\centering\itshape Placeholder: KG-SVD initialization flow\\(item--aspect matrix $\to$ IDF weighting $\to$ truncated SVD $\to$ reshape to $[N_i, A, d]$).}}
+  \caption{KG-SVD initialization pipeline. The IDF-weighted item--aspect co-occurrence matrix $\mathbf{M}$ is decomposed by truncated SVD into $A \cdot d$ latent components, which are reshaped into $A$ latent aspect slots of dimension $d$ per item.}
+  \label{fig:kgsvd}
 \end{figure}
 
-\begin{figure}[htb]
-	\centering
-	\includegraphics[width=0.9\textwidth]{img/data_preprocessing.png}
-	\caption{PNG Example.}
-	\label{fig:model}
+\section{Global View — Softmax Rationale Masking}
+\label{sec:softmax}
+
+% TODO: prose for §4.3 softmax rationale masking
+% - MLP([u_glo; a_{i,k}]) logit per slot
+% - softmax over A slots with temperature τ=0.5
+% - weighted sum to form i_glo
+% - rationale = which latent slot represents item i for user u
+% - design rationale for softmax over sigmoid (competition vs independence)
+% - ablation: −7.0% NDCG@20 with sigmoid
+
+\begin{figure}[ht]
+  \centering
+  % \includegraphics[width=0.9\textwidth]{img/softmax_attention.png}  % TODO: insert figure (c)
+  \fbox{\parbox[c][4cm][c]{0.9\textwidth}{\centering\itshape Placeholder: Softmax aspect-saliency attention forward pass\\($u_{\mathrm{glo}}$, $\{a_{i,k}\}_{k=1}^A$ $\to$ MLP logits $\to$ softmax weights $\to$ weighted sum $\to$ $i_{\mathrm{glo}}$).}}
+  \caption{Softmax rationale masking. The user-side global embedding $u_{\mathrm{glo}}$ is concatenated with each of the item's $A$ latent aspect slots; a shared MLP produces a logit per slot, which is normalized by softmax with temperature $\tau$. The resulting weights compete over the $A$ slots and produce $i_{\mathrm{glo}}$ as a weighted sum.}
+  \label{fig:softmax}
 \end{figure}
 
+\section{Local-Biased Fusion Gate}
+\label{sec:gate}
 
-\section{Data Preprocessing}
-\label{sec:SMA}
-An example for section. Fig~\ref{fig:system_architecture} is PDF. Fig~\ref{fig:model} is PNG.
+% TODO: prose for §4.4 fusion gate
+% - independent user_fusion_gate and item_fusion_gate
+% - MLP([x_loc; x_glo]) → tanh → linear → sigmoid → α
+% - bias init = +5 on final linear; α₀ ≈ σ(5) ≈ 0.993
+% - graceful degradation: model starts ≈ pure LightGCN
+% - ablation: −5.3% NDCG@20 with bias=0
 
+\begin{figure}[ht]
+  \centering
+  % \includegraphics[width=0.9\textwidth]{img/fusion_gate.png}  % TODO: insert figure (d)
+  \fbox{\parbox[c][4cm][c]{0.9\textwidth}{\centering\itshape Placeholder: Fusion gate signal flow\\($x_{\mathrm{loc}}$, $x_{\mathrm{glo}}$ $\to$ MLP with bias-initialized final linear ($b=+5$) $\to$ sigmoid $\to$ $\alpha$ $\to$ $x_{\mathrm{final}} = \alpha\, x_{\mathrm{loc}} + (1-\alpha)\, x_{\mathrm{glo}}$). Two independent gates: one for $u$, one for $i$.}}
+  \caption{Local-biased fusion gate. Independent user- and item-side gates each take the concatenation of their local and global embeddings and produce a scalar $\alpha \in (0, 1)$. The bias of the final linear layer is initialized to $+5$, so that $\alpha^{(0)} \approx 0.993$ and the model begins training as effectively pure LightGCN.}
+  \label{fig:gate}
+\end{figure}
 
-\subsection{2D LiDAR Data}
-An example for subsection. 寫中文就是 圖~\ref{fig:system_architecture} 跟圖~\ref{fig:model}.
+\section{Cross-View Contrastive Regularization}
+\label{sec:cl}
+
+% TODO: prose for §4.5 contrastive learning
+% - L_aCL between (i_loc, i_glo); L_uCL between (u_loc, u_glo)
+% - InfoNCE form with cl_projector head
+% - stop-gradient on global side
+% - small fixed weight λ_CL = 0.005 (auxiliary role)
+
+\section{Training and Complexity}
+\label{sec:method-train}
+
+% TODO: prose for §4.6 training & complexity
+% - Adam, lr, batch size, early stopping
+% - complexity breakdown per module (see slide 19 table)
+% - inference cost for full-item ranking
