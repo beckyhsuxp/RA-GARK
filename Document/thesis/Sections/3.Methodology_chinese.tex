@@ -28,12 +28,12 @@ RA-GARK 圍繞一個直接面對此失效模式的核心設計原則：
 \section{架構概覽}
 \label{sec:approach-overview-zh}
 
-圖~\ref{fig:architecture-zh} 勾勒了推論時的資料流。模型被布置為對應區域與全域視角的兩條水平泳道，於右側由融合階段匯合。
+圖~\ref{fig:architecture-zh} 勾勒了推論時的資料流。模型被布置為對應區域與全域視角的兩條水平泳道，於右側由融合階段匯合。區域視角（上方泳道）對使用者—物品互動圖套用 LightGCN，得到 $(u_{\mathrm{loc}}, i_{\mathrm{loc}})$。全域視角（下方泳道）直接以查表得到使用者的全域嵌入 $u_{\mathrm{glo}}$，並對物品的 $A=4$ 個潛在面向槽施加 softmax 合理化遮罩以得 $i_{\mathrm{glo}}$；面向槽本身為 SVD 初始化（圖中以虛線標註）。兩條視角由獨立的使用者側與物品側融合閘混合，每個閘的偏置初始化為 $+5$；最終分數為內積 $\langle u_{\mathrm{final}}, i_{\mathrm{final}} \rangle$。為求清晰，跨視角對比學習路徑於圖中省略，詳見第~\ref{sec:cl-zh}~節。
 
 \begin{figure}[ht]
 \centering
 \includegraphics[width=\textwidth]{img/architecture.png}
-\caption{RA-GARK 架構。區域視角（上方泳道）對使用者—物品互動圖套用 LightGCN，得到 $(u_{\mathrm{loc}}, i_{\mathrm{loc}})$。全域視角（下方泳道）直接以查表得到使用者的全域嵌入 $u_{\mathrm{glo}}$，並對物品的 $A=4$ 個潛在面向槽（以虛線標註的 KG-SVD 初始化）施加 softmax 合理化遮罩以得 $i_{\mathrm{glo}}$。兩條視角由獨立的使用者側與物品側融合閘混合，每個閘的偏置初始化為 $+5$。最終分數為內積 $\langle u_{\mathrm{final}}, i_{\mathrm{final}} \rangle$。為求清晰，跨視角對比學習路徑於圖中省略，詳見第~\ref{sec:cl}~節。}
+\caption{RA-GARK 架構。}
 \label{fig:architecture-zh}
 \end{figure}
 
@@ -122,7 +122,7 @@ i_{\mathrm{final}} = \alpha_i\, i_{\mathrm{loc}} + (1 - \alpha_i)\, i_{\mathrm{g
   \centering
   % \includegraphics[width=0.9\textwidth]{img/kgsvd_init.png}  % TODO: 插入圖 (b)
   \fbox{\parbox[c][4cm][c]{0.9\textwidth}{\centering\itshape 佔位：KG-SVD 初始化流程\\(物品—面向矩陣 $\to$ IDF 加權 $\to$ 截斷 SVD $\to$ reshape 至 $[N_i, A, d]$)。}}
-  \caption{KG-SVD 初始化流程。IDF 加權的物品—面向共現矩陣 $\mathbf{M}$ 經截斷 SVD 分解為 $A \cdot d$ 個潛在成分，再 reshape 為每件物品 $A$ 個維度為 $d$ 的潛在面向槽。}
+  \caption{KG-SVD 初始化流程。}
   \label{fig:kgsvd-zh}
 \end{figure}
 
@@ -141,7 +141,7 @@ i_{\mathrm{final}} = \alpha_i\, i_{\mathrm{loc}} + (1 - \alpha_i)\, i_{\mathrm{g
   \centering
   % \includegraphics[width=0.9\textwidth]{img/softmax_attention.png}  % TODO: 插入圖 (c)
   \fbox{\parbox[c][4cm][c]{0.9\textwidth}{\centering\itshape 佔位：Softmax aspect-saliency 注意力前向流程\\($u_{\mathrm{glo}}$, $\{a_{i,k}\}_{k=1}^A$ $\to$ MLP logits $\to$ softmax 權重 $\to$ 加權求和 $\to$ $i_{\mathrm{glo}}$)。}}
-  \caption{Softmax 合理化遮罩。使用者側全域嵌入 $u_{\mathrm{glo}}$ 與物品的 $A$ 個潛在面向槽分別串接後，由一個共享 MLP 產生每槽的 logit，並以溫度 $\tau$ 的 softmax 正規化。其結果為 $A$ 個槽位互相競爭的權重，並以加權求和得 $i_{\mathrm{glo}}$。}
+  \caption{Softmax 合理化遮罩。}
   \label{fig:softmax-zh}
 \end{figure}
 
@@ -159,7 +159,7 @@ i_{\mathrm{final}} = \alpha_i\, i_{\mathrm{loc}} + (1 - \alpha_i)\, i_{\mathrm{g
   \centering
   % \includegraphics[width=0.9\textwidth]{img/fusion_gate.png}  % TODO: 插入圖 (d)
   \fbox{\parbox[c][4cm][c]{0.9\textwidth}{\centering\itshape 佔位：融合閘訊號流\\($x_{\mathrm{loc}}$, $x_{\mathrm{glo}}$ $\to$ 偏置初始化最後線性層 ($b=+5$) 之 MLP $\to$ sigmoid $\to$ $\alpha$ $\to$ $x_{\mathrm{final}} = \alpha\, x_{\mathrm{loc}} + (1-\alpha)\, x_{\mathrm{glo}}$)。使用者與物品各一個獨立閘。}}
-  \caption{區域偏置融合閘。獨立的使用者側與物品側閘各接收區域與全域嵌入的串接，並產生一純量 $\alpha \in (0, 1)$。最後線性層之偏置初始化為 $+5$，使 $\alpha^{(0)} \approx 0.993$，模型訓練起點實質等同於純 LightGCN。}
+  \caption{區域偏置融合閘。}
   \label{fig:gate-zh}
 \end{figure}
 
