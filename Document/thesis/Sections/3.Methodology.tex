@@ -28,12 +28,12 @@ Each consequence is mathematized in Chapter~\ref{ch:methodology}. The rest of th
 \section{Architectural Overview}
 \label{sec:approach-overview}
 
-Figure~\ref{fig:architecture} sketches the data flow at inference time. The model is laid out as two horizontal lanes corresponding to the local and global views, joined at the right by the fusion stage.
+Figure~\ref{fig:architecture} sketches the data flow at inference time. The model is laid out as two horizontal lanes corresponding to the local and global views, joined at the right by the fusion stage. The local view (top lane) applies LightGCN to the user--item interaction graph to obtain $(u_{\mathrm{loc}}, i_{\mathrm{loc}})$. The global view (bottom lane) reads the user's global embedding $u_{\mathrm{glo}}$ by direct lookup, and obtains $i_{\mathrm{glo}}$ by applying softmax rationale masking over the $A=4$ latent aspect slots of the item; the slots themselves are SVD-initialized (indicated by the dashed annotation in the figure). The two views are mixed by independent user-side and item-side fusion gates, each bias-initialized to $+5$, and the final score is the inner product $\langle u_{\mathrm{final}}, i_{\mathrm{final}} \rangle$. The cross-view contrastive paths are omitted from the figure for clarity and are detailed in Section~\ref{sec:cl}.
 
 \begin{figure}[ht]
 \centering
 \includegraphics[width=\textwidth]{img/architecture.png}
-\caption{RA-GARK architecture. The local view (top lane) applies LightGCN to the user--item interaction graph to obtain $(u_{\mathrm{loc}}, i_{\mathrm{loc}})$. The global view (bottom lane) reads the user's global embedding $u_{\mathrm{glo}}$ by direct lookup, and obtains $i_{\mathrm{glo}}$ by applying softmax rationale masking over the $A=4$ latent aspect slots of the item (the slots are SVD-initialized, indicated by the dashed annotation). The two views are mixed by independent user-side and item-side fusion gates, each bias-initialized to $+5$. The final score is the inner product $\langle u_{\mathrm{final}}, i_{\mathrm{final}} \rangle$. Cross-view contrastive paths are omitted for clarity; see Section~\ref{sec:cl}.}
+\caption{RA-GARK architecture.}
 \label{fig:architecture}
 \end{figure}
 
@@ -122,7 +122,7 @@ and $\mathcal{L}_{\mathrm{aCL}}, \mathcal{L}_{\mathrm{uCL}}$ are InfoNCE-style a
   \centering
   % \includegraphics[width=0.9\textwidth]{img/kgsvd_init.png}  % TODO: insert figure (b)
   \fbox{\parbox[c][4cm][c]{0.9\textwidth}{\centering\itshape Placeholder: KG-SVD initialization flow\\(item--aspect matrix $\to$ IDF weighting $\to$ truncated SVD $\to$ reshape to $[N_i, A, d]$).}}
-  \caption{KG-SVD initialization pipeline. The IDF-weighted item--aspect co-occurrence matrix $\mathbf{M}$ is decomposed by truncated SVD into $A \cdot d$ latent components, which are reshaped into $A$ latent aspect slots of dimension $d$ per item.}
+  \caption{KG-SVD initialization pipeline.}
   \label{fig:kgsvd}
 \end{figure}
 
@@ -141,7 +141,7 @@ and $\mathcal{L}_{\mathrm{aCL}}, \mathcal{L}_{\mathrm{uCL}}$ are InfoNCE-style a
   \centering
   % \includegraphics[width=0.9\textwidth]{img/softmax_attention.png}  % TODO: insert figure (c)
   \fbox{\parbox[c][4cm][c]{0.9\textwidth}{\centering\itshape Placeholder: Softmax aspect-saliency attention forward pass\\($u_{\mathrm{glo}}$, $\{a_{i,k}\}_{k=1}^A$ $\to$ MLP logits $\to$ softmax weights $\to$ weighted sum $\to$ $i_{\mathrm{glo}}$).}}
-  \caption{Softmax rationale masking. The user-side global embedding $u_{\mathrm{glo}}$ is concatenated with each of the item's $A$ latent aspect slots; a shared MLP produces a logit per slot, which is normalized by softmax with temperature $\tau$. The resulting weights compete over the $A$ slots and produce $i_{\mathrm{glo}}$ as a weighted sum.}
+  \caption{Softmax rationale masking.}
   \label{fig:softmax}
 \end{figure}
 
@@ -159,7 +159,7 @@ and $\mathcal{L}_{\mathrm{aCL}}, \mathcal{L}_{\mathrm{uCL}}$ are InfoNCE-style a
   \centering
   % \includegraphics[width=0.9\textwidth]{img/fusion_gate.png}  % TODO: insert figure (d)
   \fbox{\parbox[c][4cm][c]{0.9\textwidth}{\centering\itshape Placeholder: Fusion gate signal flow\\($x_{\mathrm{loc}}$, $x_{\mathrm{glo}}$ $\to$ MLP with bias-initialized final linear ($b=+5$) $\to$ sigmoid $\to$ $\alpha$ $\to$ $x_{\mathrm{final}} = \alpha\, x_{\mathrm{loc}} + (1-\alpha)\, x_{\mathrm{glo}}$). Two independent gates: one for $u$, one for $i$.}}
-  \caption{Local-biased fusion gate. Independent user- and item-side gates each take the concatenation of their local and global embeddings and produce a scalar $\alpha \in (0, 1)$. The bias of the final linear layer is initialized to $+5$, so that $\alpha^{(0)} \approx 0.993$ and the model begins training as effectively pure LightGCN.}
+  \caption{Local-biased fusion gate.}
   \label{fig:gate}
 \end{figure}
 
