@@ -149,7 +149,92 @@ The result is a pair of embeddings whose only information source is the user--it
 \section{Global View: KG-SVD Initialization}
 \label{sec:kgsvd}
 
-The global view introduces a separate user-side embedding $u_{\mathrm{glo}}$ (a direct lookup, treated below) and an item-side parameter tensor that stores each item's KG semantics. The item-side tensor is the only place in RA-GARK where KG content enters the model. This section describes how the tensor is parameterized and how its values are initialized.
+The global view introduces a separate user-side embedding $u_{\mathrm{glo}}$ (a direct lookup, treated below) and an item-side parameter tensor that stores each item's KG semantics. The item-side tensor is the only place in RA-GARK where KG content enters the model. This section describes how the tensor is parameterized and how its values are initialized. Figure~\ref{fig:kgsvd-init} gives a visual overview of the four-stage initialization pipeline; the remainder of this section formalizes each stage.
+
+\begin{figure}[t]
+\centering
+\begin{tikzpicture}[
+    >={Stealth[length=2.2mm]},
+    font=\small,
+    node distance=10mm,
+    lbl/.style={font=\footnotesize, align=center},
+    op/.style ={font=\footnotesize\itshape, midway, above, yshift=0.5mm},
+    accent/.style={draw=blue!70!black, very thick},
+]
+
+% Panel 1: sparse 0/1 matrix M
+\begin{scope}[local bounding box=P1]
+  \foreach \r in {1,...,6}{
+    \foreach \c in {1,...,8}{
+      \pgfmathtruncatemacro{\hit}{mod(\r*\c+\r+\c,5)==0 ? 1 : 0}
+      \ifnum\hit=1
+        \fill[black] (\c*3mm, -\r*3mm) rectangle ++(3mm,-3mm);
+      \fi
+      \draw[gray!40, very thin] (\c*3mm, -\r*3mm) rectangle ++(3mm,-3mm);
+    }
+  }
+\end{scope}
+\node[lbl, below=2mm of P1] (cap1)
+  {$\mathbf{M} \in \{0,1\}^{|\mathcal{I}|\times|\mathcal{A}|}$};
+
+% Panel 2: IDF-weighted (gray scale)
+\begin{scope}[local bounding box=P2, shift={(4.2,0)}]
+  \foreach \r in {1,...,6}{
+    \foreach \c in {1,...,8}{
+      \pgfmathtruncatemacro{\hit}{mod(\r*\c+\r+\c,5)==0 ? 1 : 0}
+      \ifnum\hit=1
+        \pgfmathtruncatemacro{\g}{20+mod(\r*7+\c*3,70)}
+        \fill[black!\g] (\c*3mm, -\r*3mm) rectangle ++(3mm,-3mm);
+      \fi
+      \draw[gray!40, very thin] (\c*3mm, -\r*3mm) rectangle ++(3mm,-3mm);
+    }
+  }
+\end{scope}
+\node[lbl, below=2mm of P2] (cap2) {IDF-weighted $\tilde{\mathbf{M}}$};
+
+% Panel 3: truncated SVD
+\begin{scope}[local bounding box=P3, shift={(8.4,-0.9)}]
+  \draw[accent, fill=blue!8] (0,0) rectangle (0.5,-1.8);
+  \node[lbl] at (0.25,0.25) {$\mathbf{U}_k$};
+  \draw[accent, fill=blue!15] (0.8,-0.4) rectangle (1.3,-0.9);
+  \draw[accent] (0.8,-0.4) -- (1.3,-0.9);
+  \node[lbl] at (1.05,0.25) {$\boldsymbol{\Sigma}_k$};
+  \draw[accent, fill=blue!8] (1.6,-0.4) rectangle (3.0,-0.9);
+  \node[lbl] at (2.3,0.25) {$\mathbf{V}_k^{\!\top}$};
+  \draw[decorate, decoration={brace, amplitude=3pt}]
+    (0.5,-1.85) -- (0.0,-1.85) node[midway, below=2pt, font=\scriptsize] {$k$};
+\end{scope}
+\node[lbl, below=3mm of P3] (cap3) {Truncated SVD (rank $k = A d$)};
+
+% Panel 4: reshape to slots + GNN init
+\begin{scope}[local bounding box=P4, shift={(12.4,-0.9)}]
+  \foreach \s in {0,1,2,3}{
+    \draw[fill=black!8] (\s*0.55,-0.4) rectangle (\s*0.55+0.5,-0.9);
+  }
+  \node[lbl] at (1.1, -0.15) {$\mathbf{a}_i \in \mathbb{R}^{A \times d}$};
+  \foreach \i in {0,1,2,3}{
+    \node[circle, draw, inner sep=0pt, minimum size=3mm]
+      (a\i) at (0.3+\i*0.55, -1.6) {};
+    \node[circle, draw, inner sep=0pt, minimum size=3mm]
+      (b\i) at (0.3+\i*0.55, -2.3) {};
+  }
+  \foreach \i in {0,1,2,3}{
+    \foreach \j in {0,1,2,3}{
+      \draw[gray!60, very thin] (a\i) -- (b\j);
+    }
+  }
+\end{scope}
+\node[lbl, below=3mm of P4] (cap4) {Slots $\mathbf{A}_{\mathrm{KG}}^{(0)}$ \\ (GNN item init)};
+
+% Arrows + operation labels
+\draw[->, thick] (P1.east) -- node[op] {IDF}     (P2.west);
+\draw[->, thick] (P2.east) -- node[op] {SVD$_k$} (P3.west);
+\draw[->, thick] (P3.east) -- node[op] {reshape} (P4.west);
+
+\end{tikzpicture}
+\caption[KG-SVD item-embedding initialization pipeline.]{KG-SVD item-embedding initialization. The binary item--aspect co-occurrence matrix $\mathbf{M}$ (Equation~\eqref{eq:cooc}) is column-reweighted by IDF (Equation~\eqref{eq:idf-rescale}); the resulting $\tilde{\mathbf{M}}$ is factorized by truncated SVD at rank $k = A d$ (Equation~\eqref{eq:svd}); the left factor $\mathbf{U}_k \boldsymbol{\Sigma}_k^{1/2}$ is then reshaped into $A$ disjoint slots of width $d$ to form the initial aspect-slot tensor $\mathbf{A}_{\mathrm{KG}}^{(0)}$ (Equation~\eqref{eq:reshape}), which seeds the global-view item representation.}
+\label{fig:kgsvd-init}
+\end{figure}
 
 \subsection{Aspect Slots as the Item-side KG Representation}
 \label{sec:kgsvd-slots}
