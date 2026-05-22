@@ -154,7 +154,7 @@ The global view introduces a separate user-side embedding $u_{\mathrm{glo}}$ (a 
 \begin{figure}[t]
 \centering
 \includegraphics[width=\textwidth]{img/kg_svd.png}
-\caption[KG-SVD item-embedding initialization pipeline.]{Four-stage KG-SVD item-embedding initialization. \textbf{(1)} Triples in the KG $\mathcal{G}$ are collected into a sparse binary item--aspect matrix $\mathbf{M}\in\{0,1\}^{|\mathcal{I}|\times|\mathcal{A}|}$ (Eq.~\eqref{eq:cooc}). \textbf{(2)} Columns of $\mathbf{M}$ are re-weighted by inverse document frequency $w(a) = \log(|\mathcal{I}|/\mathrm{df}(a))$ to suppress popular tags (Eq.~\eqref{eq:idf-rescale}). \textbf{(3)} The re-weighted $\tilde{\mathbf{M}}$ is factorized at rank $k = A d$ (Eq.~\eqref{eq:svd}); only the left factor $\mathbf{U}_k\boldsymbol{\Sigma}_k^{1/2}\in\mathbb{R}^{|\mathcal{I}|\times k}$ is kept. \textbf{(4)} Each item's $k$-dim row is split into $A$ contiguous slots of width $d$, producing $\mathbf{A}_{\mathrm{KG}}^{(0)} \in \mathbb{R}^{|\mathcal{I}|\times A \times d}$ (Eq.~\eqref{eq:reshape}), which seeds the item side of the GNN backbone. The KG is used only as initialization and does not appear in any forward pass thereafter.}
+\caption{KG-SVD initialization pipeline.}
 \label{fig:kgsvd-init}
 \end{figure}
 
@@ -244,14 +244,6 @@ If $|\mathcal{A}| < A d$, the SVD rank is capped at $|\mathcal{A}| - 1$ and the 
 \label{sec:kgsvd-effect}
 
 The contribution of KG-SVD initialization is measured by ablation in Section~\ref{sec:ablation-svd}: replacing it with a Xavier-normal random initialization of the same tensor shape costs $5.3\%$ NDCG@20. The interpretation is that the SVD initialization preserves the angular geometry of the aspect-induced semantic subspace at the start of training; subsequent gradient descent fine-tunes this geometry, but cannot easily recover it from random under our sparse-KG conditions, because the gradient signal that would do so flows through the contrastive losses (with $\lambda_{\mathrm{CL}} = 0.005$) and is weak.
-
-\begin{figure}[ht]
-  \centering
-  % \includegraphics[width=0.9\textwidth]{img/kgsvd_init.png}  % TODO: insert figure (b)
-  \fbox{\parbox[c][4cm][c]{0.9\textwidth}{\centering\itshape Placeholder: KG-SVD initialization flow\\(item--aspect matrix $\to$ IDF weighting $\to$ truncated SVD $\to$ reshape to $[|\mathcal{I}|, A, d]$).}}
-  \caption{KG-SVD initialization pipeline.}
-  \label{fig:kgsvd}
-\end{figure}
 
 \section{Global View: Softmax Rationale Masking}
 \label{sec:softmax}
