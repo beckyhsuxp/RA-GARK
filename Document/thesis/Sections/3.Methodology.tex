@@ -153,17 +153,32 @@ The global view introduces a separate user-side embedding $u_{\mathrm{glo}}$ (a 
 
 \begin{figure}[t]
 \centering
+\resizebox{\textwidth}{!}{%
 \begin{tikzpicture}[
     >={Stealth[length=2.2mm]},
     font=\small,
-    node distance=10mm,
-    lbl/.style={font=\footnotesize, align=center},
-    op/.style ={font=\footnotesize\itshape, midway, above, yshift=0.5mm},
-    accent/.style={draw=blue!70!black, very thick},
+    panelcap/.style={font=\scriptsize, align=center, text width=32mm},
+    axislbl/.style ={font=\scriptsize\itshape, gray!50!black},
+    op/.style       ={font=\footnotesize\itshape, midway, above, yshift=0.5mm},
+    accent/.style   ={draw=blue!70!black, very thick},
+    khighlight/.style={red!80!black, font=\footnotesize\bfseries},
 ]
 
-% Panel 1: sparse 0/1 matrix M
+%======== KG source icon (far left, gives "count" arrow somewhere to come from)
+\begin{scope}[local bounding box=KG, shift={(-2.5,-1.05)}]
+  \foreach \p in {(0,0),(0.9,0.5),(1.3,-0.3),(0.4,-0.6),(1.0,-1.0)}{
+    \node[circle, draw, inner sep=0pt, minimum size=3mm, fill=white] at \p {};
+  }
+  \draw[gray!60] (0,0) -- (0.9,0.5) -- (1.3,-0.3) -- (0.4,-0.6) -- (1.0,-1.0) -- (0,0);
+  \draw[gray!60] (0.9,0.5) -- (0.4,-0.6);
+  \draw[gray!60] (1.3,-0.3) -- (1.0,-1.0);
+\end{scope}
+\node[panelcap, below=2mm of KG] {KG $\mathcal{G}$ \\ \scriptsize triples $(i, r, e)$};
+
+%======== Panel 1: sparse 0/1 matrix M
 \begin{scope}[local bounding box=P1]
+  \node[axislbl, anchor=south] at (0.135, 0) {aspects $a$};
+  \node[axislbl, rotate=90, anchor=south] at (0, -1.05) {items $i$};
   \foreach \r in {1,...,6}{
     \foreach \c in {1,...,8}{
       \pgfmathtruncatemacro{\hit}{mod(\r*\c+\r+\c,5)==0 ? 1 : 0}
@@ -174,11 +189,13 @@ The global view introduces a separate user-side embedding $u_{\mathrm{glo}}$ (a 
     }
   }
 \end{scope}
-\node[lbl, below=2mm of P1] (cap1)
-  {$\mathbf{M} \in \{0,1\}^{|\mathcal{I}|\times|\mathcal{A}|}$};
+\node[panelcap, below=4mm of P1.south]
+  {$\mathbf{M}[i,a] = 1$ if $(i, r, e) \in \mathcal{G}$ \\[1pt] $\mathbf{M} \in \{0,1\}^{|\mathcal{I}|\times|\mathcal{A}|}$};
 
-% Panel 2: IDF-weighted (gray scale)
-\begin{scope}[local bounding box=P2, shift={(4.2,0)}]
+%======== Panel 2: IDF-weighted (gray scale) + formula above
+\begin{scope}[local bounding box=P2, shift={(4.5,0)}]
+  \node[font=\footnotesize, anchor=south] at (0.15, 0.15)
+    {$w(a) = \log\!\frac{|\mathcal{I}|}{\mathrm{df}(a)}$};
   \foreach \r in {1,...,6}{
     \foreach \c in {1,...,8}{
       \pgfmathtruncatemacro{\hit}{mod(\r*\c+\r+\c,5)==0 ? 1 : 0}
@@ -190,49 +207,68 @@ The global view introduces a separate user-side embedding $u_{\mathrm{glo}}$ (a 
     }
   }
 \end{scope}
-\node[lbl, below=2mm of P2] (cap2) {IDF-weighted $\tilde{\mathbf{M}}$};
+\node[panelcap, below=4mm of P2.south]
+  {IDF-weighted $\tilde{\mathbf{M}}$ \\[1pt] \scriptsize rare aspects up-weighted, \\ popular aspects down-weighted};
 
-% Panel 3: truncated SVD
-\begin{scope}[local bounding box=P3, shift={(8.4,-0.3)}]
+%======== Panel 3: truncated SVD with k highlighted
+\begin{scope}[local bounding box=P3, shift={(9.0,-0.3)}]
+  % U
   \draw[accent, fill=blue!8] (0,0) rectangle (0.5,-1.8);
-  \node[lbl] at (0.25,0.25) {$\mathbf{U}_k$};
+  \node[font=\footnotesize] at (0.25,0.25) {$\mathbf{U}_{\textcolor{red!80!black}{k}}$};
+  % Sigma
   \draw[accent, fill=blue!15] (0.8,-0.4) rectangle (1.3,-0.9);
   \draw[accent] (0.8,-0.4) -- (1.3,-0.9);
-  \node[lbl] at (1.05,0.25) {$\boldsymbol{\Sigma}_k$};
+  \node[font=\footnotesize] at (1.05,0.25) {$\boldsymbol{\Sigma}_{\textcolor{red!80!black}{k}}$};
+  % V^T
   \draw[accent, fill=blue!8] (1.6,-0.4) rectangle (3.0,-0.9);
-  \node[lbl] at (2.3,0.25) {$\mathbf{V}_k^{\!\top}$};
-  \draw[decorate, decoration={brace, amplitude=3pt}]
-    (0.5,-1.85) -- (0.0,-1.85) node[midway, below=2pt, font=\scriptsize] {$k$};
+  \node[font=\footnotesize] at (2.3,0.25) {$\mathbf{V}_{\textcolor{red!80!black}{k}}^{\!\top}$};
+  % red brace + label for k
+  \draw[khighlight, decorate, decoration={brace, amplitude=3pt}]
+    (0.5,-1.95) -- (0.0,-1.95) node[midway, below=2pt] {$k = Ad$};
+  % "keep this" annotation under U·Σ^(1/2)
+  \node[font=\scriptsize, gray!50!black, align=center] at (0.25,-2.5)
+    {keep \\ $\mathbf{U}_k\boldsymbol{\Sigma}_k^{1/2}$};
 \end{scope}
-\node[lbl, below=3mm of P3] (cap3) {Truncated SVD (rank $k = A d$)};
+\node[panelcap, below=10mm of P3.south]
+  {Truncated SVD \\ $\tilde{\mathbf{M}} \approx \mathbf{U}_k \boldsymbol{\Sigma}_k \mathbf{V}_k^{\!\top}$};
 
-% Panel 4: reshape to slots + GNN init
-\begin{scope}[local bounding box=P4, shift={(13.4,0)}]
+%======== Panel 4: reshape into A slots + feed into GNN
+\begin{scope}[local bounding box=P4, shift={(14.0,0)}]
+  % per-item vector of width k, split into A=4 slots
   \foreach \s in {0,1,2,3}{
     \draw[fill=black!8] (\s*0.55,-0.4) rectangle (\s*0.55+0.5,-0.9);
+    \node[font=\scriptsize] at (\s*0.55+0.25,-0.65) {$d$};
   }
-  \node[lbl] at (1.1, -0.15) {$\mathbf{a}_i \in \mathbb{R}^{A \times d}$};
+  \draw[decorate, decoration={brace, amplitude=3pt, mirror}]
+    (0,-0.95) -- (2.2,-0.95) node[midway, below=2pt, font=\scriptsize] {$A=4$ slots};
+  \node[font=\footnotesize] at (1.1, -0.05) {$\mathbf{a}_i \in \mathbb{R}^{A \times d}$};
+  % GNN icon
   \foreach \i in {0,1,2,3}{
     \node[circle, draw, inner sep=0pt, minimum size=3mm]
-      (a\i) at (0.3+\i*0.55, -1.6) {};
+      (gA\i) at (0.3+\i*0.55, -1.9) {};
     \node[circle, draw, inner sep=0pt, minimum size=3mm]
-      (b\i) at (0.3+\i*0.55, -2.3) {};
+      (gB\i) at (0.3+\i*0.55, -2.6) {};
   }
   \foreach \i in {0,1,2,3}{
     \foreach \j in {0,1,2,3}{
-      \draw[gray!60, very thin] (a\i) -- (b\j);
+      \draw[gray!60, very thin] (gA\i) -- (gB\j);
     }
   }
+  % small "init" arrow from slots to GNN
+  \draw[->, gray!70, thin] (1.1,-1.0) -- (1.1,-1.65);
 \end{scope}
-\node[lbl, below=3mm of P4] (cap4) {Slots $\mathbf{A}_{\mathrm{KG}}^{(0)}$ \\ (GNN item init)};
+\node[panelcap, below=10mm of P4.south]
+  {Slots $\mathbf{A}_{\mathrm{KG}}^{(0)}$ \\[1pt] \scriptsize used as initialization, \\ not as a constraint};
 
-% Arrows + operation labels
-\draw[->, thick] (P1.east) -- node[op] {IDF}     (P2.west);
-\draw[->, thick] (P2.east) -- node[op] {SVD$_k$} (P3.west);
-\draw[->, thick] (P3.east) -- node[op] {reshape} (P4.west);
+%======== Arrows between panels (with operation labels)
+\draw[->, thick] (KG.east)  -- node[op] {count}    (P1.west);
+\draw[->, thick] (P1.east)  -- node[op] {IDF}      (P2.west);
+\draw[->, thick] (P2.east)  -- node[op] {SVD$_k$}  (P3.west);
+\draw[->, thick] (P3.east)  -- node[op] {reshape}  (P4.west);
 
-\end{tikzpicture}
-\caption[KG-SVD item-embedding initialization pipeline.]{KG-SVD item-embedding initialization. The binary item--aspect co-occurrence matrix $\mathbf{M}$ (Equation~\eqref{eq:cooc}) is column-reweighted by IDF (Equation~\eqref{eq:idf-rescale}); the resulting $\tilde{\mathbf{M}}$ is factorized by truncated SVD at rank $k = A d$ (Equation~\eqref{eq:svd}); the left factor $\mathbf{U}_k \boldsymbol{\Sigma}_k^{1/2}$ is then reshaped into $A$ disjoint slots of width $d$ to form the initial aspect-slot tensor $\mathbf{A}_{\mathrm{KG}}^{(0)}$ (Equation~\eqref{eq:reshape}), which seeds the global-view item representation.}
+\end{tikzpicture}%
+}
+\caption[KG-SVD item-embedding initialization pipeline.]{Four-stage KG-SVD item-embedding initialization. \textbf{(count)} Triples in the KG $\mathcal{G}$ are collected into a sparse binary item--aspect matrix $\mathbf{M}$ (Eq.~\eqref{eq:cooc}). \textbf{(IDF)} Columns of $\mathbf{M}$ are re-weighted by inverse document frequency $w(a) = \log(|\mathcal{I}|/\mathrm{df}(a))$ to suppress popular tags (Eq.~\eqref{eq:idf-rescale}). \textbf{(SVD$_k$)} The re-weighted $\tilde{\mathbf{M}}$ is factorized at rank $k = A d$ (Eq.~\eqref{eq:svd}); only the left factor $\mathbf{U}_k\boldsymbol{\Sigma}_k^{1/2}$ is kept. \textbf{(reshape)} Each item's $k$-dim row is split into $A$ contiguous slots of width $d$, producing $\mathbf{A}_{\mathrm{KG}}^{(0)} \in \mathbb{R}^{|\mathcal{I}|\times A \times d}$ (Eq.~\eqref{eq:reshape}), which seeds the item side of the global view. The KG is used only as initialization and does not appear in any forward pass thereafter.}
 \label{fig:kgsvd-init}
 \end{figure}
 
