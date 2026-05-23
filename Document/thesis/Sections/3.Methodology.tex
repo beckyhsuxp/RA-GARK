@@ -411,16 +411,16 @@ The bias magnitude is chosen by a single principle: large enough that the initia
 \node[note, left=1mm of xglo] {global lookup};
 
 % ---- Concat
-\node[block] (concat) at (2.3,0) {concat \\ $[u_{\mathrm{loc}};u_{\mathrm{glo}}]\in\mathbb{R}^{2d}$};
+\node[block] (concat) at (2.3,0) {concat};
 \draw[->] (xloc.east) -- ([yshift=2mm]concat.west);
 \draw[->] (xglo.east) -- ([yshift=-2mm]concat.west);
 
 % ---- MLP body
-\node[gateblock, minimum width=22mm] (mlp) at (5.2,0) {$\tanh(\mathbf{W}\cdot)$ \\ hidden $d$};
-\draw[->] (concat.east) -- node[op] {$\mathbf{W}\in\mathbb{R}^{d\times 2d}$} (mlp.west);
+\node[gateblock, minimum width=22mm] (mlp) at (5.2,0) {MLP ($\tanh$)};
+\draw[->] (concat.east) -- (mlp.west);
 
 % ---- Linear head with highlighted bias b=+5
-\node[accent, block, minimum width=24mm] (head) at (8.6,0) {$\mathbf{w}^{\!\top}\!h \;+\; \boldsymbol{b}$ \\ \textbf{init} $b = +5$};
+\node[accent, block, minimum width=24mm] (head) at (8.6,0) {\textbf{init} $b = +5$};
 \draw[->] (mlp.east) -- (head.west);
 
 % ---- Sigmoid -> alpha
