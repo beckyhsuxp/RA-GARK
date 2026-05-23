@@ -441,16 +441,9 @@ u_{\mathrm{final}}^{(0)} \approx 0.993\, u_{\mathrm{loc}}^{(0)} + 0.007\, u_{\ma
 \node[veclbl, above=0.4mm of xfin] {$u_{\mathrm{final}}$};
 \draw[->] (plus.east) -- (xfin.west);
 
-\node[note, below=8mm of mlp]
-  {Gate$(z) = \sigma\!\big(\mathbf{w}^{\!\top}\tanh(\mathbf{W}z) + b\big)$};
-\node[note, below=8mm of plus, text width=46mm]
-  {物品側結構完全相同： \\ $i_{\mathrm{loc}}, i_{\mathrm{glo}} \to \mathrm{Gate}_i \to \alpha_i \to i_{\mathrm{final}}$};
-\node[note, above=5mm of head, text=orange!75!black, text width=40mm]
-  {區域偏置初始化：訓練起點 $\approx$ 純 LightGCN； KG 通道僅在 BPR 將 $b$ 向下推時才打開};
-
 \end{tikzpicture}%
 }
-\caption{區域偏置融合閘。}
+\caption{區域偏置融合閘（物品側同理）。}
 \label{fig:gate-zh}
 \end{figure}
 
