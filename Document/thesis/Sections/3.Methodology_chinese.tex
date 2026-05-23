@@ -408,14 +408,14 @@ u_{\mathrm{final}}^{(0)} \approx 0.993\, u_{\mathrm{loc}}^{(0)} + 0.007\, u_{\ma
 \node[note, left=1mm of xloc] {LightGCN};
 \node[note, left=1mm of xglo] {全域查表};
 
-\node[block] (concat) at (2.3,0) {concat \\ $[u_{\mathrm{loc}};u_{\mathrm{glo}}]\in\mathbb{R}^{2d}$};
+\node[block] (concat) at (2.3,0) {串接};
 \draw[->] (xloc.east) -- ([yshift=2mm]concat.west);
 \draw[->] (xglo.east) -- ([yshift=-2mm]concat.west);
 
-\node[gateblock, minimum width=22mm] (mlp) at (5.2,0) {$\tanh(\mathbf{W}\cdot)$ \\ 隱藏寬度 $d$};
-\draw[->] (concat.east) -- node[op] {$\mathbf{W}\in\mathbb{R}^{d\times 2d}$} (mlp.west);
+\node[gateblock, minimum width=22mm] (mlp) at (5.2,0) {MLP ($\tanh$)};
+\draw[->] (concat.east) -- (mlp.west);
 
-\node[accent, block, minimum width=24mm] (head) at (8.6,0) {$\mathbf{w}^{\!\top}\!h \;+\; \boldsymbol{b}$ \\ \textbf{初始化} $b = +5$};
+\node[accent, block, minimum width=24mm] (head) at (8.6,0) {\textbf{初始化} $b = +5$};
 \draw[->] (mlp.east) -- (head.west);
 
 \node[gateblock] (sig) at (11.6,0) {$\sigma(\cdot)$};
