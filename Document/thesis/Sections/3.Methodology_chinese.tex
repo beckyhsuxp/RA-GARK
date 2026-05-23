@@ -391,12 +391,12 @@ u_{\mathrm{final}}^{(0)} \approx 0.993\, u_{\mathrm{loc}}^{(0)} + 0.007\, u_{\ma
     op/.style        ={font=\footnotesize\itshape, midway, above, yshift=0.4mm},
 ]
 
-\node[locvec] (xloc) at (0, 0.8)   {$x_{\mathrm{loc}}$};
-\node[glovec] (xglo) at (0,-0.8)   {$x_{\mathrm{glo}}$};
+\node[locvec] (xloc) at (0, 0.8)   {$u_{\mathrm{loc}}$};
+\node[glovec] (xglo) at (0,-0.8)   {$u_{\mathrm{glo}}$};
 \node[note, left=0pt of xloc] {LightGCN};
-\node[note, left=0pt of xglo] {KG-SVD};
+\node[note, left=0pt of xglo] {全域查表};
 
-\node[block] (concat) at (2.3,0) {concat \\ $[x_{\mathrm{loc}};x_{\mathrm{glo}}]\in\mathbb{R}^{2d}$};
+\node[block] (concat) at (2.3,0) {concat \\ $[u_{\mathrm{loc}};u_{\mathrm{glo}}]\in\mathbb{R}^{2d}$};
 \draw[->] (xloc.east) -- ([yshift=2mm]concat.west);
 \draw[->] (xglo.east) -- ([yshift=-2mm]concat.west);
 
@@ -409,13 +409,13 @@ u_{\mathrm{final}}^{(0)} \approx 0.993\, u_{\mathrm{loc}}^{(0)} + 0.007\, u_{\ma
 \node[block] (sig) at (11.6,0) {$\sigma(\cdot)$};
 \draw[->] (head.east) -- (sig.west);
 \node[font=\scriptsize, draw=none, fill=none, below=0pt of head, text=red!70!black]
-  {$\alpha^{(0)} \approx \sigma(5) \approx 0.993$};
+  {$\alpha_u^{(0)} \approx \sigma(5) \approx 0.993$};
 
-\node[circle, draw=red!70!black, fill=red!10, inner sep=1pt, font=\footnotesize\bfseries] (alpha) at (13.5,0) {$\alpha$};
+\node[circle, draw=red!70!black, fill=red!10, inner sep=1pt, font=\footnotesize\bfseries] (alpha) at (13.5,0) {$\alpha_u$};
 \draw[->] (sig.east) -- (alpha.west);
 
-\node[locvec] (sl) at (15.4, 0.8) {$\alpha\, x_{\mathrm{loc}}$};
-\node[glovec] (sg) at (15.4,-0.8) {$(1{-}\alpha)\, x_{\mathrm{glo}}$};
+\node[locvec] (sl) at (15.4, 0.8) {$\alpha_u\, u_{\mathrm{loc}}$};
+\node[glovec] (sg) at (15.4,-0.8) {$(1{-}\alpha_u)\, u_{\mathrm{glo}}$};
 \draw[->, red!70!black] (alpha.east) to[bend left=15]  (sl.west);
 \draw[->, red!70!black] (alpha.east) to[bend right=15] (sg.west);
 
@@ -423,19 +423,19 @@ u_{\mathrm{final}}^{(0)} \approx 0.993\, u_{\mathrm{loc}}^{(0)} + 0.007\, u_{\ma
 \draw[->] (sl.east) -- ([yshift=2mm]plus.west);
 \draw[->] (sg.east) -- ([yshift=-2mm]plus.west);
 
-\node[finalvec] (xfin) at (19.7,0) {$x_{\mathrm{final}}$};
+\node[finalvec] (xfin) at (19.7,0) {$u_{\mathrm{final}}$};
 \draw[->] (plus.east) -- (xfin.west);
 
 \node[note, below=8mm of mlp]
   {Gate$(z) = \sigma\!\big(\mathbf{w}^{\!\top}\tanh(\mathbf{W}z) + b\big)$};
-\node[note, below=8mm of plus, text width=44mm]
-  {使用者與物品各一個獨立閘： \\ Gate$_u$、Gate$_i$};
+\node[note, below=8mm of plus, text width=46mm]
+  {物品側結構完全相同： \\ $i_{\mathrm{loc}}, i_{\mathrm{glo}} \to \mathrm{Gate}_i \to \alpha_i \to i_{\mathrm{final}}$};
 \node[note, above=5mm of head, text=red!70!black, text width=40mm]
   {區域偏置初始化：訓練起點 $\approx$ 純 LightGCN； KG 通道僅在 BPR 將 $b$ 向下推時才打開};
 
 \end{tikzpicture}%
 }
-\caption[區域偏置融合閘訊號流。]{區域偏置融合閘。區域表示 $x_{\mathrm{loc}}$（來自 LightGCN）與全域表示 $x_{\mathrm{glo}}$（來自 KG-SVD）先串接，經一小型 MLP（隱藏寬度 $d$、$\tanh$），標量 logit 再加上\textbf{初始化偏置 $b = +5$} 後送入 sigmoid（式~\eqref{eq:gate-mlp-zh}）。所得 $\alpha \in (0,1)$ 構成凸組合 $x_{\mathrm{final}} = \alpha x_{\mathrm{loc}} + (1-\alpha) x_{\mathrm{glo}}$。偏置初始化使 $\alpha^{(0)} \approx 0.993$，訓練起點實質上等同純 LightGCN；KG 通道僅在 BPR 梯度將 $b$ 向下推時才打開（第~\ref{sec:gate-bias-zh}~節）。使用者與物品各實例化一個獨立閘。}
+\caption[區域偏置融合閘訊號流。]{區域偏置融合閘，以使用者側為例。區域表示 $u_{\mathrm{loc}}$（來自 LightGCN）與全域表示 $u_{\mathrm{glo}}$（直接查全域使用者表）先串接，經一小型 MLP（隱藏寬度 $d$、$\tanh$），標量 logit 再加上\textbf{初始化偏置 $b = +5$} 後送入 sigmoid（式~\eqref{eq:gate-mlp-zh}）。所得 $\alpha_u \in (0,1)$ 構成凸組合 $u_{\mathrm{final}} = \alpha_u u_{\mathrm{loc}} + (1-\alpha_u) u_{\mathrm{glo}}$。偏置初始化使 $\alpha_u^{(0)} \approx 0.993$，訓練起點實質上等同純 LightGCN；KG 通道僅在 BPR 梯度將 $b$ 向下推時才打開（第~\ref{sec:gate-bias-zh}~節）。物品側結構完全相同：另一個架構一致的 $\mathrm{Gate}_i$ 將 $(i_{\mathrm{loc}}, i_{\mathrm{glo}})$ 映射至 $\alpha_i$ 與 $i_{\mathrm{final}}$，其偏置亦初始化為 $+5$。}
 \label{fig:gate-zh}
 \end{figure}
 

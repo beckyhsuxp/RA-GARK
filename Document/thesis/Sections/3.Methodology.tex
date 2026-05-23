@@ -393,13 +393,13 @@ The bias magnitude is chosen by a single principle: large enough that the initia
 ]
 
 % ---- Inputs (left column)
-\node[locvec] (xloc) at (0, 0.8)   {$x_{\mathrm{loc}}$};
-\node[glovec] (xglo) at (0,-0.8)   {$x_{\mathrm{glo}}$};
+\node[locvec] (xloc) at (0, 0.8)   {$u_{\mathrm{loc}}$};
+\node[glovec] (xglo) at (0,-0.8)   {$u_{\mathrm{glo}}$};
 \node[note, left=0pt of xloc] {LightGCN};
-\node[note, left=0pt of xglo] {KG-SVD};
+\node[note, left=0pt of xglo] {global lookup};
 
 % ---- Concat
-\node[block] (concat) at (2.3,0) {concat \\ $[x_{\mathrm{loc}};x_{\mathrm{glo}}]\in\mathbb{R}^{2d}$};
+\node[block] (concat) at (2.3,0) {concat \\ $[u_{\mathrm{loc}};u_{\mathrm{glo}}]\in\mathbb{R}^{2d}$};
 \draw[->] (xloc.east) -- ([yshift=2mm]concat.west);
 \draw[->] (xglo.east) -- ([yshift=-2mm]concat.west);
 
@@ -415,15 +415,15 @@ The bias magnitude is chosen by a single principle: large enough that the initia
 \node[block] (sig) at (11.6,0) {$\sigma(\cdot)$};
 \draw[->] (head.east) -- (sig.west);
 \node[font=\scriptsize, accent, draw=none, fill=none, below=0pt of head, text=red!70!black]
-  {$\alpha^{(0)} \approx \sigma(5) \approx 0.993$};
+  {$\alpha_u^{(0)} \approx \sigma(5) \approx 0.993$};
 
 % ---- alpha output node
-\node[circle, draw=red!70!black, fill=red!10, inner sep=1pt, font=\footnotesize\bfseries] (alpha) at (13.5,0) {$\alpha$};
+\node[circle, draw=red!70!black, fill=red!10, inner sep=1pt, font=\footnotesize\bfseries] (alpha) at (13.5,0) {$\alpha_u$};
 \draw[->] (sig.east) -- (alpha.west);
 
 % ---- Right side: convex combination
-\node[locvec] (sl) at (15.4, 0.8) {$\alpha\, x_{\mathrm{loc}}$};
-\node[glovec] (sg) at (15.4,-0.8) {$(1{-}\alpha)\, x_{\mathrm{glo}}$};
+\node[locvec] (sl) at (15.4, 0.8) {$\alpha_u\, u_{\mathrm{loc}}$};
+\node[glovec] (sg) at (15.4,-0.8) {$(1{-}\alpha_u)\, u_{\mathrm{glo}}$};
 \draw[->, red!70!black] (alpha.east) to[bend left=15]  (sl.west);
 \draw[->, red!70!black] (alpha.east) to[bend right=15] (sg.west);
 
@@ -431,20 +431,20 @@ The bias magnitude is chosen by a single principle: large enough that the initia
 \draw[->] (sl.east) -- ([yshift=2mm]plus.west);
 \draw[->] (sg.east) -- ([yshift=-2mm]plus.west);
 
-\node[finalvec] (xfin) at (19.7,0) {$x_{\mathrm{final}}$};
+\node[finalvec] (xfin) at (19.7,0) {$u_{\mathrm{final}}$};
 \draw[->] (plus.east) -- (xfin.west);
 
 % ---- Annotations
 \node[note, below=8mm of mlp]
   {Gate$(z) = \sigma\!\big(\mathbf{w}^{\!\top}\tanh(\mathbf{W}z) + b\big)$};
-\node[note, below=8mm of plus, text width=42mm]
-  {Two independent gates: \\ Gate$_u$ for users, Gate$_i$ for items};
+\node[note, below=8mm of plus, text width=44mm]
+  {Item-side is structurally identical: \\ $i_{\mathrm{loc}}, i_{\mathrm{glo}} \to \mathrm{Gate}_i \to \alpha_i \to i_{\mathrm{final}}$};
 \node[note, above=5mm of head, text=red!70!black, text width=38mm]
   {Local-biased init: \\ training starts $\approx$ pure LightGCN; \\ KG channel opens only if BPR pushes $b$ down};
 
 \end{tikzpicture}%
 }
-\caption[Local-biased fusion gate signal flow.]{Local-biased fusion gate. Local ($x_{\mathrm{loc}}$, from LightGCN) and global ($x_{\mathrm{glo}}$, from KG-SVD) representations are concatenated, passed through a small MLP (hidden width $d$, $\tanh$), and the scalar logit is shifted by an \textbf{initialized bias $b = +5$} before the sigmoid (Eq.~\eqref{eq:gate-mlp}). The resulting $\alpha \in (0,1)$ produces the convex combination $x_{\mathrm{final}} = \alpha x_{\mathrm{loc}} + (1-\alpha) x_{\mathrm{glo}}$. The bias initialization yields $\alpha^{(0)} \approx 0.993$, so training begins effectively as pure LightGCN; the KG channel widens only if BPR gradients pull $b$ downward (Section~\ref{sec:gate-bias}). Two independent gates are instantiated, one for users and one for items.}
+\caption[Local-biased fusion gate signal flow.]{Local-biased fusion gate, shown on the user side. The local representation $u_{\mathrm{loc}}$ (from LightGCN) and the global representation $u_{\mathrm{glo}}$ (direct lookup into the global user table) are concatenated, passed through a small MLP (hidden width $d$, $\tanh$), and the scalar logit is shifted by an \textbf{initialized bias $b = +5$} before the sigmoid (Eq.~\eqref{eq:gate-mlp}). The resulting $\alpha_u \in (0,1)$ produces the convex combination $u_{\mathrm{final}} = \alpha_u u_{\mathrm{loc}} + (1-\alpha_u) u_{\mathrm{glo}}$. The bias initialization yields $\alpha_u^{(0)} \approx 0.993$, so training begins effectively as pure LightGCN; the KG channel widens only if BPR gradients pull $b$ downward (Section~\ref{sec:gate-bias}). The item side is structurally identical: a separate $\mathrm{Gate}_i$ with the same architecture maps $(i_{\mathrm{loc}}, i_{\mathrm{glo}})$ to $\alpha_i$ and $i_{\mathrm{final}}$, with its own bias also initialized to $+5$.}
 \label{fig:gate}
 \end{figure}
 
