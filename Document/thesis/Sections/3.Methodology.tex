@@ -382,10 +382,19 @@ The bias magnitude is chosen by a single principle: large enough that the initia
 \begin{tikzpicture}[
     >={Stealth[length=2.4mm]},
     font=\small,
-    vec/.style       ={draw, rounded corners=1pt, minimum height=6mm, minimum width=14mm, font=\footnotesize},
-    locvec/.style    ={vec, fill=blue!8,    draw=blue!55!black},
-    glovec/.style    ={vec, fill=green!12,  draw=green!55!black},
-    finalvec/.style  ={vec, fill=blue!8,    draw=blue!55!black, minimum width=18mm},
+    vecbar/.style 2 args={draw=#1!55!black, fill=#1!8,
+                          minimum height=4mm, minimum width=#2,
+                          inner sep=0pt, rounded corners=0pt,
+                          path picture={
+                            \foreach \k in {1,2,3}{
+                              \draw[#1!55!black, thin]
+                                ([xshift=\k*0.25*#2]path picture bounding box.south west) --
+                                ([xshift=\k*0.25*#2]path picture bounding box.north west);
+                            }}},
+    locvec/.style    ={vecbar={blue}{12mm}},
+    glovec/.style    ={vecbar={green}{12mm}},
+    finalvec/.style  ={vecbar={blue}{14mm}},
+    veclbl/.style    ={font=\footnotesize, inner sep=1pt},
     block/.style     ={draw, rounded corners=2pt, minimum height=9mm, minimum width=16mm, font=\footnotesize, align=center, fill=white},
     gateblock/.style ={block, fill=orange!10, draw=orange!65!black},
     accent/.style    ={draw=orange!80!black, very thick, fill=orange!22, dashed},
@@ -394,10 +403,12 @@ The bias magnitude is chosen by a single principle: large enough that the initia
 ]
 
 % ---- Inputs (left column)
-\node[locvec] (xloc) at (0, 0.8)   {$u_{\mathrm{loc}}$};
-\node[glovec] (xglo) at (0,-0.8)   {$u_{\mathrm{glo}}$};
-\node[note, left=0pt of xloc] {LightGCN};
-\node[note, left=0pt of xglo] {global lookup};
+\node[locvec] (xloc) at (0, 0.8)   {};
+\node[veclbl, above=0.4mm of xloc] {$u_{\mathrm{loc}}$};
+\node[glovec] (xglo) at (0,-0.8)   {};
+\node[veclbl, above=0.4mm of xglo] {$u_{\mathrm{glo}}$};
+\node[note, left=1mm of xloc] {LightGCN};
+\node[note, left=1mm of xglo] {global lookup};
 
 % ---- Concat
 \node[block] (concat) at (2.3,0) {concat \\ $[u_{\mathrm{loc}};u_{\mathrm{glo}}]\in\mathbb{R}^{2d}$};
@@ -423,8 +434,10 @@ The bias magnitude is chosen by a single principle: large enough that the initia
 \draw[->] (sig.east) -- (alpha.west);
 
 % ---- Right side: convex combination
-\node[locvec] (sl) at (15.4, 0.8) {$\alpha_u\, u_{\mathrm{loc}}$};
-\node[glovec] (sg) at (15.4,-0.8) {$(1{-}\alpha_u)\, u_{\mathrm{glo}}$};
+\node[locvec] (sl) at (15.4, 0.8) {};
+\node[veclbl, above=0.4mm of sl] {$\alpha_u\, u_{\mathrm{loc}}$};
+\node[glovec] (sg) at (15.4,-0.8) {};
+\node[veclbl, above=0.4mm of sg] {$(1{-}\alpha_u)\, u_{\mathrm{glo}}$};
 \draw[->, orange!75!black] (alpha.east) to[bend left=15]  (sl.west);
 \draw[->, orange!75!black] (alpha.east) to[bend right=15] (sg.west);
 
@@ -432,7 +445,8 @@ The bias magnitude is chosen by a single principle: large enough that the initia
 \draw[->] (sl.east) -- ([yshift=2mm]plus.west);
 \draw[->] (sg.east) -- ([yshift=-2mm]plus.west);
 
-\node[finalvec] (xfin) at (19.7,0) {$u_{\mathrm{final}}$};
+\node[finalvec] (xfin) at (19.7,0) {};
+\node[veclbl, above=0.4mm of xfin] {$u_{\mathrm{final}}$};
 \draw[->] (plus.east) -- (xfin.west);
 
 % ---- Annotations
