@@ -383,11 +383,12 @@ The bias magnitude is chosen by a single principle: large enough that the initia
     >={Stealth[length=2.4mm]},
     font=\small,
     vec/.style       ={draw, rounded corners=1pt, minimum height=6mm, minimum width=14mm, font=\footnotesize},
-    locvec/.style    ={vec, fill=blue!10,   draw=blue!60!black},
-    glovec/.style    ={vec, fill=orange!18, draw=orange!70!black},
-    finalvec/.style  ={vec, fill=green!12,  draw=green!50!black, minimum width=18mm},
-    block/.style     ={draw, rounded corners=2pt, minimum height=9mm, minimum width=16mm, font=\footnotesize, align=center, fill=gray!5},
-    accent/.style    ={draw=red!75!black, very thick, fill=red!8},
+    locvec/.style    ={vec, fill=blue!8,    draw=blue!55!black},
+    glovec/.style    ={vec, fill=green!12,  draw=green!55!black},
+    finalvec/.style  ={vec, fill=blue!8,    draw=blue!55!black, minimum width=18mm},
+    block/.style     ={draw, rounded corners=2pt, minimum height=9mm, minimum width=16mm, font=\footnotesize, align=center, fill=white},
+    gateblock/.style ={block, fill=orange!10, draw=orange!65!black},
+    accent/.style    ={draw=orange!80!black, very thick, fill=orange!22, dashed},
     note/.style      ={font=\scriptsize\itshape, gray!50!black, align=center},
     op/.style        ={font=\footnotesize\itshape, midway, above, yshift=0.4mm},
 ]
@@ -404,7 +405,7 @@ The bias magnitude is chosen by a single principle: large enough that the initia
 \draw[->] (xglo.east) -- ([yshift=-2mm]concat.west);
 
 % ---- MLP body
-\node[block, minimum width=22mm] (mlp) at (5.2,0) {$\tanh(\mathbf{W}\cdot)$ \\ hidden $d$};
+\node[gateblock, minimum width=22mm] (mlp) at (5.2,0) {$\tanh(\mathbf{W}\cdot)$ \\ hidden $d$};
 \draw[->] (concat.east) -- node[op] {$\mathbf{W}\in\mathbb{R}^{d\times 2d}$} (mlp.west);
 
 % ---- Linear head with highlighted bias b=+5
@@ -412,20 +413,20 @@ The bias magnitude is chosen by a single principle: large enough that the initia
 \draw[->] (mlp.east) -- (head.west);
 
 % ---- Sigmoid -> alpha
-\node[block] (sig) at (11.6,0) {$\sigma(\cdot)$};
+\node[gateblock] (sig) at (11.6,0) {$\sigma(\cdot)$};
 \draw[->] (head.east) -- (sig.west);
-\node[font=\scriptsize, accent, draw=none, fill=none, below=0pt of head, text=red!70!black]
+\node[font=\scriptsize, draw=none, fill=none, below=0pt of head, text=orange!75!black]
   {$\alpha_u^{(0)} \approx \sigma(5) \approx 0.993$};
 
 % ---- alpha output node
-\node[circle, draw=red!70!black, fill=red!10, inner sep=1pt, font=\footnotesize\bfseries] (alpha) at (13.5,0) {$\alpha_u$};
+\node[circle, draw=orange!80!black, fill=orange!22, inner sep=1pt, font=\footnotesize\bfseries] (alpha) at (13.5,0) {$\alpha_u$};
 \draw[->] (sig.east) -- (alpha.west);
 
 % ---- Right side: convex combination
 \node[locvec] (sl) at (15.4, 0.8) {$\alpha_u\, u_{\mathrm{loc}}$};
 \node[glovec] (sg) at (15.4,-0.8) {$(1{-}\alpha_u)\, u_{\mathrm{glo}}$};
-\draw[->, red!70!black] (alpha.east) to[bend left=15]  (sl.west);
-\draw[->, red!70!black] (alpha.east) to[bend right=15] (sg.west);
+\draw[->, orange!75!black] (alpha.east) to[bend left=15]  (sl.west);
+\draw[->, orange!75!black] (alpha.east) to[bend right=15] (sg.west);
 
 \node[circle, draw, inner sep=1pt, font=\footnotesize] (plus) at (17.6,0) {$+$};
 \draw[->] (sl.east) -- ([yshift=2mm]plus.west);
@@ -439,7 +440,7 @@ The bias magnitude is chosen by a single principle: large enough that the initia
   {Gate$(z) = \sigma\!\big(\mathbf{w}^{\!\top}\tanh(\mathbf{W}z) + b\big)$};
 \node[note, below=8mm of plus, text width=44mm]
   {Item-side is structurally identical: \\ $i_{\mathrm{loc}}, i_{\mathrm{glo}} \to \mathrm{Gate}_i \to \alpha_i \to i_{\mathrm{final}}$};
-\node[note, above=5mm of head, text=red!70!black, text width=38mm]
+\node[note, above=5mm of head, text=orange!75!black, text width=38mm]
   {Local-biased init: \\ training starts $\approx$ pure LightGCN; \\ KG channel opens only if BPR pushes $b$ down};
 
 \end{tikzpicture}%
