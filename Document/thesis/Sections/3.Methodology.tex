@@ -449,17 +449,9 @@ The bias magnitude is chosen by a single principle: large enough that the initia
 \node[veclbl, above=0.4mm of xfin] {$u_{\mathrm{final}}$};
 \draw[->] (plus.east) -- (xfin.west);
 
-% ---- Annotations
-\node[note, below=8mm of mlp]
-  {Gate$(z) = \sigma\!\big(\mathbf{w}^{\!\top}\tanh(\mathbf{W}z) + b\big)$};
-\node[note, below=8mm of plus, text width=44mm]
-  {Item-side is structurally identical: \\ $i_{\mathrm{loc}}, i_{\mathrm{glo}} \to \mathrm{Gate}_i \to \alpha_i \to i_{\mathrm{final}}$};
-\node[note, above=5mm of head, text=orange!75!black, text width=38mm]
-  {Local-biased init: \\ training starts $\approx$ pure LightGCN; \\ KG channel opens only if BPR pushes $b$ down};
-
 \end{tikzpicture}%
 }
-\caption{Local-biased fusion gate.}
+\caption{Local-biased fusion gate (item side is analogous).}
 \label{fig:gate}
 \end{figure}
 
