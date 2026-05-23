@@ -376,11 +376,67 @@ u_{\mathrm{final}}^{(0)} \approx 0.993\, u_{\mathrm{loc}}^{(0)} + 0.007\, u_{\ma
 偏置量值之選擇依單一原則：大到使初始閘輸出絕對偏向區域、小到使 $b$ 之梯度非零而能於訓練中調整閘。於 $b = +5$，$\sigma'(5) = \sigma(5)(1 - \sigma(5)) \approx 0.007$——雖小但未消失。$b = +10$ 之後 $b$ 上之梯度於數值上可忽略，閘無法學會開啟。$b = +5$ 為使 $\alpha^{(0)} > 0.99$ 同時保持 $\sigma'(b) > 10^{-3}$ 之最小整數，並通過敏感性掃描不需進一步調整（第~\ref{sec:sens-bias-zh}~節）。完全移除偏置初始化（設 $b = 0$）會損失 $5.3\%$ NDCG@20（第~\ref{sec:ablation-gate-zh}~節）。
 
 \begin{figure}[ht]
-  \centering
-  % \includegraphics[width=0.9\textwidth]{img/fusion_gate.png}  % TODO: 插入圖 (d)
-  \fbox{\parbox[c][4cm][c]{0.9\textwidth}{\centering\itshape 佔位：融合閘訊號流\\($x_{\mathrm{loc}}$, $x_{\mathrm{glo}}$ $\to$ 偏置初始化最後線性層 ($b=+5$) 之 MLP $\to$ sigmoid $\to$ $\alpha$ $\to$ $x_{\mathrm{final}} = \alpha\, x_{\mathrm{loc}} + (1-\alpha)\, x_{\mathrm{glo}}$)。使用者與物品各一個獨立閘。}}
-  \caption{區域偏置融合閘。}
-  \label{fig:gate-zh}
+\centering
+\resizebox{\textwidth}{!}{%
+\begin{tikzpicture}[
+    >={Stealth[length=2.4mm]},
+    font=\small,
+    vec/.style       ={draw, rounded corners=1pt, minimum height=6mm, minimum width=14mm, font=\footnotesize},
+    locvec/.style    ={vec, fill=blue!10,   draw=blue!60!black},
+    glovec/.style    ={vec, fill=orange!18, draw=orange!70!black},
+    finalvec/.style  ={vec, fill=green!12,  draw=green!50!black, minimum width=18mm},
+    block/.style     ={draw, rounded corners=2pt, minimum height=9mm, minimum width=16mm, font=\footnotesize, align=center, fill=gray!5},
+    accent/.style    ={draw=red!75!black, very thick, fill=red!8},
+    note/.style      ={font=\scriptsize\itshape, gray!50!black, align=center},
+    op/.style        ={font=\footnotesize\itshape, midway, above, yshift=0.4mm},
+]
+
+\node[locvec] (xloc) at (0, 0.8)   {$x_{\mathrm{loc}}$};
+\node[glovec] (xglo) at (0,-0.8)   {$x_{\mathrm{glo}}$};
+\node[note, left=0pt of xloc] {LightGCN};
+\node[note, left=0pt of xglo] {KG-SVD};
+
+\node[block] (concat) at (2.3,0) {concat \\ $[x_{\mathrm{loc}};x_{\mathrm{glo}}]\in\mathbb{R}^{2d}$};
+\draw[->] (xloc.east) -- ([yshift=2mm]concat.west);
+\draw[->] (xglo.east) -- ([yshift=-2mm]concat.west);
+
+\node[block, minimum width=22mm] (mlp) at (5.2,0) {$\tanh(\mathbf{W}\cdot)$ \\ 隱藏寬度 $d$};
+\draw[->] (concat.east) -- node[op] {$\mathbf{W}\in\mathbb{R}^{d\times 2d}$} (mlp.west);
+
+\node[accent, block, minimum width=24mm] (head) at (8.6,0) {$\mathbf{w}^{\!\top}\!h \;+\; \boldsymbol{b}$ \\ \textbf{初始化} $b = +5$};
+\draw[->] (mlp.east) -- (head.west);
+
+\node[block] (sig) at (11.6,0) {$\sigma(\cdot)$};
+\draw[->] (head.east) -- (sig.west);
+\node[font=\scriptsize, draw=none, fill=none, below=0pt of head, text=red!70!black]
+  {$\alpha^{(0)} \approx \sigma(5) \approx 0.993$};
+
+\node[circle, draw=red!70!black, fill=red!10, inner sep=1pt, font=\footnotesize\bfseries] (alpha) at (13.5,0) {$\alpha$};
+\draw[->] (sig.east) -- (alpha.west);
+
+\node[locvec] (sl) at (15.4, 0.8) {$\alpha\, x_{\mathrm{loc}}$};
+\node[glovec] (sg) at (15.4,-0.8) {$(1{-}\alpha)\, x_{\mathrm{glo}}$};
+\draw[->, red!70!black] (alpha.east) to[bend left=15]  (sl.west);
+\draw[->, red!70!black] (alpha.east) to[bend right=15] (sg.west);
+
+\node[circle, draw, inner sep=1pt, font=\footnotesize] (plus) at (17.6,0) {$+$};
+\draw[->] (sl.east) -- ([yshift=2mm]plus.west);
+\draw[->] (sg.east) -- ([yshift=-2mm]plus.west);
+
+\node[finalvec] (xfin) at (19.7,0) {$x_{\mathrm{final}}$};
+\draw[->] (plus.east) -- (xfin.west);
+
+\node[note, below=8mm of mlp]
+  {Gate$(z) = \sigma\!\big(\mathbf{w}^{\!\top}\tanh(\mathbf{W}z) + b\big)$};
+\node[note, below=8mm of plus, text width=44mm]
+  {使用者與物品各一個獨立閘： \\ Gate$_u$、Gate$_i$};
+\node[note, above=5mm of head, text=red!70!black, text width=40mm]
+  {區域偏置初始化：訓練起點 $\approx$ 純 LightGCN； KG 通道僅在 BPR 將 $b$ 向下推時才打開};
+
+\end{tikzpicture}%
+}
+\caption[區域偏置融合閘訊號流。]{區域偏置融合閘。區域表示 $x_{\mathrm{loc}}$（來自 LightGCN）與全域表示 $x_{\mathrm{glo}}$（來自 KG-SVD）先串接，經一小型 MLP（隱藏寬度 $d$、$\tanh$），標量 logit 再加上\textbf{初始化偏置 $b = +5$} 後送入 sigmoid（式~\eqref{eq:gate-mlp-zh}）。所得 $\alpha \in (0,1)$ 構成凸組合 $x_{\mathrm{final}} = \alpha x_{\mathrm{loc}} + (1-\alpha) x_{\mathrm{glo}}$。偏置初始化使 $\alpha^{(0)} \approx 0.993$，訓練起點實質上等同純 LightGCN；KG 通道僅在 BPR 梯度將 $b$ 向下推時才打開（第~\ref{sec:gate-bias-zh}~節）。使用者與物品各實例化一個獨立閘。}
+\label{fig:gate-zh}
 \end{figure}
 
 \section{跨視角對比正則化}

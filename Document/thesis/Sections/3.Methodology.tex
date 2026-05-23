@@ -377,11 +377,75 @@ This is a graceful degradation property in the precise architectural sense of Hi
 The bias magnitude is chosen by a single principle: large enough that the initial gate output is overwhelmingly local, small enough that gradients on $b$ are nonzero and can adjust the gate during training. At $b = +5$, $\sigma'(5) = \sigma(5)(1 - \sigma(5)) \approx 0.007$ --- small, but not vanishing. With $b = +10$ or beyond, the gradient on $b$ becomes numerically negligible and the gate cannot learn to open at all. The choice $b = +5$ is the smallest integer for which $\alpha^{(0)} > 0.99$ while keeping $\sigma'(b) > 10^{-3}$, and it survives a sensitivity sweep without further tuning (Section~\ref{sec:sens-bias}). Removing the bias initialization entirely (setting $b = 0$) costs $5.3\%$ NDCG@20 (Section~\ref{sec:ablation-gate}).
 
 \begin{figure}[ht]
-  \centering
-  % \includegraphics[width=0.9\textwidth]{img/fusion_gate.png}  % TODO: insert figure (d)
-  \fbox{\parbox[c][4cm][c]{0.9\textwidth}{\centering\itshape Placeholder: Fusion gate signal flow\\($x_{\mathrm{loc}}$, $x_{\mathrm{glo}}$ $\to$ MLP with bias-initialized final linear ($b=+5$) $\to$ sigmoid $\to$ $\alpha$ $\to$ $x_{\mathrm{final}} = \alpha\, x_{\mathrm{loc}} + (1-\alpha)\, x_{\mathrm{glo}}$). Two independent gates: one for $u$, one for $i$.}}
-  \caption{Local-biased fusion gate.}
-  \label{fig:gate}
+\centering
+\resizebox{\textwidth}{!}{%
+\begin{tikzpicture}[
+    >={Stealth[length=2.4mm]},
+    font=\small,
+    vec/.style       ={draw, rounded corners=1pt, minimum height=6mm, minimum width=14mm, font=\footnotesize},
+    locvec/.style    ={vec, fill=blue!10,   draw=blue!60!black},
+    glovec/.style    ={vec, fill=orange!18, draw=orange!70!black},
+    finalvec/.style  ={vec, fill=green!12,  draw=green!50!black, minimum width=18mm},
+    block/.style     ={draw, rounded corners=2pt, minimum height=9mm, minimum width=16mm, font=\footnotesize, align=center, fill=gray!5},
+    accent/.style    ={draw=red!75!black, very thick, fill=red!8},
+    note/.style      ={font=\scriptsize\itshape, gray!50!black, align=center},
+    op/.style        ={font=\footnotesize\itshape, midway, above, yshift=0.4mm},
+]
+
+% ---- Inputs (left column)
+\node[locvec] (xloc) at (0, 0.8)   {$x_{\mathrm{loc}}$};
+\node[glovec] (xglo) at (0,-0.8)   {$x_{\mathrm{glo}}$};
+\node[note, left=0pt of xloc] {LightGCN};
+\node[note, left=0pt of xglo] {KG-SVD};
+
+% ---- Concat
+\node[block] (concat) at (2.3,0) {concat \\ $[x_{\mathrm{loc}};x_{\mathrm{glo}}]\in\mathbb{R}^{2d}$};
+\draw[->] (xloc.east) -- ([yshift=2mm]concat.west);
+\draw[->] (xglo.east) -- ([yshift=-2mm]concat.west);
+
+% ---- MLP body
+\node[block, minimum width=22mm] (mlp) at (5.2,0) {$\tanh(\mathbf{W}\cdot)$ \\ hidden $d$};
+\draw[->] (concat.east) -- node[op] {$\mathbf{W}\in\mathbb{R}^{d\times 2d}$} (mlp.west);
+
+% ---- Linear head with highlighted bias b=+5
+\node[accent, block, minimum width=24mm] (head) at (8.6,0) {$\mathbf{w}^{\!\top}\!h \;+\; \boldsymbol{b}$ \\ \textbf{init} $b = +5$};
+\draw[->] (mlp.east) -- (head.west);
+
+% ---- Sigmoid -> alpha
+\node[block] (sig) at (11.6,0) {$\sigma(\cdot)$};
+\draw[->] (head.east) -- (sig.west);
+\node[font=\scriptsize, accent, draw=none, fill=none, below=0pt of head, text=red!70!black]
+  {$\alpha^{(0)} \approx \sigma(5) \approx 0.993$};
+
+% ---- alpha output node
+\node[circle, draw=red!70!black, fill=red!10, inner sep=1pt, font=\footnotesize\bfseries] (alpha) at (13.5,0) {$\alpha$};
+\draw[->] (sig.east) -- (alpha.west);
+
+% ---- Right side: convex combination
+\node[locvec] (sl) at (15.4, 0.8) {$\alpha\, x_{\mathrm{loc}}$};
+\node[glovec] (sg) at (15.4,-0.8) {$(1{-}\alpha)\, x_{\mathrm{glo}}$};
+\draw[->, red!70!black] (alpha.east) to[bend left=15]  (sl.west);
+\draw[->, red!70!black] (alpha.east) to[bend right=15] (sg.west);
+
+\node[circle, draw, inner sep=1pt, font=\footnotesize] (plus) at (17.6,0) {$+$};
+\draw[->] (sl.east) -- ([yshift=2mm]plus.west);
+\draw[->] (sg.east) -- ([yshift=-2mm]plus.west);
+
+\node[finalvec] (xfin) at (19.7,0) {$x_{\mathrm{final}}$};
+\draw[->] (plus.east) -- (xfin.west);
+
+% ---- Annotations
+\node[note, below=8mm of mlp]
+  {Gate$(z) = \sigma\!\big(\mathbf{w}^{\!\top}\tanh(\mathbf{W}z) + b\big)$};
+\node[note, below=8mm of plus, text width=42mm]
+  {Two independent gates: \\ Gate$_u$ for users, Gate$_i$ for items};
+\node[note, above=5mm of head, text=red!70!black, text width=38mm]
+  {Local-biased init: \\ training starts $\approx$ pure LightGCN; \\ KG channel opens only if BPR pushes $b$ down};
+
+\end{tikzpicture}%
+}
+\caption[Local-biased fusion gate signal flow.]{Local-biased fusion gate. Local ($x_{\mathrm{loc}}$, from LightGCN) and global ($x_{\mathrm{glo}}$, from KG-SVD) representations are concatenated, passed through a small MLP (hidden width $d$, $\tanh$), and the scalar logit is shifted by an \textbf{initialized bias $b = +5$} before the sigmoid (Eq.~\eqref{eq:gate-mlp}). The resulting $\alpha \in (0,1)$ produces the convex combination $x_{\mathrm{final}} = \alpha x_{\mathrm{loc}} + (1-\alpha) x_{\mathrm{glo}}$. The bias initialization yields $\alpha^{(0)} \approx 0.993$, so training begins effectively as pure LightGCN; the KG channel widens only if BPR gradients pull $b$ downward (Section~\ref{sec:gate-bias}). Two independent gates are instantiated, one for users and one for items.}
+\label{fig:gate}
 \end{figure}
 
 \section{Cross-View Contrastive Regularization}
