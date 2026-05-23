@@ -435,7 +435,7 @@ u_{\mathrm{final}}^{(0)} \approx 0.993\, u_{\mathrm{loc}}^{(0)} + 0.007\, u_{\ma
 
 \end{tikzpicture}%
 }
-\caption[區域偏置融合閘訊號流。]{區域偏置融合閘，以使用者側為例。區域表示 $u_{\mathrm{loc}}$（來自 LightGCN）與全域表示 $u_{\mathrm{glo}}$（直接查全域使用者表）先串接，經一小型 MLP（隱藏寬度 $d$、$\tanh$），標量 logit 再加上\textbf{初始化偏置 $b = +5$} 後送入 sigmoid（式~\eqref{eq:gate-mlp-zh}）。所得 $\alpha_u \in (0,1)$ 構成凸組合 $u_{\mathrm{final}} = \alpha_u u_{\mathrm{loc}} + (1-\alpha_u) u_{\mathrm{glo}}$。偏置初始化使 $\alpha_u^{(0)} \approx 0.993$，訓練起點實質上等同純 LightGCN；KG 通道僅在 BPR 梯度將 $b$ 向下推時才打開（第~\ref{sec:gate-bias-zh}~節）。物品側結構完全相同：另一個架構一致的 $\mathrm{Gate}_i$ 將 $(i_{\mathrm{loc}}, i_{\mathrm{glo}})$ 映射至 $\alpha_i$ 與 $i_{\mathrm{final}}$，其偏置亦初始化為 $+5$。}
+\caption{區域偏置融合閘。}
 \label{fig:gate-zh}
 \end{figure}
 

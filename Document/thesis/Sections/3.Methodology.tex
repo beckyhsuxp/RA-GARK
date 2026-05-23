@@ -444,7 +444,7 @@ The bias magnitude is chosen by a single principle: large enough that the initia
 
 \end{tikzpicture}%
 }
-\caption[Local-biased fusion gate signal flow.]{Local-biased fusion gate, shown on the user side. The local representation $u_{\mathrm{loc}}$ (from LightGCN) and the global representation $u_{\mathrm{glo}}$ (direct lookup into the global user table) are concatenated, passed through a small MLP (hidden width $d$, $\tanh$), and the scalar logit is shifted by an \textbf{initialized bias $b = +5$} before the sigmoid (Eq.~\eqref{eq:gate-mlp}). The resulting $\alpha_u \in (0,1)$ produces the convex combination $u_{\mathrm{final}} = \alpha_u u_{\mathrm{loc}} + (1-\alpha_u) u_{\mathrm{glo}}$. The bias initialization yields $\alpha_u^{(0)} \approx 0.993$, so training begins effectively as pure LightGCN; the KG channel widens only if BPR gradients pull $b$ downward (Section~\ref{sec:gate-bias}). The item side is structurally identical: a separate $\mathrm{Gate}_i$ with the same architecture maps $(i_{\mathrm{loc}}, i_{\mathrm{glo}})$ to $\alpha_i$ and $i_{\mathrm{final}}$, with its own bias also initialized to $+5$.}
+\caption{Local-biased fusion gate.}
 \label{fig:gate}
 \end{figure}
 
