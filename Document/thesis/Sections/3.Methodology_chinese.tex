@@ -2,12 +2,21 @@
 \label{ch:methodology-zh}
 \label{ch:architecture-zh}
 
-本章呈現 RA-GARK 之完整方法。第~\ref{sec:approach-principle-zh}~節說明使 RA-GARK 有別於第~\ref{ch:relatedwork-zh}~章所回顧之深度融合基線的核心設計原則。第~\ref{sec:approach-overview-zh}~節以泳道圖（swim-lane）呈現推論時的整體資料流。第~\ref{sec:approach-notation-zh}~節固定符號。第~\ref{sec:approach-problem-zh}~節形式化推薦任務與訓練目標。第~\ref{sec:local-zh}~至~\ref{sec:cl-zh}~節依模組於前向傳遞中的順序逐一詳述各模組；第~\ref{sec:method-train-zh}~節說明訓練程序與計算複雜度。
+本章呈現 RA-GARK 之完整方法，編排如下：
+\begin{itemize}
+  \item 第~\ref{sec:approach-principle-zh}~節說明使 RA-GARK 有別於第~\ref{ch:relatedwork-zh}~章所回顧之深度融合基線的核心設計原則。
+  \item 第~\ref{sec:approach-overview-zh}~節以泳道圖（swim-lane）呈現推論時的整體資料流。
+  \item 第~\ref{sec:approach-notation-zh}~至~\ref{sec:approach-problem-zh}~節固定符號並形式化推薦任務與訓練目標。
+  \item 第~\ref{sec:local-zh}~至~\ref{sec:cl-zh}~節依模組於前向傳遞中的順序逐一詳述各模組。
+  \item 第~\ref{sec:method-train-zh}~節說明訓練程序與計算複雜度。
+\end{itemize}
 
 \section{設計原則：KG 作為可被閘控的旁路通道}
 \label{sec:approach-principle-zh}
 
-第~\ref{ch:intro-zh}~章的經驗觀察是：在本研究稀疏的評論衍生知識圖譜（KG）上，四種具代表性的 KG-aware 方法（KGAT、KGCL、MCCLK、KGRec）皆被純 LightGCN 一致地超越。這些基線所共有的結構性失因在於：KG 被當作評分管線的\emph{必要組件}串接進來——KG 實體嵌入直接參與訊息傳遞，且無任何架構性的開關能在 KG 被證實不可靠時將其脫接。因此 KG 雜訊與協同表示共享同一條梯度流。
+第~\ref{ch:intro-zh}~章的經驗觀察是：在本研究稀疏的評論衍生知識圖譜（KG）上，四種具代表性的 KG-aware 方法（KGAT、KGCL、MCCLK、KGRec）皆被純 LightGCN 一致地超越。
+
+這些基線所共有的結構性失因在於：KG 被當作評分管線的\emph{必要組件}串接進來——KG 實體嵌入直接參與訊息傳遞，且無任何架構性的開關能在 KG 被證實不可靠時將其脫接。因此 KG 雜訊與協同表示共享同一條梯度流。
 
 RA-GARK 圍繞一個直接面對此失效模式的核心設計原則：
 

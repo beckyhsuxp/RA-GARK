@@ -2,12 +2,21 @@
 \label{ch:methodology}
 \label{ch:architecture}
 
-This chapter presents RA-GARK in full. Section~\ref{sec:approach-principle} states the central design principle that distinguishes RA-GARK from the deep-fusion baselines surveyed in Chapter~\ref{ch:relatedwork}. Section~\ref{sec:approach-overview} gives a swim-lane overview of the architecture and the data flow at inference time. Section~\ref{sec:approach-notation} fixes notation. Section~\ref{sec:approach-problem} formalizes the recommendation task and the training objective. Sections~\ref{sec:local}--\ref{sec:cl} then detail each module in the order it participates in the forward pass, and Section~\ref{sec:method-train} describes training and computational complexity.
+This chapter presents RA-GARK in full. The chapter is organized as follows:
+\begin{itemize}
+  \item Section~\ref{sec:approach-principle} states the central design principle that distinguishes RA-GARK from the deep-fusion baselines of Chapter~\ref{ch:relatedwork}.
+  \item Section~\ref{sec:approach-overview} gives a swim-lane overview of the architecture and inference-time data flow.
+  \item Sections~\ref{sec:approach-notation}--\ref{sec:approach-problem} fix notation and formalize the recommendation task and training objective.
+  \item Sections~\ref{sec:local}--\ref{sec:cl} detail each module in the order it participates in the forward pass.
+  \item Section~\ref{sec:method-train} describes training and computational complexity.
+\end{itemize}
 
 \section{Design Principle: KG as a Gateable Side Channel}
 \label{sec:approach-principle}
 
-The empirical observation in Chapter~\ref{ch:intro} is that four representative KG-aware methods (KGAT, KGCL, MCCLK, KGRec) are uniformly outperformed by pure LightGCN on our sparse review-derived knowledge graph (KG). The structural cause shared by these baselines is that the KG is wired into the scoring pipeline as a \emph{mandatory} component: KG entity embeddings participate in message passing, and there is no architectural switch by which the model can disengage the KG when it turns out to be unreliable. KG noise therefore enters the same gradient flow that produces the collaborative representation.
+The empirical observation in Chapter~\ref{ch:intro} is that four representative KG-aware methods (KGAT, KGCL, MCCLK, KGRec) are uniformly outperformed by pure LightGCN on our sparse review-derived knowledge graph (KG).
+
+The structural cause shared by these baselines is that the KG is wired into the scoring pipeline as a \emph{mandatory} component: KG entity embeddings participate in message passing, and there is no architectural switch by which the model can disengage the KG when it turns out to be unreliable. KG noise therefore enters the same gradient flow that produces the collaborative representation.
 
 RA-GARK is organized around a single design principle that addresses this failure mode directly:
 
