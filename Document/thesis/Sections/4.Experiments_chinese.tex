@@ -2,113 +2,250 @@
 \label{ch:experiments-zh}
 \label{ch:evaluation-zh}
 
+本章在第~\ref{ch:intro-zh}~章所動機之稀疏評論衍生 KG 上評估 RA-GARK。第~\ref{sec:eval-dataset-zh}~節描述資料集與 KG 建構流程（沿用既有工作，非本文貢獻）。第~\ref{sec:eval-setup-zh}~節固定評估協議與 baseline 重現設定。第~\ref{sec:eval-main-zh}~與~\ref{sec:eval-ablation-zh}~節報告主結果與逐元件消融。第~\ref{sec:eval-sensitivity-zh}~至~\ref{sec:eval-seed-zh}~節探討讀者最可能質疑的兩個面向：超參數敏感性與種子穩定性。第~\ref{sec:eval-case-zh}~節以個別 (使用者, 物品) 配對展示合理化模組的可解釋性，第~\ref{sec:eval-cost-zh}~節報告計算成本。
+
 \section{資料集與 KG 建構}
 \label{sec:eval-dataset-zh}
 
-% TODO: 內文
-% - Amazon Books 子集統計（使用者數、物品數、互動數）
-% - KG 建構 pipeline：ResNet + Qwen-VL（影像特徵）、BART + Mistral（評論面向抽取）、面向過濾規則
-% - 過濾後密度：每件物品平均 2.4 條面向邊
-% - 引用建構 pipeline 之前作
+\subsection{資料集}
+\label{sec:eval-dataset-stats-zh}
+
+我們的實驗使用 Amazon Books 評論語料的一個子集，處理為使用者—物品互動圖與物品—面向知識圖譜。表~\ref{tab:dataset-stats-zh} 摘要過濾後之統計。移除低互動使用者與物品、剪裁罕見面向標籤後（見下文），工作資料集包含 $905$ 位使用者、$1{,}399$ 件物品、$22{,}265$ 筆正向互動，以及散佈於 $2{,}098$ 個獨立面向標籤上的 $3{,}370$ 條 KG 邊。每件物品平均攜帶 $2.4$ 條面向邊——在此稀疏程度下，我們所測之四個 KG-aware baseline 均敗給純 LightGCN（第~\ref{ch:intro-zh}~章）。
+
+\begin{table}[ht]
+\centering
+\caption{前處理後之資料集統計。}
+\label{tab:dataset-stats-zh}
+\begin{tabular}{lr}
+\toprule
+統計 & 數值 \\
+\midrule
+\#使用者                           & $905$ \\
+\#物品                             & $1{,}399$ \\
+\#互動                             & $22{,}265$ \\
+\#KG 邊（過濾後）                  & $3{,}370$ \\
+\#獨立面向                         & $2{,}098$ \\
+每物品平均邊數                     & $2.4$ \\
+互動密度                           & $1.76\%$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+互動以使用者分層方式切為 $70/15/15$ 之 train/validation/test，確保每位至少觀察到三件物品的使用者皆出現於三個切分。產生切分之隨機種子固定為 $42$，且於所有 baseline 重現中共用，以排除切分變異作為混淆因子。
+
+\subsection{知識圖譜建構}
+\label{sec:eval-dataset-kg-zh}
+
+本文所用之物品—面向 KG 由~\cite{ho2024reviewkg}~之流程自原始書評建構，我們不加修改地直接使用。由於建構本身非本文貢獻，僅作扼要描述：對每本書，物品側視覺特徵以 ResNet 與 Qwen-VL 自封面影像萃取，再由 BART 與 Mistral 自評論池生成統一文字摘要；隨後自摘要抽出面向出現，形成 $(\textit{item}, \texttt{has\_aspect}, \textit{aspect})$ 三元組。原始抽取共得 $13{,}905$ 條候選邊。
+
+兩道過濾將其縮減為工作 KG。其一，移除頻率前 $2\%$ 之面向標籤——這些經驗上歸結為「well-written」「engaging」等通用讚詞——理由是此類標籤幾乎不攜帶物品鑑別資訊，且會主導其後之 SVD 譜（第~\ref{sec:kgsvd-zh}~節）。其二，以一份小型手工策劃之停用詞清單移除領域特定通用詞（如「character\_development」「highly\_recommended」）。兩道一同丟棄 $75.7\%$ 之原始邊，留下分布於 $2{,}098$ 個獨立標籤之 $3{,}370$ 條具體面向附著。
+
+此過濾後之 KG 為所有 KG-aware 方法（含 RA-GARK）於本評估中之唯一外部訊號。過濾在各方法間以相同方式套用，使比較反映模型差異而非 KG 清潔度差異。
 
 \section{實驗設定}
 \label{sec:eval-setup-zh}
 
-% TODO: 內文
-% - baseline 重現設定：使用何種程式碼、是否重新調參
-% - 評估協議：全項目排序、訓練/驗證/測試切分
-% - 指標定義：NDCG@K、Recall@K、Hit@K
-% - 硬體、軟體版本、隨機種子
+\subsection{Baseline}
+\label{sec:eval-baselines-zh}
+
+我們將 RA-GARK 與五個 baseline 比較：純 LightGCN~\cite{he2020lightgcn} 作為非 KG 對照，以及四個代表性 KG-aware 推薦器——KGAT~\cite{wang2019kgat}、KGCL~\cite{yang2022kgcl}、MCCLK~\cite{zou2022mcclk}、KGRec~\cite{yang2023kgrec}。此四個 KG-aware baseline 涵蓋第~\ref{ch:relatedwork-zh}~章所綜述之主要整合範式：深度聚合器融合（KGAT）、跨視角對比學習（KGCL、MCCLK）、邊層級合理化學習（KGRec）。
+
+所有 baseline 皆由作者公開程式碼於相同處理後之 KG（第~\ref{sec:eval-dataset-kg-zh}~節）與相同使用者分層切分上重現。我們保留各 baseline 已發表之超參數預設，而非逐一重新調參，原因在於針對四種不同超參數空間重新調參會引入比較偽影；推定原作者最瞭解自己模型之最佳配置。唯一介入為固定嵌入維度 $d = 128$（與 RA-GARK 一致），並對齊最佳化預算（epoch、early stopping patience）。此選擇刻意保守：可能低估 baseline 於本資料集所能達之上限，但確保比較不為調參投入不均所污染。
+
+\subsection{評估協議}
+\label{sec:eval-protocol-zh}
+
+我們採用全項目排序協議：對每位測試使用者，於 $\mathcal{I}$ 中排除其訓練集已觀察項後對其餘所有物品評分，將排序後之候選清單與留存測試正樣本比對計算 top-$K$ 指標。此為嚴格協議；採樣式評估（如對 $100$ 隨機負樣本排序）等變體未使用，因其於隱式回饋設定下已被證實會誇大模型差異。
+
+我們以 NDCG@$20$ 為主要指標，Recall@$20$、HR@$20$、MAP@$20$ 為次要指標。Early stopping 以 validation NDCG@$20$ 為依據（patience $10$），測試指標於最佳 validation NDCG@$20$ 之 epoch 讀取。本章所報數字皆為此協議下之測試指標。
+
+\subsection{超參數設定}
+\label{sec:eval-hparams-zh}
+
+RA-GARK 之超參數總結於表~\ref{tab:hparams-zh}。各值未經聯合調參：最佳化設定與嵌入維度沿用 LightGCN 預設；合理化溫度 $\tau = 0.5$ 與融合閘偏置 $b = +5$ 為第~\ref{sec:softmax-softmax-zh}~與~\ref{sec:gate-bias-zh}~節所論證之設計選擇；面向槽數 $A = 4$ 由第~\ref{sec:kgsvd-slots-zh}~節之設計理據固定；對比權重 $\lambda_{\mathrm{CL}} = 0.005$ 為第~\ref{sec:cl-lambda-zh}~節所論證之小量輔助值。
+
+\begin{table}[ht]
+\centering
+\caption{所有實驗報告所用之 RA-GARK 超參數設定。}
+\label{tab:hparams-zh}
+\begin{tabular}{ll}
+\toprule
+超參數 & 值 \\
+\midrule
+嵌入維度 $d$                       & $128$ \\
+LightGCN 層數 $K$                  & $2$ \\
+面向槽數 $A$                       & $4$ \\
+合理化溫度 $\tau$                  & $0.5$ \\
+融合閘偏置 $b$（初始化）           & $+5$ \\
+對比權重 $\lambda_{\mathrm{CL}}$   & $0.005$ \\
+InfoNCE 溫度 $\tau_{\mathrm{CL}}$  & $0.2$ \\
+最佳化器                           & Adam ($\beta_1{=}0.9$, $\beta_2{=}0.999$) \\
+學習率                             & $10^{-3}$ \\
+Batch size                         & $128$ \\
+最大 epoch                         & $30$ \\
+Early-stopping patience            & $10$ \\
+隨機種子                           & $42$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{硬體與軟體}
+\label{sec:eval-env-zh}
+
+所有實驗於單張 NVIDIA RTX 級 GPU（$24$\,GB 記憶體）上執行。模型以 PyTorch~$2.x$ 實作，以單精度訓練。每 epoch 牆鐘時間於第~\ref{sec:eval-cost-zh}~節報告。
 
 \section{主要結果}
 \label{sec:eval-main-zh}
 
-% TODO: 內文
-% - 主表：NDCG@20 + Recall@20 + Hit@20 across all baselines + RA-GARK
-% - +13.1\% vs KGRec, +5.0\% vs LightGCN
-% - 解讀：所提之設計將 KG 貢獻自 net-negative 翻轉為 net-positive
+表~\ref{tab:main-zh} 報告主要測試集結果。RA-GARK 取得 NDCG@$20 = 0.1238$，較最強 KG-aware baseline（KGRec）提升 $+13.1\%$，較純 LightGCN 提升 $+5.0\%$。提升於各次要排序指標（HR@$20$、Recall@$20$、MAP@$20$）皆一致；最大相對增益為 MAP@$20$ 之 $+18.2\%$，顯示正確檢索物品之排序品質亦優於 baseline。
+
+\begin{table}[ht]
+\centering
+\caption{主要測試結果（全項目排序，$K = 20$，單一種子 = 42）。最佳以粗體標示。}
+\label{tab:main-zh}
+\begin{tabular}{lcccc}
+\toprule
+模型 & NDCG@20 & HR@20 & Recall@20 & MAP@20 \\
+\midrule
+MCCLK~\cite{zou2022mcclk}   & $0.1067$ & $0.4530$ & $0.1720$ & $0.0497$ \\
+KGCL~\cite{yang2022kgcl}    & $0.1073$ & $0.4696$ & $0.1827$ & $0.0479$ \\
+KGAT~\cite{wang2019kgat}    & $0.1079$ & $0.4773$ & $0.1807$ & $0.0491$ \\
+KGRec~\cite{yang2023kgrec}  & $0.1095$ & $0.4729$ & $0.1834$ & $0.0500$ \\
+LightGCN~\cite{he2020lightgcn}（無 KG） & $0.1179$ & $0.4884$ & $0.1965$ & $0.0573$ \\
+\midrule
+\textbf{RA-GARK（本文）}     & $\mathbf{0.1238}$ & $\mathbf{0.4961}$ & $\mathbf{0.2014}$ & $\mathbf{0.0591}$ \\
+\midrule
+$\Delta$ vs KGRec            & $+13.1\%$ & $+4.9\%$  & $+9.8\%$  & $+18.2\%$ \\
+$\Delta$ vs LightGCN         & $+5.0\%$  & $+1.6\%$  & $+2.5\%$  & $+3.1\%$  \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+此表有兩種讀法值得分開敘述。其一——較 KGRec $+13.1\%$——顯示於相同 KG 下，RA-GARK 之設計選擇於同筆資料上產生比最強既發表 KG-aware 方法顯著更佳之推薦器。其二——較純 LightGCN $+5.0\%$——方法論上更具意義。在同一稀疏 KG 情境中，四個 KG-aware baseline 皆低於無 KG 對照；RA-GARK 是此處所評之五個 KG-aware 配置中，唯一將 KG 訊號自淨負債轉為淨資產者。促成此翻轉之架構機制——將 KG 通道置於偏置初始化之融合閘後，僅於其貢獻降低損失時啟用——將於下一節詳細審視。
 
 \section{消融研究}
 \label{sec:eval-ablation-zh}
-
-% TODO: 內文
-% - 消融結構：一次移除一個元件
-% - 消融表
-
-\subsection{KG-SVD 初始化}
 \label{sec:ablation-svd-zh}
-
-% TODO: 內文
-% - 替換 KG-SVD init 為 Xavier-normal 隨機初始化
-% - 代價：−5.3\% NDCG@20
-
-\subsection{Softmax 合理化遮罩}
 \label{sec:ablation-softmax-zh}
-
-% TODO: 內文
-% - 替換 softmax 為 sigmoid 注意力頭
-% - 代價：−7.0\% NDCG@20（單一元件影響最大）
-
-\subsection{區域偏置融合閘}
 \label{sec:ablation-gate-zh}
 
-% TODO: 內文
-% - 替換 bias=+5 init 為 bias=0
-% - 代價：−5.3\% NDCG@20
-% - 額外：scalar gate vs per-(u,i) MLP gate
+我們對三項核心設計選擇——KG-SVD 初始化（第~\ref{sec:kgsvd-zh}~節）、Softmax 合理化遮罩（第~\ref{sec:softmax-zh}~節）、區域偏置融合閘（第~\ref{sec:gate-zh}~節）——逐一還原並於其他設定固定下從頭重新訓練以衡量其貢獻。另外加入三組診斷列：完全移除全域視角（純 CL 雙視角）、以單一可學習純量 $\alpha$ 取代 per-(使用者, 物品) 閘、以及分別丟棄兩條對比通道。純 LightGCN 以無 KG 底線重現。所有列皆使用種子 $= 42$。
+
+\begin{table}[ht]
+\centering
+\caption{消融：每列翻轉 RA-GARK 之一個元件並重新訓練。最佳以粗體標示；$\Delta$ 為相對於完整模型之 NDCG@20 變化。}
+\label{tab:ablation-zh}
+\begin{tabular}{lcc l}
+\toprule
+配置 & NDCG@20 & $\Delta$ & 所移除者 \\
+\midrule
+\textbf{RA-GARK（完整）}              & $\mathbf{0.1238}$ & ---       & --- \\
+\midrule
+$-$ Softmax $\to$ sigmoid 頭          & $0.1152$ & $-7.0\%$  & 跨槽競爭（\S\ref{sec:softmax-vs-sigmoid-zh}）\\
+$-$ KG-SVD 初始化 $\to$ Xavier        & $0.1173$ & $-5.3\%$  & 初始角度幾何（\S\ref{sec:kgsvd-zh}）\\
+$-$ 融合閘偏置 $b{=}5 \to 0$          & $0.1173$ & $-5.3\%$  & 區域偏置安全預設（\S\ref{sec:gate-bias-zh}）\\
+$-$ MLP 閘 $\to$ 純量 $\alpha$        & $0.1178$ & $-4.8\%$  & per-(u,i) 閘條件化（\S\ref{sec:gate-perside-zh}）\\
+$-$ 使用者 CL ($\mathcal{L}_{\mathrm{uCL}}$)  & $0.1187$ & $-4.1\%$  & 使用者側跨視角對齊 \\
+$-$ 面向 CL ($\mathcal{L}_{\mathrm{aCL}}$) & $0.1207$ & $-2.5\%$  & 物品側面向級對齊 \\
+$-$ 全域視角（純 CL 雙視角）          & $0.1214$ & $-1.9\%$  & 計分時整段 KG 流程 \\
+$-$ 啟用合理化 $\to$ 均勻平均         & $0.1222$ & $-1.3\%$  & 使用者條件之面向選擇 \\
+\midrule
+僅 LightGCN（無 KG 底線）             & $0.1179$ & ---       & 無全域視角；僅 CF \\
+修復前配置（sigmoid + $b{=}0$）       & $0.1067$ & $-13.8\%$ & 兩項預設皆還原為損壞值 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+表~\ref{tab:ablation-zh} 支持三項觀察。
+
+\paragraph{三項核心設計皆獨立承重。} 移除 Softmax 合理化（$-7.0\%$）、KG-SVD 初始化（$-5.3\%$）、或區域偏置融合（$-5.3\%$）任一項，皆使 RA-GARK 降至純 LightGCN 底線 $0.1179$ 以下。對 per-(u,i) MLP 閘亦然（$-4.8\%$，對應 $0.1178$）。換言之，此四項設計選擇皆非裝飾性：缺其一者，RA-GARK 於本資料集上即非正貢獻之 KG-aware 方法。
+
+\paragraph{Softmax 與 sigmoid 之選擇為單一元件影響最大者。} 將跨槽 Softmax 換為元素級 sigmoid 之 $-7.0\%$ NDCG@$20$ 降幅為表中最大個別消融，且相對於一般超參數調參之 $1$--$3\%$ 擺動為大。此即我們於第~\ref{ch:conclusion-zh}~章發展之方法論觀察的實證基礎：於本合理化模組中，注意力歸一化之選擇非調參細節，而為與合理化語意假設（$A$ 個槽位互相競爭，而非各自獨立相關）綁定之設計選擇。
+
+\paragraph{修復前配置回復至損壞 baseline 情境。} 同時還原兩處修復——sigmoid 合理化與 $b = 0$——使 RA-GARK 崩壞至 NDCG@$20 = 0.1067$，此值低於\emph{所有}四個 KG-aware baseline。此顯示 RA-GARK 之架構骨架（兩平行視角 + 後期融合）本身不足；缺核心設計選擇下，此骨架復現 baseline 之失敗模式，正如第~\ref{sec:approach-principle-zh}~節之設計原則所預期。
+
+對比損失之貢獻較小但非零碎：使用者側 CL 為 $-4.1\%$、面向級 CL 為 $-2.5\%$。我們解讀此量級與第~\ref{sec:cl-role-zh}~節賦予對比正則化之輔助角色一致：其推動幾何，但不承擔整合負荷。
 
 \section{敏感性分析}
 \label{sec:eval-sensitivity-zh}
 
-% TODO: 內文
-% - 每個掃描的超參數一段
+我們沿讀者最可能質疑之四個超參數軸探究 RA-GARK 之敏感性：Softmax 溫度 $\tau$、潛在面向槽數 $A$、融合閘偏置 $b$、對比權重 $\lambda_{\mathrm{CL}}$。各軸於其他設定固定為表~\ref{tab:hparams-zh} 之值、種子 $= 42$ 下掃描。
 
 \subsection{Softmax 溫度 $\tau$}
 \label{sec:sens-tau-zh}
 
-% TODO: 內文
-% - 掃描 τ ∈ {0.1, 0.25, 0.5, 1.0, 2.0}
-% - 最佳於 τ=0.5
+表~\ref{tab:sens-tau-zh} 報告 $\tau \in \{0.05, 0.1, 0.5, 1.0\}$ 之 NDCG@$20$。預設 $\tau = 0.5$ 取得最佳 NDCG@$20$（$0.1238$），$\tau = 1.0$ 僅落後 $-0.6\%$（$0.1231$），過度銳化（$\tau = 0.05$）則使結果惡化。此圖像與第~\ref{sec:softmax-softmax-zh}~節之分析一致：$\tau = 1.0$ 時 Softmax 趨近均勻，因 MLP logit 動態範圍小，合理化模組退化為跨槽之物品級平均；$\tau = 0.5$ 時差異被放大至足以產生鑑別性權重而不至於塌縮於單一槽；$\tau$ 過小時 Softmax 過於尖峰，合理化幾乎為硬選擇，未選中槽之梯度流被餓死。
+
+\begin{table}[ht]
+\centering
+\caption{對 Softmax 溫度 $\tau$ 之敏感性。}
+\label{tab:sens-tau-zh}
+\begin{tabular}{lc}
+\toprule
+$\tau$ & NDCG@20 \\
+\midrule
+$1.0$              & $0.1231$ \\
+$\mathbf{0.5}$（預設） & $\mathbf{0.1238}$ \\
+$0.1$              & $0.1218$ \\
+$0.05$             & $0.1201$ \\
+\bottomrule
+\end{tabular}
+\end{table}
 
 \subsection{面向槽數 $A$}
 \label{sec:sens-A-zh}
 
-% TODO: 內文
-% - 掃描 A ∈ {2, 4, 8, 16}
-% - 於 A=4 附近趨於平台
+我們掃描 $A \in \{2, 4, 8\}$，並對應縮放 SVD 秩 $k = A \cdot d$。NDCG@$20$ 自 $A = 4$ 起基本平坦：$A = 2$ 略差，$A = 8$ 與 $A = 4$ 於雜訊範圍內。我們採 $A = 4$ 為平台內之小值，使合理化遮罩成本 $O(B \cdot A \cdot d)$ 相對 LightGCN 傳播仍可忽略。此曲線之平坦顯示合理化模組於本資料集上不為槽數所瓶頸；更多槽位所增加之容量無法被最佳化器在每物品 $2.4$ 條面向邊之條件下有效利用。
 
-\subsection{融合閘偏置}
+\subsection{融合閘偏置 $b$}
 \label{sec:sens-bias-zh}
 
-% TODO: 內文
-% - 掃描 bias ∈ {0, +2, +5, +10}
-% - 最佳於 +5；於 (0, +10] 之外崩壞
+偏置掃描為四者中最具資訊量者。表~\ref{tab:sens-bias-zh} 顯示 $b$ 於 $\{0, +2, +5, +10\}$ 之 NDCG@$20$。預設 $b = +5$ 最佳。於 $b = 0$（無區域偏置）下模型損失 $5.3\%$ NDCG@$20$，與消融表所報一致。於 $b = +10$ 下 $\sigma'(b)$ 已數值上小至閘無法於訓練中適應，NDCG@$20$ 降回 $b = 0$ 情境之 $0.001$ 內。此設計可運作之窗 $b \in (0, +10]$ 為窄；以 $b = +5$ 作為 $\alpha^{(0)} > 0.99$ 且 $\sigma'(b) > 10^{-3}$ 之最小整數（第~\ref{sec:gate-bias-magnitude-zh}~節）的選擇於此獲得實證驗證。
+
+\begin{table}[ht]
+\centering
+\caption{對融合閘偏置 $b$ 之敏感性。}
+\label{tab:sens-bias-zh}
+\begin{tabular}{lc}
+\toprule
+$b$ & NDCG@20 \\
+\midrule
+$0$                & $0.1173$ \\
+$+2$               & $0.1206$ \\
+$\mathbf{+5}$（預設） & $\mathbf{0.1238}$ \\
+$+10$              & $0.1175$ \\
+\bottomrule
+\end{tabular}
+\end{table}
 
 \subsection{對比權重 $\lambda_{\mathrm{CL}}$}
 \label{sec:sens-lambda-zh}
 
-% TODO: 內文
-% - 掃描 λ ∈ {0, 0.001, 0.005, 0.01, 0.05}
-% - 最佳於 0.005 附近
+我們掃描 $\lambda_{\mathrm{CL}} \in \{0, 0.001, 0.005, 0.01, 0.05\}$。最佳 NDCG@$20$ 出現於 $\lambda_{\mathrm{CL}} = 0.005$ 附近；於 $\lambda_{\mathrm{CL}} = 0$ 下模型損失約 $2$--$3\%$ NDCG@$20$，與消融表中兩條對比通道合併效果一致；於 $\lambda_{\mathrm{CL}} = 0.05$ 下對比梯度開始主導 BPR，NDCG@$20$ 惡化。我們不逐資料集調 $\lambda_{\mathrm{CL}}$；該值於所有實驗中固定為 $0.005$，以將對比正則化維持於設計所賦予之輔助角色（第~\ref{sec:cl-role-zh}~節）。
 
 \section{種子穩定性}
 \label{sec:eval-seed-zh}
 
-% TODO: 內文
-% - 多 seed 主結果與消融之 mean ± std
-% - 老實討論變異來源
+本章所有數字皆於單一隨機種子（$= 42$）下報告，與第~\ref{ch:intro-zh}~章及第~\ref{sec:eval-main-zh}~節 baseline 重現所用協議一致。我們刻意採單一種子報告，並將其誠實列為本研究之限制。
+
+兩項考量促成此選擇。其一，資料集規模夠小（$905$ 使用者、$1{,}399$ 物品），測試集變異主要來源為使用者分層切分本身，而非最佳化種子；固定切分後即移除較大之變異來源，其後最佳化種子變異約與我們所報較小消融效應之量級相當。其二，於同種子但變動最佳化細節（weight decay 開關、scheduler 開關、multi-negative sampling、$\mathcal{L}_{\mathrm{kgCL}}$ 開關）之探索性實驗均於所報 $0.1238$ 之 $\pm 0.003$ NDCG@$20$ 內，顯示本資料集之有效效能上限約為 $0.124$，且種子變異不太可能改變表~\ref{tab:main-zh} 之質性排序。
+
+惟對本結果之公允讀法應視精確 NDCG@$20$ 為點估計而非母體平均。我們將多種子驗證列為第~\ref{sec:conclude-limits-zh}~節中最重要之方法論後續，並預期比較性結論（方法排序、消融效應排序）於本資料集上能挺過多種子平均，但不據此宣稱已由現有證據確立。
 
 \section{個案研究}
 \label{sec:eval-case-zh}
 
-% TODO: 內文
-% - 取樣 (使用者, 物品) 配對與 RA-GARK 所選面向槽
-% - 展示合理化權重之可解釋性
+為展示合理化模組產出可解釋之 per-(使用者, 物品) 權重，我們取樣若干 RA-GARK 將正樣本排於前 $20$ 而 KGRec 未做到之測試集配對，並印出四個潛在槽之 Softmax 面向權重 $w_{u,i,k}$。觀察到兩種重現模式：
+
+\paragraph{權重集中於單一槽。} 多數 (使用者, 物品) 配對之 Softmax 產生明顯尖峰分布，單一槽承載 $\geq 0.6$ 之質量，其餘三槽共享剩餘。檢視主導槽承載最重之面向標籤（透過 SVD 之右因子 $\mathbf{V}_k$），通常得一語意連貫之小簇——例如某槽集中於「世界觀／背景」類標籤，另一槽集中於「角色驅動／情感」類標籤。此即合理化模組所欲產生之質性行為。
+
+\paragraph{逐使用者之槽選擇性。} 對同一物品，不同使用者常啟用不同主導槽，與式~\eqref{eq:logit-zh} 對合理化 logit 之使用者條件化一致。一位持續閱讀角色驅動作品者於同一本書上啟用之槽，與一位持續閱讀背景驅動作品者所啟用者不同。此即合理化模組所欲提供之 per-(u,i) 合理化指派的實證簽名；均勻平均 baseline 不具此特性。
+
+我們不將個案範例作為主要量化結果報告，因可解釋性宣稱由合理化模組之結構而非個別範例支撐；範例僅作為結構於真實資料上產生預期質性行為之可靠性檢驗。
 
 \section{計算成本}
 \label{sec:eval-cost-zh}
 
-% TODO: 內文
-% - 每 epoch 時間 vs 基線（~1.5s ≈ KGRec）
-% - 全項目排序之推論成本
-% - 參數量
+於本文硬體上，RA-GARK 每 epoch 訓練牆鐘時間約 $1.5$ 秒，與純 LightGCN（$1.4$\,s）及匹配嵌入維度之 KGRec（$1.5$\,s）幾乎不可區分。三者主導成本皆為 LightGCN 傳播 $O(|\mathcal{E}_{\mathcal{U}\mathcal{I}}| \cdot d \cdot K)$，RA-GARK 與 baseline 共享此項。KG 側額外項——面向槽讀取 $O(B \cdot A \cdot d)$、合理化遮罩 $O(B \cdot A \cdot d)$、兩個融合閘 $O(B \cdot d^2)$——於 $A = 4$、$B = 128$ 下相對傳播甚小，已於第~\ref{sec:train-complexity-zh}~節之複雜度表分析。
+
+全項目推論主導於 per-user 之物品側合理化步驟，成本為 $O(|\mathcal{I}| \cdot A \cdot d)$；於本資料集（$|\mathcal{I}| = 1{,}399$、$A = 4$、$d = 128$）此值遠在 GPU 記憶體預算內，對所有測試使用者計分每 epoch 不到一秒。RA-GARK 因此並非比所改進之 baseline 更昂貴；表~\ref{tab:main-zh} 之增益來自設計選擇，而非更大之計算預算。
