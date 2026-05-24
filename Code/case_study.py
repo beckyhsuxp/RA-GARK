@@ -64,7 +64,7 @@ def find_winner_checkpoint() -> str | None:
     )
     candidates = [
         f for f in all_files
-        if "mlp_softmax" in f and "fb5" in f
+        if (("mlp_softmax" in f and "fb5" in f) or "winner" in f)
         and not any(m in f for m in off_markers)
         and "_no_" not in f
     ]
