@@ -302,14 +302,6 @@ A natural alternative is to score each slot independently with a sigmoid: $w_{u,
 
 Empirically, the sigmoid variant degrades NDCG@20 by $7.0\%$ on our benchmark (Section~\ref{sec:ablation-softmax}) --- the largest single-component effect we observe. We interpret this as evidence that, for the aspect-saliency rationale, the correct semantic assumption is competitive rather than independent: among the $A$ latent slots, the rationale answers ``which one'' is most representative, and the answer is approximately one-hot. Softmax encodes this assumption directly; sigmoid does not. We discuss this finding more carefully in Chapter~\ref{ch:conclusion} and explicitly position it as a single-dataset observation pending replication.
 
-\begin{figure}[ht]
-  \centering
-  % \includegraphics[width=0.9\textwidth]{img/softmax_attention.png}  % TODO: insert figure (c)
-  \fbox{\parbox[c][4cm][c]{0.9\textwidth}{\centering\itshape Placeholder: Softmax rationale masking forward pass\\($u_{\mathrm{glo}}$, $\{\mathbf{a}_{i,k}\}_{k=1}^A$ $\to$ MLP logits $\to$ softmax weights $w_{u,i,k}$ $\to$ weighted sum $\to$ $i_{\mathrm{glo}}$).}}
-  \caption{Softmax rationale masking.}
-  \label{fig:softmax}
-\end{figure}
-
 \section{Local-Biased Fusion Gate}
 \label{sec:gate}
 
