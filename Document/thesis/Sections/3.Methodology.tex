@@ -313,7 +313,14 @@ Empirically, the sigmoid variant degrades NDCG@20 by $7.0\%$ on our benchmark (S
 \section{Local-Biased Fusion Gate}
 \label{sec:gate}
 
-The fusion gate is the architectural mechanism that turns RA-GARK's design principle (KG as gateable side channel) into a concrete operation. It combines the local and global representations into the final embeddings that produce the score.
+The fusion gate is the architectural mechanism that turns RA-GARK's design principle (KG as gateable side channel) into a concrete operation. It combines the local and global representations into the final embeddings that produce the score. Figure~\ref{fig:gate} illustrates the signal flow on the user side; the highlighted $b = +5$ box anticipates the bias-initialization design developed in Section~\ref{sec:gate-bias}, and the item-side gate is structurally identical.
+
+\begin{figure}[ht]
+\centering
+\includegraphics[width=\textwidth]{img/gate.png}
+\caption{Local-biased fusion gate (item side is analogous).}
+\label{fig:gate}
+\end{figure}
 
 \subsection{Per-Side Gates}
 \label{sec:gate-perside}
@@ -375,13 +382,6 @@ This is a graceful degradation property in the precise architectural sense of Hi
 \label{sec:gate-bias-magnitude}
 
 The bias magnitude is chosen by a single principle: large enough that the initial gate output is overwhelmingly local, small enough that gradients on $b$ are nonzero and can adjust the gate during training. At $b = +5$, $\sigma'(5) = \sigma(5)(1 - \sigma(5)) \approx 0.007$ --- small, but not vanishing. With $b = +10$ or beyond, the gradient on $b$ becomes numerically negligible and the gate cannot learn to open at all. The choice $b = +5$ is the smallest integer for which $\alpha^{(0)} > 0.99$ while keeping $\sigma'(b) > 10^{-3}$, and it survives a sensitivity sweep without further tuning (Section~\ref{sec:sens-bias}). Removing the bias initialization entirely (setting $b = 0$) costs $5.3\%$ NDCG@20 (Section~\ref{sec:ablation-gate}).
-
-\begin{figure}[ht]
-\centering
-\includegraphics[width=\textwidth]{img/gate.png}
-\caption{Local-biased fusion gate (item side is analogous).}
-\label{fig:gate}
-\end{figure}
 
 \section{Cross-View Contrastive Regularization}
 \label{sec:cl}

@@ -312,7 +312,14 @@ i_{\mathrm{glo}} = \sum_{k=1}^{A} w_{u, i, k} \cdot \mathbf{a}_{i, k} \;\in\; \m
 \section{區域偏置融合閘}
 \label{sec:gate-zh}
 
-融合閘是將 RA-GARK 設計原則（KG 為可被閘控之旁路通道）落實為具體運算的架構機制。它將區域與全域表示結合為最終嵌入，並由其產生分數。
+融合閘是將 RA-GARK 設計原則（KG 為可被閘控之旁路通道）落實為具體運算的架構機制。它將區域與全域表示結合為最終嵌入，並由其產生分數。圖~\ref{fig:gate-zh} 以使用者側為例呈現訊號流；圖中被標註的 $b = +5$ 框預告了第~\ref{sec:gate-bias-zh}~節將展開的偏置初始化設計，物品側結構完全相同。
+
+\begin{figure}[ht]
+\centering
+\includegraphics[width=\textwidth]{img/gate.png}
+\caption{區域偏置融合閘（物品側同理）。}
+\label{fig:gate-zh}
+\end{figure}
 
 \subsection{雙側獨立閘}
 \label{sec:gate-perside-zh}
@@ -374,13 +381,6 @@ u_{\mathrm{final}}^{(0)} \approx 0.993\, u_{\mathrm{loc}}^{(0)} + 0.007\, u_{\ma
 \label{sec:gate-bias-magnitude-zh}
 
 偏置量值之選擇依單一原則：大到使初始閘輸出絕對偏向區域、小到使 $b$ 之梯度非零而能於訓練中調整閘。於 $b = +5$，$\sigma'(5) = \sigma(5)(1 - \sigma(5)) \approx 0.007$——雖小但未消失。$b = +10$ 之後 $b$ 上之梯度於數值上可忽略，閘無法學會開啟。$b = +5$ 為使 $\alpha^{(0)} > 0.99$ 同時保持 $\sigma'(b) > 10^{-3}$ 之最小整數，並通過敏感性掃描不需進一步調整（第~\ref{sec:sens-bias-zh}~節）。完全移除偏置初始化（設 $b = 0$）會損失 $5.3\%$ NDCG@20（第~\ref{sec:ablation-gate-zh}~節）。
-
-\begin{figure}[ht]
-\centering
-\includegraphics[width=\textwidth]{img/gate.png}
-\caption{區域偏置融合閘（物品側同理）。}
-\label{fig:gate-zh}
-\end{figure}
 
 \section{跨視角對比正則化}
 \label{sec:cl-zh}
