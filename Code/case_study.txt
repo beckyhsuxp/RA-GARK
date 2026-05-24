@@ -1,0 +1,45 @@
+RA-GARK softmax rationale — per-user aspect attention
+======================================================================
+
+── Item 1331  (asin=1594633665, trained by 59 users) ──
+  top KG aspects: character_complexity, unreliable_narrators, psychological_themes
+  aspect attention (softmax over 4 aspect slots):
+    user  458  →  [0.230, 0.282, 0.231, 0.257]   (max idx = aspect#1)
+    user  112  →  [0.227, 0.284, 0.231, 0.257]   (max idx = aspect#1)
+    user    1  →  [0.229, 0.284, 0.231, 0.256]   (max idx = aspect#1)
+
+── Item 785  (asin=0553418025, trained by 54 users) ──
+  top KG aspects: science_fiction_genre, survival_stories, realism, space_exploration
+  aspect attention (softmax over 4 aspect slots):
+    user  416  →  [0.285, 0.239, 0.241, 0.235]   (max idx = aspect#0)
+    user  580  →  [0.284, 0.240, 0.241, 0.235]   (max idx = aspect#0)
+    user  859  →  [0.287, 0.240, 0.241, 0.233]   (max idx = aspect#0)
+
+── Item 296  (asin=0312641893, trained by 52 users) ──
+  top KG aspects: cyberpunk_genre, cyborg_elements, romance_subplot, future_setting
+  aspect attention (softmax over 4 aspect slots):
+    user   89  →  [0.250, 0.267, 0.250, 0.232]   (max idx = aspect#1)
+    user  256  →  [0.251, 0.265, 0.251, 0.232]   (max idx = aspect#1)
+    user  828  →  [0.250, 0.268, 0.250, 0.232]   (max idx = aspect#1)
+
+── Item 77  (asin=0062024027, trained by 44 users) ──
+  top KG aspects: dystopian_worlds, post_apocalyptㄇic_settings, action_and_suspense
+  aspect attention (softmax over 4 aspect slots):
+    user  249  →  [0.284, 0.238, 0.239, 0.238]   (max idx = aspect#0)
+    user  153  →  [0.283, 0.239, 0.240, 0.238]   (max idx = aspect#0)
+    user  728  →  [0.284, 0.237, 0.240, 0.239]   (max idx = aspect#0)
+
+── Item 245  (asin=0307887448, trained by 44 users) ──
+  top KG aspects: dystopian_sci_fi, video_games, 80s_culture, novels
+  aspect attention (softmax over 4 aspect slots):
+    user  467  →  [0.238, 0.246, 0.240, 0.276]   (max idx = aspect#3)
+    user   51  →  [0.239, 0.245, 0.241, 0.275]   (max idx = aspect#3)
+    user  740  →  [0.238, 0.248, 0.242, 0.272]   (max idx = aspect#3)
+
+======================================================================
+Reading guide: each aspect slot is an abstract learned dimension
+(initialised from KG SVD, then fine-tuned). Slot identities are
+consistent *per item* but not globally comparable across items.
+The signal to look for is whether different users of the SAME item
+spread their attention differently — that demonstrates the
+rationale-aware aspect selection is user-conditioned.

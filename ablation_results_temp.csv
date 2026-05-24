@@ -1,0 +1,5 @@
+preset,elapsed_s,use_rationale,use_svd_init,use_acl,use_ucl,use_global_view,rationale_style,rationale_temperature,HR,Precision,Recall,F1,MAP,NDCG
+winner,105,1,1,1,1,1,mlp_softmax,1.0,0.4972,0.0356,0.2009,0.0586,0.0584,0.1232
+winner_temp_0.5,101,1,1,1,1,1,mlp_softmax,0.5,0.4961,0.0358,0.2014,0.0589,0.0591,0.1238
+winner_temp_0.1,101,1,1,1,1,1,mlp_softmax,0.1,0.4983,0.0355,0.2005,0.0585,0.0577,0.1222
+winner_temp_0.05,102,1,1,1,1,1,mlp_softmax,0.05,0.4961,0.0354,0.2004,0.0583,0.0578,0.1223
