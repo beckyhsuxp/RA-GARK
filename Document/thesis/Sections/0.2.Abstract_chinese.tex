@@ -23,10 +23,8 @@
 \end{center}
 
 \normalsize
-\begin{spacing}{1.25}
 
 知識圖譜感知（KG-aware）推薦系統在 KG 稠密且品質良好時普遍能提升準確度，但當 KG 稀疏或品質不佳時——即評論衍生、冷啟動、隱私受限等常見場景——既有研究探討有限。本文以書評衍生 KG 為例（過濾後每件商品平均 2.4 條邊），觀察到四個代表性方法（KGAT、KGCL、MCCLK、KGRec）皆不及完全不使用 KG 的純 LightGCN，原因在於這些方法將 KG 訊號作為計分管線之必經成分，缺乏在 KG 不可信時切斷或弱化的機制，KG 雜訊因此污染協同表示之梯度流。
 
-本文提出 RA-GARK（Rationale-Aware Gating over Review-Aspect Knowledge graphs），將 KG 視為可閘控之側通道。核心為本地偏置融合閘，依每組（使用者, 商品）動態調整協同與 KG 兩訊號之相對權重；偏置初始化為 $+5$，使訓練起點等同於純 LightGCN，僅在梯度顯示 KG 有益時才逐步開啟，提供結構性優雅退化。每件商品之 KG 語意以 $A=4$ 個潛在面向槽儲存，由 IDF 加權商品—面向共現矩陣之截斷 SVD 初始化，並以 softmax 注意力挑選最具顯著性之槽位。實驗中 RA-GARK 於 NDCG@20 達 0.1238，較最強 KG-aware 基準 KGRec 提升 13.1\%、較純 LightGCN 提升 5.0\%，在 KG 不變的條件下將其貢獻自「無益」翻轉為「有益」。消融顯示：softmax 替換為 sigmoid 損失 7.0\% NDCG，移除偏置融合閘或 KG-SVD 初始化各損失 5.3\%。注意力歸一化之觀察定位為單一資料集之待驗證假說。\\
+本文提出 RA-GARK（Rationale-Aware Gating over Review-Aspect Knowledge graphs），將 KG 視為可閘控之側通道。核心為本地偏置融合閘，依每組（使用者, 商品）動態調整協同與 KG 兩訊號之相對權重；偏置初始化為 $+5$，使訓練起點等同於純 LightGCN，僅在梯度顯示 KG 有益時才逐步開啟，提供結構性優雅退化。每件商品之 KG 語意以 $A=4$ 個潛在面向槽儲存，由 IDF 加權商品—面向共現矩陣之截斷 SVD 初始化，並以 softmax 注意力挑選最具顯著性之槽位。實驗中 RA-GARK 於 NDCG@20 達 0.1238，較最強 KG-aware 基準 KGRec 提升 13.1\%、較純 LightGCN 提升 5.0\%，在 KG 不變的條件下將其貢獻自「無益」翻轉為「有益」。消融顯示：softmax 替換為 sigmoid 損失 7.0\% NDCG，移除偏置融合閘或 KG-SVD 初始化各損失 5.3\%。注意力歸一化之觀察定位為單一資料集之待驗證假說。\\[-0.6em]
 \textbf{關鍵字：}知識圖譜推薦；可退化機制；融合閘；稀疏知識圖譜；協同過濾
-\end{spacing}
