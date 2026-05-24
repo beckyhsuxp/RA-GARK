@@ -124,3 +124,7 @@ Style2*=\tiny$\blacksquare$ ,Style3*=$\circ$ ,Style4*=-- )
 
 % 控制編號的深度到 subsubsection 層級
 \setcounter{secnumdepth}{3}
+
+% PDF 內部超連結：目錄、引用、參考文獻可點擊跳轉
+% 須最後載入，避免與其他套件衝突
+\usepackage[hidelinks,linktoc=all,bookmarksnumbered=true,bookmarksopen=true]{hyperref}
