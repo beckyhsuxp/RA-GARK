@@ -46,6 +46,24 @@ RA-GARK 的前提較弱。我們不假設 KG 整體是可靠的。aspect-salienc
   \item \textbf{對 KG 可信度的處理。} KGRec 沒有任何架構機制可脫接 KG。RA-GARK 的偏置初始化融合閘正提供此一機制：訓練起始時 $\alpha^{(0)} \approx 0.993$，模型實質上即為純 LightGCN；唯當學習顯示 KG 通道能降低損失時，閘才會被打開。
 \end{itemize}
 
+表~\ref{tab:rw-kgrec-vs-ragark-zh} 將上述四項軸線並列對照。
+
+\begin{table}[ht]
+\centering
+\caption{合理化典範對比：KGRec 與 RA-GARK 於四項設計軸線。}
+\label{tab:rw-kgrec-vs-ragark-zh}
+\begin{tabular}{l l l}
+\toprule
+軸線 & KGRec & RA-GARK \\
+\midrule
+合理化粒度       & KG 三元組（邊）         & $A$ 個潛在面向槽 \\
+選擇機制         & Bernoulli dropout + CL  & Softmax 注意力 \\
+作用位置         & KGAT 訊息傳遞之內       & 旁路通道，後期融合 \\
+KG 可信度處理    & 無脫接機制              & 偏置初始化融合閘 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
 因此我們不將 RA-GARK 定位為對 KGRec 的工程性改良，而是基於對 KG 可信度不同前提之另一種設計。此一區別在經驗上是否重要，則於第~\ref{ch:experiments-zh}~章中作答。
 
 \section{深度學習中的閘控機制}
