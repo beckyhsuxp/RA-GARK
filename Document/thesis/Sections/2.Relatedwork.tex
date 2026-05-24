@@ -46,6 +46,24 @@ RA-GARK's premise is weaker. We do not assume that the KG, taken as a whole, is 
   \item \textbf{Treatment of KG trust.} KGRec has no architectural mechanism to disengage the KG. RA-GARK's bias-initialized fusion gate provides exactly this mechanism: at the start of training, $\alpha^{(0)} \approx 0.993$, so the model is essentially pure LightGCN; the gate opens only when learning indicates that the KG channel reduces loss.
 \end{itemize}
 
+Table~\ref{tab:rw-kgrec-vs-ragark} consolidates these four axes side by side.
+
+\begin{table}[ht]
+\centering
+\caption{Rationale-paradigm comparison: KGRec vs.\ RA-GARK along the four design axes.}
+\label{tab:rw-kgrec-vs-ragark}
+\begin{tabular}{l l l}
+\toprule
+Axis & KGRec & RA-GARK \\
+\midrule
+Rationale granularity & KG triple (edge)         & $A$ latent aspect slots \\
+Selection mechanism   & Bernoulli dropout + CL   & Softmax attention \\
+Site of action        & Inside KGAT propagation  & Side channel, late fusion \\
+Treatment of KG trust & No disengage mechanism   & Bias-initialized gate \\
+\bottomrule
+\end{tabular}
+\end{table}
+
 We therefore position RA-GARK not as an engineering improvement of KGRec, but as a separate design that begins from a different premise about KG reliability. Whether this distinction matters empirically is settled in Chapter~\ref{ch:evaluation}.
 
 \section{Gating Mechanisms in Deep Learning}
