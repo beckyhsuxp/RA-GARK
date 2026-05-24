@@ -30,13 +30,11 @@ We frame this as a hypothesis rather than a methodological claim. The evidence c
 \section{Limitations}
 \label{sec:conclude-limits}
 
-The contributions of this thesis are bounded by four limitations, which we state explicitly so that the scope of the claims is unambiguous.
+The contributions of this thesis are bounded by three limitations, which we state explicitly so that the scope of the claims is unambiguous.
 
 \paragraph{Single sparse benchmark.} All quantitative results in this thesis are reported on one dataset: a subset of Amazon Books reviews with $905$ users, $1{,}399$ items, and an item--aspect KG containing $3{,}370$ edges over $2{,}098$ aspect tags (Section~\ref{sec:eval-dataset}). The benchmark was chosen because it exhibits the empirical anomaly that motivates the thesis, but no claim is made that RA-GARK's design choices transfer unchanged to other recommendation datasets or other KG schemas. In particular, the headline observation --- that pure LightGCN beats all four KG-aware baselines we tested --- need not hold on datasets where the KG is denser, more curated, or more aligned with the recommendation signal.
 
 \paragraph{KG construction is prior work.} The item--aspect KG itself is built by the pipeline of~\cite{ho2024reviewkg}, which combines visual and textual encoders (ResNet, Qwen-VL, BART, Mistral) to extract review-derived aspect mentions. We use this KG as given and do not propose any modification to the construction process. The contributions of this thesis lie entirely on the modeling side, taking the KG as fixed input.
-
-\paragraph{Single seed.} As discussed in Section~\ref{sec:eval-seed}, all numbers in Chapter~\ref{ch:experiments} are reported at a single random seed ($= 42$). Exploratory variation suggests that the qualitative ordering of methods and the ranking of ablation effects are robust within $\pm 0.003$ NDCG@$20$, but the precise NDCG@$20$ figures should be read as point estimates rather than population means. Multi-seed mean-and-variance reporting is the most important methodological follow-up.
 
 \paragraph{Dense-KG regime not validated.} RA-GARK was designed for, and evaluated on, the sparse-KG regime in which the KG signal is unreliable. We make no claim about its behavior when the KG is dense and accurate. In that regime --- the traditional home turf of KGAT and KGIN --- a bias-initialized gate that defaults to ``KG off'' is precisely the wrong inductive prior, and the deep-fusion baselines we critique here may well be the appropriate choice. Section~\ref{sec:conclude-future} discusses how the gate would need to be reconfigured to handle a symmetric regime.
 

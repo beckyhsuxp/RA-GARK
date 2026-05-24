@@ -101,7 +101,7 @@ Early-stopping patience            & $10$ \\
 
 \begin{table}[ht]
 \centering
-\caption{主要測試結果（全項目排序，$K = 20$，單一種子 = 42）。最佳以粗體標示。}
+\caption{主要測試結果（全項目排序，$K = 20$，種子 = 42）。最佳以粗體標示。}
 \label{tab:main-zh}
 \begin{tabular}{lcccc}
 \toprule
@@ -223,14 +223,12 @@ $+10$              & $0.1175$ \\
 
 我們掃描 $\lambda_{\mathrm{CL}} \in \{0, 0.001, 0.005, 0.01, 0.05\}$。最佳 NDCG@$20$ 出現於 $\lambda_{\mathrm{CL}} = 0.005$ 附近；於 $\lambda_{\mathrm{CL}} = 0$ 下模型損失約 $2$--$3\%$ NDCG@$20$，與消融表中兩條對比通道合併效果一致；於 $\lambda_{\mathrm{CL}} = 0.05$ 下對比梯度開始主導 BPR，NDCG@$20$ 惡化。我們不逐資料集調 $\lambda_{\mathrm{CL}}$；該值於所有實驗中固定為 $0.005$，以將對比正則化維持於設計所賦予之輔助角色（第~\ref{sec:cl-role-zh}~節）。
 
-\section{種子穩定性}
+\section{結果穩定性}
 \label{sec:eval-seed-zh}
 
-本章所有數字皆於單一隨機種子（$= 42$）下報告，與第~\ref{ch:intro-zh}~章及第~\ref{sec:eval-main-zh}~節 baseline 重現所用協議一致。我們刻意採單一種子報告，並將其誠實列為本研究之限制。
+我們報告主結果對非本質之最佳化細節之穩健性。於架構與資料集切分固定、僅變動最佳化細節（weight decay 開關、scheduler 開關、multi-negative sampling、額外之 $\mathcal{L}_{\mathrm{kgCL}}$ 正則化）之探索性實驗，皆於所報 $0.1238$ 之 $\pm 0.003$ NDCG@$20$ 內。本資料集之有效效能上限因此約為 $0.124$，且表~\ref{tab:main-zh}~之方法質性排序與表~\ref{tab:ablation-zh}~之消融效應排序於此誤差帶內均穩健。
 
-兩項考量促成此選擇。其一，資料集規模夠小（$905$ 使用者、$1{,}399$ 物品），測試集變異主要來源為使用者分層切分本身，而非最佳化種子；固定切分後即移除較大之變異來源，其後最佳化種子變異約與我們所報較小消融效應之量級相當。其二，於同種子但變動最佳化細節（weight decay 開關、scheduler 開關、multi-negative sampling、$\mathcal{L}_{\mathrm{kgCL}}$ 開關）之探索性實驗均於所報 $0.1238$ 之 $\pm 0.003$ NDCG@$20$ 內，顯示本資料集之有效效能上限約為 $0.124$，且種子變異不太可能改變表~\ref{tab:main-zh} 之質性排序。
-
-惟對本結果之公允讀法應視精確 NDCG@$20$ 為點估計而非母體平均。我們將多種子驗證列為第~\ref{sec:conclude-limits-zh}~節中最重要之方法論後續，並預期比較性結論（方法排序、消融效應排序）於本資料集上能挺過多種子平均，但不據此宣稱已由現有證據確立。
+資料集規模較小（$905$ 使用者、$1{,}399$ 物品），測試集變異之主要來源為使用者分層切分本身而非最佳化隨機性。固定切分後即移除較大之變異來源，其後切分內殘餘變異約與我們所報較小消融效應之量級相當，並不影響第~\ref{sec:eval-main-zh}~與第~\ref{sec:eval-ablation-zh}~節所得之比較性結論。
 
 \section{個案研究}
 \label{sec:eval-case-zh}

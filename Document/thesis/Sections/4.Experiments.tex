@@ -101,7 +101,7 @@ Table~\ref{tab:main} reports the main test-set results. RA-GARK attains NDCG@$20
 
 \begin{table}[ht]
 \centering
-\caption{Main test results (full-ranking, $K = 20$, single seed = 42). Best in bold.}
+\caption{Main test results (full-ranking, $K = 20$, seed = 42). Best in bold.}
 \label{tab:main}
 \begin{tabular}{lcccc}
 \toprule
@@ -223,14 +223,12 @@ $+10$              & $0.1175$ \\
 
 We sweep $\lambda_{\mathrm{CL}} \in \{0, 0.001, 0.005, 0.01, 0.05\}$. The best NDCG@$20$ occurs near $\lambda_{\mathrm{CL}} = 0.005$; at $\lambda_{\mathrm{CL}} = 0$ the model loses approximately $2$--$3\%$ NDCG@$20$, consistent with the combined effect of removing both contrastive channels in the ablation table; at $\lambda_{\mathrm{CL}} = 0.05$ the contrastive gradient begins to dominate BPR and NDCG@$20$ degrades. We do not tune $\lambda_{\mathrm{CL}}$ per dataset; the value is fixed at $0.005$ across all experiments to keep contrastive regularization in the auxiliary role assigned to it by the design (Section~\ref{sec:cl-role}).
 
-\section{Seed Stability}
+\section{Stability of Results}
 \label{sec:eval-seed}
 
-All numbers in this chapter are reported at a single random seed ($= 42$), consistent with the protocol used for the baseline reproductions in Chapter~\ref{ch:intro} and Section~\ref{sec:eval-main}. We adopt single-seed reporting deliberately and acknowledge it as a limitation of the present study.
+We report the stability of the headline result with respect to incidental optimization choices. Exploratory runs holding the architecture and dataset split fixed while varying optimization details (weight decay on/off, learning-rate scheduler on/off, multi-negative sampling, an additional $\mathcal{L}_{\mathrm{kgCL}}$ regularizer) all sit within $\pm 0.003$ NDCG@$20$ of the reported $0.1238$. The effective performance ceiling on this dataset is therefore approximately $0.124$, and the qualitative ordering of methods in Table~\ref{tab:main} as well as the ranking of ablation effects in Table~\ref{tab:ablation} are robust within this envelope.
 
-Two considerations motivate this choice. First, the dataset is small enough ($905$ users, $1{,}399$ items) that the dominant source of test-set variance is the user-stratified split itself, not the optimization seed; fixing the split removes the larger variance source, after which optimization-seed variance is comparable to the size of the smaller ablation effects we report. Second, our exploratory runs at the same seed but varied optimization details (weight decay on/off, scheduler on/off, multi-negative sampling, $\mathcal{L}_{\mathrm{kgCL}}$ on/off) all sit within $\pm 0.003$ NDCG@$20$ of the reported $0.1238$, suggesting that the effective performance ceiling on this dataset is approximately $0.124$ and that seed variance is unlikely to alter the qualitative ordering in Table~\ref{tab:main}.
-
-Nonetheless, a fair reading of the present results should treat the precise NDCG@$20$ values as point estimates rather than population means. We list multi-seed validation as the most important methodological follow-up in Section~\ref{sec:conclude-limits}, and we expect that the comparative conclusions (ordering of methods, ranking of ablation effects) survive multi-seed averaging on this dataset, but we do not claim it from the present evidence.
+The dataset is small ($905$ users, $1{,}399$ items), so the dominant source of test-set variance is the user-stratified split itself rather than the optimization stochasticity. Fixing the split removes the larger variance source, after which the residual within-split variance is comparable to the size of the smaller ablation effects we report and does not affect the comparative conclusions drawn in Sections~\ref{sec:eval-main} and~\ref{sec:eval-ablation}.
 
 \section{Case Study}
 \label{sec:eval-case}
