@@ -174,7 +174,7 @@ We probe RA-GARK's sensitivity along the four hyperparameter axes that a reader 
 \subsection{Softmax Temperature $\tau$}
 \label{sec:sens-tau}
 
-Table~\ref{tab:sens-tau} reports NDCG@$20$ across $\tau \in \{0.05, 0.1, 0.5, 1.0\}$. The default $\tau = 0.5$ achieves the best NDCG@$20$ ($0.1238$), with $\tau = 1.0$ only $-0.6\%$ behind ($0.1231$) and aggressive sharpening ($\tau = 0.05$) degrading the result. The picture is consistent with the analysis in Section~\ref{sec:softmax-softmax}: at $\tau = 1.0$ the softmax is approximately uniform because the MLP logits have small dynamic range, so the rationale module degenerates to an item-wise mean over slots; at $\tau = 0.5$ the differences are amplified enough to produce discriminative weights without collapsing onto a single slot; at very small $\tau$ the softmax becomes too peaked, the rationale becomes effectively hard-selection, and the gradient flow into the unselected slots is starved.
+Table~\ref{tab:sens-tau} reports NDCG@$20$ across $\tau \in \{0.05, 0.1, 0.5, 1.0\}$. The default $\tau = 0.5$ achieves the best NDCG@$20$ ($0.1238$), with $\tau = 1.0$ only $-0.5\%$ behind ($0.1232$), and the two sharper settings ($\tau = 0.1$ and $\tau = 0.05$) sitting on an essentially common plateau around $0.1222$--$0.1223$ ($-1.3\%$). The picture is consistent with the analysis in Section~\ref{sec:softmax-softmax}: at $\tau = 1.0$ the softmax is close to uniform because the MLP logits have small dynamic range, so the rationale module is pushed toward an item-wise mean over slots; at $\tau = 0.5$ the differences are amplified enough to produce discriminative weights without collapsing onto a single slot; at $\tau \leq 0.1$ further sharpening stops helping --- the rationale is already approximately one-hot --- but does not visibly hurt either, so the curve flattens rather than degrading further.
 
 \begin{table}[ht]
 \centering
@@ -184,10 +184,10 @@ Table~\ref{tab:sens-tau} reports NDCG@$20$ across $\tau \in \{0.05, 0.1, 0.5, 1.
 \toprule
 $\tau$ & NDCG@20 \\
 \midrule
-$1.0$              & $0.1231$ \\
+$1.0$              & $0.1232$ \\
 $\mathbf{0.5}$ (default) & $\mathbf{0.1238}$ \\
-$0.1$              & $0.1218$ \\
-$0.05$             & $0.1201$ \\
+$0.1$              & $0.1222$ \\
+$0.05$             & $0.1223$ \\
 \bottomrule
 \end{tabular}
 \end{table}
