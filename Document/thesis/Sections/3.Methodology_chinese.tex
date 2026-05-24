@@ -23,7 +23,7 @@ RA-GARK 圍繞一個直接面對此失效模式的核心設計原則：
   \item \textbf{合理化感知的物品端聚合。} 每件物品的 KG 語意儲存於 $A=4$ 個\emph{潛在}面向槽中，槽位內容由 IDF 加權商品—面向矩陣之截斷 SVD 產生；softmax aspect-saliency 注意力依（使用者, 物品）配對選取代表該物品的潛在槽。
 \end{enumerate}
 
-每項後果均於第~\ref{ch:methodology-zh}~章中數學化。本章其餘部分將符號與問題陳述定位至足以使第~\ref{ch:methodology-zh}~章自洽所需之細節層級。
+每項後果均於下方第~\ref{sec:local-zh}~至~\ref{sec:cl-zh}~節中數學化。本章其餘部分先固定符號與問題陳述（第~\ref{sec:approach-notation-zh}~至~\ref{sec:approach-problem-zh}~節），再依各模組於前向傳遞中之參與順序逐一展開。
 
 \section{架構概覽}
 \label{sec:approach-overview-zh}
