@@ -257,7 +257,7 @@ u_{\mathrm{glo}} = \mathbf{E}^{\mathrm{glo}}_u, \qquad \mathbf{E}^{\mathrm{glo}}
 \subsection{動機}
 \label{sec:softmax-motivation-zh}
 
-每件物品的 KG 語意分散儲存於 $\mathbf{a}_i$ 的 $A$ 個潛在槽中；不同槽位編碼 SVD 可見之不同語意面向。然而給定使用者並非「同時透過物品之全部語意面向」與物品互動——其偏好通常由一或兩個面向主導。合理化模組的職責即在每組（使用者, 物品）配對中，挑出與該使用者表示 $u_{\mathrm{glo}}$ 最一致的槽。
+每件物品的 KG 語意分散儲存於 $\mathbf{a}_i$ 的 $A$ 個潛在槽中；不同槽位編碼 SVD 可見之不同語意面向。合理化模組的職責即在（使用者, 物品）配對之條件下，於全域視角中挑出最能代表該物品之槽。式~\eqref{eq:logit-zh} 將槽 logit 同時條件於 $u_{\mathrm{glo}}$ 與槽嵌入，因此選擇於結構上為 per-(使用者, 物品)；至於訓練完成之模型是否實際運用使用者維度、抑或退化為物品條件之路由，則為實證問題，於第~\ref{sec:eval-case-zh}~節個案研究中檢視。
 
 \subsection{使用者條件之注意力 logits}
 \label{sec:softmax-logit-zh}
@@ -297,9 +297,9 @@ i_{\mathrm{glo}} = \sum_{k=1}^{A} w_{u, i, k} \cdot \mathbf{a}_{i, k} \;\in\; \m
 \subsection{為何使用 Softmax 而非 Sigmoid}
 \label{sec:softmax-vs-sigmoid-zh}
 
-一個自然的替代是對每個槽獨立以 sigmoid 評分：$w_{u,i,k} = \sigma(\ell_{u,i,k})$，不施加跨槽歸一化。這表達了不同的語意假設：每個槽對使用者獨立地相關或不相關；多個槽可同時「開啟」而不相互競爭。
+一個自然的替代是對每個槽獨立以 sigmoid 評分：$w_{u,i,k} = \sigma(\ell_{u,i,k})$，不施加跨槽歸一化。兩種運算於下游融合閘所關注之一項結構性質上不同：Softmax 產生之權重總和為 $1$，所得 $i_{\mathrm{glo}}$ 之模長無論 logit 尺度為何皆有界於 $\max_k \|\mathbf{a}_{i,k}\|$；sigmoid 之輸出總和不受限，所得 $i_{\mathrm{glo}}$ 之模長隨 logit 動態範圍縮放。
 
-實證上 sigmoid 變體會使本基準 NDCG@20 下降 $7.0\%$（第~\ref{sec:ablation-softmax-zh}~節）——是我們所觀察到單一元件影響最大者。我們解讀為：對於面向顯著性合理化而言，正確的語意假設是競爭而非獨立——在 $A$ 個潛在槽中，合理化回答的是「哪一個」最具代表性，而答案近似為 one-hot。Softmax 直接編碼此假設，sigmoid 則否。我們在第~\ref{ch:conclusion-zh}~章對此發現作更謹慎之討論，並明確將其定位為單一資料集觀察，需多資料集複製驗證。
+實證上 sigmoid 變體會使本基準 NDCG@20 下降 $7.0\%$（第~\ref{sec:ablation-softmax-zh}~節）——是我們所觀察到單一元件影響最大者。第~\ref{sec:eval-case-zh}~節之個案研究暗示其因：合理化模組運作於刻意被節制之 KG 通道內，最終產生之是\emph{軟尖峰}權重（$\max_k w_k \approx 0.28$、其餘約 $0.24$），而非單由 Softmax 名稱所推測之近 one-hot 向量。於 Softmax 下此即意謂 $i_{\mathrm{glo}}$ 之模長維持有界且可預測，融合閘之校準（第~\ref{sec:gate-bias-zh}~節）因而能穩定將 KG 貢獻維持於分數中所欲之小比例；於 sigmoid 下逐槽模長則隨 logit 漂移，恰好破壞了閘所依賴之「有界貢獻」性質。Softmax 之承載性角色因此為「為被節制之輔助通道提供模長受控之歸一化」，而非強制諸槽間之 one-hot 競爭。我們在第~\ref{ch:conclusion-zh}~章對此發現作更謹慎之討論，並明確將其定位為單一資料集觀察，需多資料集複製驗證。
 
 \section{區域偏置融合閘}
 \label{sec:gate-zh}
