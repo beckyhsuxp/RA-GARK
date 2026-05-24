@@ -23,7 +23,7 @@ Three architectural consequences follow from this principle and define RA-GARK:
   \item \textbf{Rationale-aware item-side aggregation.} Each item's KG semantics are stored in $A=4$ \emph{latent} aspect slots produced by truncated SVD of an IDF-weighted item--aspect matrix; a softmax aspect-saliency attention selects, per (user, item) pair, which latent slot represents the item in the global view.
 \end{enumerate}
 
-Each consequence is mathematized in Chapter~\ref{ch:methodology}. The rest of this chapter sets up notation and problem statement at the level of detail needed to make Chapter~\ref{ch:methodology} self-contained.
+Each consequence is mathematized in Sections~\ref{sec:local}--\ref{sec:cl} below. The remainder of this chapter first fixes notation and the problem statement (Sections~\ref{sec:approach-notation}--\ref{sec:approach-problem}), then develops each module in the order it participates in the forward pass.
 
 \section{Architectural Overview}
 \label{sec:approach-overview}
