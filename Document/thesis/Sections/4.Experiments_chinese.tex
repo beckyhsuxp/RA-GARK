@@ -11,14 +11,6 @@
 % - 過濾後密度：每件物品平均 2.4 條面向邊
 % - 引用建構 pipeline 之前作
 
-\begin{figure}[ht]
-  \centering
-  % \includegraphics[width=\textwidth]{img/kg_pipeline.png}  % TODO: 插入圖 (e)
-  \fbox{\parbox[c][4.5cm][c]{0.95\textwidth}{\centering\itshape 佔位：KG 建構 pipeline\\(書封 $\to$ ResNet + Qwen-VL 視覺面向；評論 $\to$ BART 摘要 + Mistral 面向抽取；合併 $\to$ 面向過濾 $\to$ 物品—面向 KG，平均 2.4 邊/物品)。}}
-  \caption{評論衍生 KG 建構 pipeline。}
-  \label{fig:kg-pipeline-zh}
-\end{figure}
-
 \section{實驗設定}
 \label{sec:eval-setup-zh}
 

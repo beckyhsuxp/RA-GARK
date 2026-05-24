@@ -301,14 +301,6 @@ i_{\mathrm{glo}} = \sum_{k=1}^{A} w_{u, i, k} \cdot \mathbf{a}_{i, k} \;\in\; \m
 
 實證上 sigmoid 變體會使本基準 NDCG@20 下降 $7.0\%$（第~\ref{sec:ablation-softmax-zh}~節）——是我們所觀察到單一元件影響最大者。我們解讀為：對於面向顯著性合理化而言，正確的語意假設是競爭而非獨立——在 $A$ 個潛在槽中，合理化回答的是「哪一個」最具代表性，而答案近似為 one-hot。Softmax 直接編碼此假設，sigmoid 則否。我們在第~\ref{ch:conclusion-zh}~章對此發現作更謹慎之討論，並明確將其定位為單一資料集觀察，需多資料集複製驗證。
 
-\begin{figure}[ht]
-  \centering
-  % \includegraphics[width=0.9\textwidth]{img/softmax_attention.png}  % TODO: 插入圖 (c)
-  \fbox{\parbox[c][4cm][c]{0.9\textwidth}{\centering\itshape 佔位：Softmax 合理化遮罩前向流程\\($u_{\mathrm{glo}}$, $\{\mathbf{a}_{i,k}\}_{k=1}^A$ $\to$ MLP logits $\to$ softmax 權重 $w_{u,i,k}$ $\to$ 加權求和 $\to$ $i_{\mathrm{glo}}$)。}}
-  \caption{Softmax 合理化遮罩。}
-  \label{fig:softmax-zh}
-\end{figure}
-
 \section{區域偏置融合閘}
 \label{sec:gate-zh}
 
