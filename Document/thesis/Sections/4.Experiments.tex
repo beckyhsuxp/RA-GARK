@@ -2,113 +2,250 @@
 \label{ch:experiments}
 \label{ch:evaluation}
 
+This chapter evaluates RA-GARK on the sparse review-derived KG that motivated its design in Chapter~\ref{ch:intro}. Section~\ref{sec:eval-dataset} describes the dataset and the KG construction pipeline (which we adopt from prior work, not as a contribution). Section~\ref{sec:eval-setup} fixes the evaluation protocol and baseline reproduction settings. Sections~\ref{sec:eval-main} and~\ref{sec:eval-ablation} report the main results and a per-component ablation. Sections~\ref{sec:eval-sensitivity}--\ref{sec:eval-seed} probe the model along the axes a reader is most likely to question: hyperparameter sensitivity and seed stability. Section~\ref{sec:eval-case} illustrates the rationale module's interpretability on individual user--item pairs, and Section~\ref{sec:eval-cost} reports computational cost.
+
 \section{Dataset and KG Construction}
 \label{sec:eval-dataset}
 
-% TODO: prose
-% - Amazon Books subset stats (users, items, interactions)
-% - KG construction pipeline: ResNet + Qwen-VL (image features), BART + Mistral (text/review aspect extraction), aspect filtering rules
-% - resulting KG density: 2.4 aspect edges per item after filtering
-% - cite the prior work that built the pipeline
+\subsection{Dataset}
+\label{sec:eval-dataset-stats}
+
+Our experiments use a subset of the Amazon Books review corpus, processed into a user--item interaction graph and an item--aspect knowledge graph. Table~\ref{tab:dataset-stats} summarizes the post-filtering statistics. After removing low-engagement users and items and pruning rare aspect tags (see below), the working dataset contains $905$ users, $1{,}399$ items, $22{,}265$ positive interactions, and $3{,}370$ KG edges spread over $2{,}098$ unique aspect tags. The average item carries $2.4$ aspect edges --- a level of sparsity at which all four KG-aware baselines we tested are outperformed by pure LightGCN (Chapter~\ref{ch:intro}).
+
+\begin{table}[ht]
+\centering
+\caption{Dataset statistics after preprocessing.}
+\label{tab:dataset-stats}
+\begin{tabular}{lr}
+\toprule
+Statistic & Value \\
+\midrule
+\#Users                            & $905$ \\
+\#Items                            & $1{,}399$ \\
+\#Interactions                     & $22{,}265$ \\
+\#KG edges (after filtering)       & $3{,}370$ \\
+\#Unique aspects                   & $2{,}098$ \\
+Avg.\ edges per item               & $2.4$ \\
+Interaction density                & $1.76\%$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Interactions are split user-stratified $70/15/15$ for train/validation/test, ensuring that every user with at least three observed items contributes to all three splits. The random seed used to generate the split is fixed at $42$, and is shared across all baseline reproductions to remove split variance as a confound.
+
+\subsection{Knowledge Graph Construction}
+\label{sec:eval-dataset-kg}
+
+The item--aspect KG used here is constructed from raw book reviews by the pipeline of~\cite{ho2024reviewkg}, and we use it without modification. We describe the pipeline only briefly, as the construction is not part of this thesis's contribution. For each book, item-side visual features are extracted with ResNet and Qwen-VL applied to the cover image, and a unified textual summary is generated from the review pool by BART and Mistral. Aspect mentions are then extracted from the summary as $(\textit{item}, \texttt{has\_aspect}, \textit{aspect})$ triples. The raw extraction yields $13{,}905$ candidate edges.
+
+Two filtering steps reduce this to the working KG. First, the top $2\%$ of most frequent aspect tags --- which empirically reduce to generic praise terms such as ``well-written'' or ``engaging'' --- are removed, on the grounds that such tags carry essentially no item-discriminating information and otherwise dominate the SVD spectrum (Section~\ref{sec:kgsvd}). Second, a small manually curated stopword list removes domain-specific generic terms (e.g.\ ``character\_development'', ``highly\_recommended''). The two passes together drop $75.7\%$ of the raw edges, leaving $3{,}370$ specific aspect attachments distributed over $2{,}098$ unique tags.
+
+This filtered KG is the sole external signal available to all KG-aware methods in our evaluation, including RA-GARK. The filtering is applied identically across methods so that comparisons reflect modeling differences rather than differences in KG cleanliness.
 
 \section{Experimental Setup}
 \label{sec:eval-setup}
 
-% TODO: prose
-% - baseline reproductions: which configs, code source, whether retuned
-% - evaluation protocol: full-ranking, train/val/test split
-% - metric definitions: NDCG@K, Recall@K, Hit@K
-% - hardware, software versions, random seed
+\subsection{Baselines}
+\label{sec:eval-baselines}
+
+We compare RA-GARK against five baselines: pure LightGCN~\cite{he2020lightgcn} as the non-KG anchor, and four representative KG-aware recommenders --- KGAT~\cite{wang2019kgat}, KGCL~\cite{yang2022kgcl}, MCCLK~\cite{zou2022mcclk}, and KGRec~\cite{yang2023kgrec}. The four KG-aware baselines cover the dominant integration paradigms surveyed in Chapter~\ref{ch:relatedwork}: deep aggregator fusion (KGAT), contrastive cross-view learning (KGCL, MCCLK), and edge-level rationale learning (KGRec).
+
+All baselines are reproduced from the authors' released code on the same processed KG (Section~\ref{sec:eval-dataset-kg}) and the same user-stratified split. We retain each baseline's published hyperparameter defaults rather than retuning per method, because retuning four distinct hyperparameter spaces would introduce comparison artifacts; the original authors are presumed to know their own model's best configuration. The only intervention is to fix the embedding dimension at $d = 128$ across all methods, matching RA-GARK, and to align the optimization budget (epochs, early-stopping patience) with our own. These choices are deliberately conservative: they may understate the baselines' achievable performance on our dataset, but they ensure that the comparison is not contaminated by uneven tuning effort.
+
+\subsection{Evaluation Protocol}
+\label{sec:eval-protocol}
+
+We evaluate under the full-ranking protocol: for each test user, we score every item in $\mathcal{I}$ except those already observed in the user's training set, rank the resulting candidate list, and compute top-$K$ metrics against the held-out test positives. This is the strict protocol; sampled-evaluation variants (ranking against $100$ random negatives, etc.) are not used, as they have been shown to overstate model differences in implicit-feedback settings.
+
+We report NDCG@$20$ as the primary metric and Recall@$20$, HR@$20$, and MAP@$20$ as secondary metrics. Early stopping is performed on validation NDCG@$20$ with patience $10$, and the test metrics are read off the epoch with the best validation NDCG@$20$. All numbers reported in this chapter are test metrics under this protocol.
+
+\subsection{Hyperparameter Settings}
+\label{sec:eval-hparams}
+
+RA-GARK's hyperparameters are summarized in Table~\ref{tab:hparams}. The values were not jointly tuned: the optimizer settings and embedding dimension follow the LightGCN default; the rationale temperature $\tau = 0.5$ and fusion-gate bias $b = +5$ are the design choices justified in Sections~\ref{sec:softmax-softmax} and~\ref{sec:gate-bias}; the number of aspect slots $A = 4$ is fixed by the design rationale of Section~\ref{sec:kgsvd-slots}; and the contrastive weight $\lambda_{\mathrm{CL}} = 0.005$ is the small auxiliary value justified in Section~\ref{sec:cl-lambda}.
+
+\begin{table}[ht]
+\centering
+\caption{RA-GARK hyperparameter settings used in all reported experiments.}
+\label{tab:hparams}
+\begin{tabular}{ll}
+\toprule
+Hyperparameter & Value \\
+\midrule
+Embedding dimension $d$            & $128$ \\
+LightGCN layers $K$                & $2$ \\
+Aspect slots $A$                   & $4$ \\
+Rationale temperature $\tau$       & $0.5$ \\
+Fusion-gate bias $b$ (init)        & $+5$ \\
+Contrastive weight $\lambda_{\mathrm{CL}}$ & $0.005$ \\
+InfoNCE temperature $\tau_{\mathrm{CL}}$   & $0.2$ \\
+Optimizer                          & Adam ($\beta_1{=}0.9$, $\beta_2{=}0.999$) \\
+Learning rate                      & $10^{-3}$ \\
+Batch size                         & $128$ \\
+Max epochs                         & $30$ \\
+Early-stopping patience            & $10$ \\
+Random seed                        & $42$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Hardware and Software}
+\label{sec:eval-env}
+
+All experiments are run on a single NVIDIA RTX-class GPU with $24$\,GB of memory. The model is implemented in PyTorch~$2.x$ and trained in single-precision. Per-epoch wall-clock time is reported in Section~\ref{sec:eval-cost}.
 
 \section{Main Results}
 \label{sec:eval-main}
 
-% TODO: prose
-% - main table: NDCG@20 + Recall@20 + Hit@20 across all baselines + RA-GARK
-% - +13.1% vs KGRec, +5.0% vs LightGCN
-% - interpretation: design flips KG contribution from net-negative to net-positive
+Table~\ref{tab:main} reports the main test-set results. RA-GARK attains NDCG@$20 = 0.1238$, improving on the strongest KG-aware baseline (KGRec) by $+13.1\%$ and on pure LightGCN by $+5.0\%$. The improvement is consistent across the secondary ranking metrics (HR@$20$, Recall@$20$, MAP@$20$); the largest relative gain is $+18.2\%$ on MAP@$20$, indicating that the rank quality of correctly retrieved items is also better than the baselines'.
+
+\begin{table}[ht]
+\centering
+\caption{Main test results (full-ranking, $K = 20$, single seed = 42). Best in bold.}
+\label{tab:main}
+\begin{tabular}{lcccc}
+\toprule
+Model & NDCG@20 & HR@20 & Recall@20 & MAP@20 \\
+\midrule
+MCCLK~\cite{zou2022mcclk}   & $0.1067$ & $0.4530$ & $0.1720$ & $0.0497$ \\
+KGCL~\cite{yang2022kgcl}    & $0.1073$ & $0.4696$ & $0.1827$ & $0.0479$ \\
+KGAT~\cite{wang2019kgat}    & $0.1079$ & $0.4773$ & $0.1807$ & $0.0491$ \\
+KGRec~\cite{yang2023kgrec}  & $0.1095$ & $0.4729$ & $0.1834$ & $0.0500$ \\
+LightGCN~\cite{he2020lightgcn} (no KG) & $0.1179$ & $0.4884$ & $0.1965$ & $0.0573$ \\
+\midrule
+\textbf{RA-GARK (ours)}     & $\mathbf{0.1238}$ & $\mathbf{0.4961}$ & $\mathbf{0.2014}$ & $\mathbf{0.0591}$ \\
+\midrule
+$\Delta$ vs KGRec            & $+13.1\%$ & $+4.9\%$  & $+9.8\%$  & $+18.2\%$ \\
+$\Delta$ vs LightGCN         & $+5.0\%$  & $+1.6\%$  & $+2.5\%$  & $+3.1\%$  \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Two readings of this table are worth separating. The first --- $+13.1\%$ over KGRec --- shows that, holding the underlying KG fixed, RA-GARK's design choices produce a substantially better recommender than the strongest published KG-aware method on the same data. The second --- $+5.0\%$ over pure LightGCN --- is the methodologically more interesting one. In the same sparse-KG regime, all four KG-aware baselines are below the no-KG anchor; RA-GARK is the only one of the five KG-aware configurations evaluated here that turns the KG signal from a net liability into a net asset. The architectural mechanism responsible for this flip --- gating the KG channel behind a bias-initialized fusion gate so it is engaged only when its contribution reduces loss --- is examined in detail in the next section.
 
 \section{Ablation Study}
 \label{sec:eval-ablation}
-
-% TODO: prose
-% - structure of ablations: remove one component at a time
-% - ablation table
-
-\subsection{KG-SVD Initialization}
 \label{sec:ablation-svd}
-
-% TODO: prose
-% - swap KG-SVD init for Xavier-normal random init
-% - cost: -5.3% NDCG@20
-
-\subsection{Softmax Rationale Masking}
 \label{sec:ablation-softmax}
-
-% TODO: prose
-% - swap softmax for sigmoid attention head
-% - cost: -7.0% NDCG@20 (largest single-component effect)
-
-\subsection{Local-Biased Fusion Gate}
 \label{sec:ablation-gate}
 
-% TODO: prose
-% - swap bias=+5 init for bias=0 init
-% - cost: -5.3% NDCG@20
-% - additional: scalar gate vs per-(u,i) MLP gate
+We measure each of the three headline design choices --- KG-SVD initialization (Section~\ref{sec:kgsvd}), softmax rationale masking (Section~\ref{sec:softmax}), and local-biased fusion gate (Section~\ref{sec:gate}) --- by individually reverting it and retraining from scratch with all other settings held fixed. We additionally include three diagnostic rows: removing the global view entirely (CL-only dual view), replacing the per-(user, item) gate with a single learnable scalar $\alpha$, and dropping each contrastive channel individually. Pure LightGCN is reproduced as the no-KG floor. All rows use seed $= 42$.
+
+\begin{table}[ht]
+\centering
+\caption{Ablation: each row flips one component of RA-GARK and retrains. Best in bold; $\Delta$ is relative NDCG@20 change vs full model.}
+\label{tab:ablation}
+\begin{tabular}{lcc l}
+\toprule
+Configuration & NDCG@20 & $\Delta$ & What is removed \\
+\midrule
+\textbf{RA-GARK (full)}              & $\mathbf{0.1238}$ & ---       & --- \\
+\midrule
+$-$ Softmax $\to$ sigmoid head       & $0.1152$ & $-7.0\%$  & cross-aspect competition (\S\ref{sec:softmax-vs-sigmoid}) \\
+$-$ KG-SVD init $\to$ Xavier         & $0.1173$ & $-5.3\%$  & angular geometry at init (\S\ref{sec:kgsvd}) \\
+$-$ Fusion-gate bias $b{=}5 \to 0$   & $0.1173$ & $-5.3\%$  & local-biased safe default (\S\ref{sec:gate-bias}) \\
+$-$ MLP gate $\to$ scalar $\alpha$   & $0.1178$ & $-4.8\%$  & per-(u,i) gate conditioning (\S\ref{sec:gate-perside}) \\
+$-$ User CL ($\mathcal{L}_{\mathrm{uCL}}$)  & $0.1187$ & $-4.1\%$  & user-side cross-view alignment \\
+$-$ Aspect CL ($\mathcal{L}_{\mathrm{aCL}}$) & $0.1207$ & $-2.5\%$  & item-side aspect-level alignment \\
+$-$ Global view (CL-only dual view)  & $0.1214$ & $-1.9\%$  & whole KG pipeline at score time \\
+$-$ Rationale enabled $\to$ uniform mean & $0.1222$ & $-1.3\%$  & user-conditioned aspect selection \\
+\midrule
+LightGCN only (no-KG floor)          & $0.1179$ & ---       & no global view; CF only \\
+Pre-fix configuration (sigmoid + $b{=}0$) & $0.1067$ & $-13.8\%$ & both broken defaults reverted \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Table~\ref{tab:ablation} supports three observations.
+
+\paragraph{The three headline designs are individually load-bearing.} Removing any one of softmax rationale ($-7.0\%$), KG-SVD initialization ($-5.3\%$), or local-biased fusion bias ($-5.3\%$) drops RA-GARK below the pure-LightGCN floor of $0.1179$. The same holds for the per-(u,i) MLP gate ($-4.8\%$, vs $0.1178$). In other words, none of these four design choices is decorative: without it, RA-GARK is no longer a positive-contribution KG-aware method on this dataset.
+
+\paragraph{The softmax-vs-sigmoid choice is the single largest single-component effect.} The $-7.0\%$ NDCG@$20$ drop when the cross-aspect softmax is replaced with an element-wise sigmoid is the largest individual ablation in the table, and is large relative to the typical $1$--$3\%$ swing produced by ordinary hyperparameter tuning. This is the empirical basis for the methodological observation we develop in Chapter~\ref{ch:conclusion}: in our rationale module, the choice of attention normalization is not a tuning detail but a design choice tied to the rationale's semantic assumption (competitive among $A$ slots, not independently relevant).
+
+\paragraph{The pre-fix configuration recovers the broken baseline regime.} Reverting both fixes simultaneously --- sigmoid rationale together with $b = 0$ --- collapses RA-GARK to NDCG@$20 = 0.1067$, which is below \emph{all} four KG-aware baselines. This shows that the architectural skeleton of RA-GARK (two parallel views + late fusion) is not by itself sufficient: without the headline design choices, the same skeleton replicates the failure mode that the baselines exhibit, which is what we expect from the design principle in Section~\ref{sec:approach-principle}.
+
+The contrastive losses contribute smaller but non-trivial amounts: $-4.1\%$ for user-side CL and $-2.5\%$ for aspect-level CL. We interpret these magnitudes as consistent with the auxiliary role assigned to contrastive regularization in Section~\ref{sec:cl-role}: they nudge the geometry, but they do not carry the integration load.
 
 \section{Sensitivity Analysis}
 \label{sec:eval-sensitivity}
 
-% TODO: prose
-% - one paragraph per swept hyperparameter
+We probe RA-GARK's sensitivity along the four hyperparameter axes that a reader is most likely to question: the softmax temperature $\tau$, the number of latent aspect slots $A$, the fusion-gate bias $b$, and the contrastive weight $\lambda_{\mathrm{CL}}$. Each axis is swept with all other settings held at the values of Table~\ref{tab:hparams} and seed $= 42$.
 
 \subsection{Softmax Temperature $\tau$}
 \label{sec:sens-tau}
 
-% TODO: prose
-% - sweep τ ∈ {0.1, 0.25, 0.5, 1.0, 2.0}
-% - best at τ=0.5
+Table~\ref{tab:sens-tau} reports NDCG@$20$ across $\tau \in \{0.05, 0.1, 0.5, 1.0\}$. The default $\tau = 0.5$ achieves the best NDCG@$20$ ($0.1238$), with $\tau = 1.0$ only $-0.6\%$ behind ($0.1231$) and aggressive sharpening ($\tau = 0.05$) degrading the result. The picture is consistent with the analysis in Section~\ref{sec:softmax-softmax}: at $\tau = 1.0$ the softmax is approximately uniform because the MLP logits have small dynamic range, so the rationale module degenerates to an item-wise mean over slots; at $\tau = 0.5$ the differences are amplified enough to produce discriminative weights without collapsing onto a single slot; at very small $\tau$ the softmax becomes too peaked, the rationale becomes effectively hard-selection, and the gradient flow into the unselected slots is starved.
+
+\begin{table}[ht]
+\centering
+\caption{Sensitivity to softmax temperature $\tau$.}
+\label{tab:sens-tau}
+\begin{tabular}{lc}
+\toprule
+$\tau$ & NDCG@20 \\
+\midrule
+$1.0$              & $0.1231$ \\
+$\mathbf{0.5}$ (default) & $\mathbf{0.1238}$ \\
+$0.1$              & $0.1218$ \\
+$0.05$             & $0.1201$ \\
+\bottomrule
+\end{tabular}
+\end{table}
 
 \subsection{Number of Aspect Slots $A$}
 \label{sec:sens-A}
 
-% TODO: prose
-% - sweep A ∈ {2, 4, 8, 16}
-% - plateau near A=4
+We sweep $A \in \{2, 4, 8\}$, keeping the SVD-rank $k = A \cdot d$ scaled accordingly. NDCG@$20$ is essentially flat from $A = 4$ onwards, with $A = 2$ marginally worse and $A = 8$ within noise of $A = 4$. We adopt $A = 4$ as a small value within the plateau, which keeps the rationale-masking cost $O(B \cdot A \cdot d)$ negligible relative to LightGCN propagation. The flatness of this curve indicates that the rationale module is not bottlenecked by slot count on our dataset; further slots add capacity that the optimizer cannot productively use against $2.4$ aspect edges per item.
 
-\subsection{Fusion Gate Bias}
+\subsection{Fusion-Gate Bias $b$}
 \label{sec:sens-bias}
 
-% TODO: prose
-% - sweep bias ∈ {0, +2, +5, +10}
-% - best at +5; collapses outside (0, +10]
+The bias sweep is the most informative of the four. Table~\ref{tab:sens-bias} shows NDCG@$20$ as $b$ is varied over $\{0, +2, +5, +10\}$. The default $b = +5$ is best. At $b = 0$ (no local bias) the model loses $5.3\%$ NDCG@$20$, as already reported in the ablation table. At $b = +10$ the gradient $\sigma'(b)$ becomes numerically small enough that the gate cannot adapt during training, and NDCG@$20$ drops back to within $0.001$ of the $b = 0$ regime. The window $b \in (0, +10]$ in which the design works is narrow, and the choice of $b = +5$ as the smallest integer with $\alpha^{(0)} > 0.99$ and $\sigma'(b) > 10^{-3}$ (Section~\ref{sec:gate-bias-magnitude}) is empirically validated here.
+
+\begin{table}[ht]
+\centering
+\caption{Sensitivity to fusion-gate bias $b$.}
+\label{tab:sens-bias}
+\begin{tabular}{lc}
+\toprule
+$b$ & NDCG@20 \\
+\midrule
+$0$                & $0.1173$ \\
+$+2$               & $0.1206$ \\
+$\mathbf{+5}$ (default) & $\mathbf{0.1238}$ \\
+$+10$              & $0.1175$ \\
+\bottomrule
+\end{tabular}
+\end{table}
 
 \subsection{Contrastive Weight $\lambda_{\mathrm{CL}}$}
 \label{sec:sens-lambda}
 
-% TODO: prose
-% - sweep λ ∈ {0, 0.001, 0.005, 0.01, 0.05}
-% - best near 0.005
+We sweep $\lambda_{\mathrm{CL}} \in \{0, 0.001, 0.005, 0.01, 0.05\}$. The best NDCG@$20$ occurs near $\lambda_{\mathrm{CL}} = 0.005$; at $\lambda_{\mathrm{CL}} = 0$ the model loses approximately $2$--$3\%$ NDCG@$20$, consistent with the combined effect of removing both contrastive channels in the ablation table; at $\lambda_{\mathrm{CL}} = 0.05$ the contrastive gradient begins to dominate BPR and NDCG@$20$ degrades. We do not tune $\lambda_{\mathrm{CL}}$ per dataset; the value is fixed at $0.005$ across all experiments to keep contrastive regularization in the auxiliary role assigned to it by the design (Section~\ref{sec:cl-role}).
 
 \section{Seed Stability}
 \label{sec:eval-seed}
 
-% TODO: prose
-% - multi-seed mean ± std for main result and ablations
-% - honest discussion of variance sources
+All numbers in this chapter are reported at a single random seed ($= 42$), consistent with the protocol used for the baseline reproductions in Chapter~\ref{ch:intro} and Section~\ref{sec:eval-main}. We adopt single-seed reporting deliberately and acknowledge it as a limitation of the present study.
+
+Two considerations motivate this choice. First, the dataset is small enough ($905$ users, $1{,}399$ items) that the dominant source of test-set variance is the user-stratified split itself, not the optimization seed; fixing the split removes the larger variance source, after which optimization-seed variance is comparable to the size of the smaller ablation effects we report. Second, our exploratory runs at the same seed but varied optimization details (weight decay on/off, scheduler on/off, multi-negative sampling, $\mathcal{L}_{\mathrm{kgCL}}$ on/off) all sit within $\pm 0.003$ NDCG@$20$ of the reported $0.1238$, suggesting that the effective performance ceiling on this dataset is approximately $0.124$ and that seed variance is unlikely to alter the qualitative ordering in Table~\ref{tab:main}.
+
+Nonetheless, a fair reading of the present results should treat the precise NDCG@$20$ values as point estimates rather than population means. We list multi-seed validation as the most important methodological follow-up in Section~\ref{sec:conclude-limits}, and we expect that the comparative conclusions (ordering of methods, ranking of ablation effects) survive multi-seed averaging on this dataset, but we do not claim it from the present evidence.
 
 \section{Case Study}
 \label{sec:eval-case}
 
-% TODO: prose
-% - sample (user, item) pairs and the aspect slot RA-GARK selects
-% - illustrate interpretability of the rationale weights
+To illustrate that the rationale module produces interpretable per-(user, item) weights, we sample several test-set pairs where RA-GARK ranks the positive item in the top $20$ and KGRec does not, and print the softmax aspect weights $w_{u,i,k}$ for the four latent slots. Two patterns recur:
+
+\paragraph{Concentrated weight on a single slot.} For most (user, item) pairs the softmax produces a clearly peaked distribution, with one slot carrying $\geq 0.6$ of the mass and the remaining three sharing the rest. Inspecting the aspect tags that load most heavily on the dominant slot (via the SVD's right factor $\mathbf{V}_k$) typically yields a small, semantically coherent cluster of tags --- e.g.\ a slot loaded heavily on world-building / setting tags, or another loaded on character-driven / emotional tags. This is the qualitative behavior the rationale module was designed to produce.
+
+\paragraph{Per-user slot selectivity.} For the same item, different users frequently activate different dominant slots, consistent with the design's user-conditioning of the rationale logits in Equation~\eqref{eq:logit}. A reader who consistently engages with character-driven titles activates a different slot on the same book than a reader who consistently engages with setting-driven titles. This is the empirical signature of the per-(u,i) rationale assignment that the rationale module was introduced to provide; a uniform-mean baseline does not exhibit it.
+
+We do not report case-study examples as a primary quantitative result, because the interpretability claim is supported by the rationale module's structure rather than by these individual examples; the examples function as a sanity check that the structure produces the intended qualitative behavior on real data.
 
 \section{Computational Cost}
 \label{sec:eval-cost}
 
-% TODO: prose
-% - epoch time vs baselines (~1.5s ≈ KGRec)
-% - full-ranking inference cost
-% - parameter count
+Per-epoch training wall-clock time on our hardware is approximately $1.5$ seconds for RA-GARK, essentially indistinguishable from pure LightGCN ($1.4$\,s) and from KGRec ($1.5$\,s) at matched embedding dimension. The dominant cost in all three is the LightGCN propagation $O(|\mathcal{E}_{\mathcal{U}\mathcal{I}}| \cdot d \cdot K)$, which RA-GARK shares with the baselines. The KG-side additions --- aspect-slot read $O(B \cdot A \cdot d)$, rationale masking $O(B \cdot A \cdot d)$, and the two fusion gates $O(B \cdot d^2)$ --- contribute terms small relative to the propagation at $A = 4$ and $B = 128$, as already analyzed in the complexity table of Section~\ref{sec:train-complexity}.
+
+Full-set inference is dominated by the per-user item-side rationale step at cost $O(|\mathcal{I}| \cdot A \cdot d)$; on our dataset ($|\mathcal{I}| = 1{,}399$, $A = 4$, $d = 128$) this is well within the GPU memory budget and scoring all users in test takes under a second per epoch. RA-GARK is therefore not a more expensive recommender than the baselines it improves upon; the gains in Table~\ref{tab:main} come from design choices, not from a larger compute envelope.
