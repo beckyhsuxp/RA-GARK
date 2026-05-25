@@ -38,14 +38,14 @@ This is not a claim that the four baselines are flawed---each performs strongly 
 
 A natural objection is to treat the empirical anomaly as a dataset peculiarity and either curate a denser KG, or apply KG completion to fill in missing edges. We argue that sparse KG is in fact the more common setting in practical recommendation, and that robustness under unreliable KG signal therefore deserves dedicated study rather than circumvention.
 
-Three sources of sparsity recur in practice. First, \emph{review-derived KGs}---of the kind used in this work---inherit their density from whatever topics users happened to mention; coverage is inherently uneven. Second, \emph{cold-start and emerging domains}---new product categories, low-resource languages, niche verticals---rarely have access to a curated source comparable to Freebase or Wikidata, so the KG must be bootstrapped from limited signal. Third, \emph{privacy-constrained domains} such as medical or financial recommendation deliberately restrict which relational signals can be exposed to a model. In all three settings, an aggressive KG completion step is itself non-trivial: completion introduces its own noise, and typically requires sufficient seed signal to train, which is precisely what is missing in the sparse regime.
+Three sources of sparsity recur in practice. First, \emph{review-derived KGs}---of the kind used in this work---inherit their density from whatever topics users happened to mention; coverage is inherently uneven. Second, \emph{cold-start and emerging domains}---new product categories, low-resource languages, niche verticals---rarely have access to a curated source comparable to Freebase or Wikidata, so the KG must be bootstrapped from limited signal. Third, \emph{privacy-constrained domains} such as medical or financial recommendation deliberately restrict which relational signals can be exposed to a model. In all three settings, an aggressive KG completion step is itself non-trivial: completion introduces its own noise, and typically requires sufficient seed signal to train, which is precisely what is missing in the sparse setting.
 
 The implication is that a recommender's \emph{robustness} when the KG is unreliable is at least as important as its \emph{peak performance} when the KG is dense. This thesis takes that robustness as the primary design objective.
 
 \section{Research Questions}
 \label{sec:intro-rq}
 
-The empirical anomaly and the practical importance of the sparse-KG regime motivate two research questions:
+The empirical anomaly and the practical importance of the sparse-KG setting motivate two research questions:
 
 \begin{itemize}
   \item \textbf{(RQ1, diagnosis)} Why do existing KG-aware methods underperform pure LightGCN under sparse KG? What is the structural failure mode they share?
