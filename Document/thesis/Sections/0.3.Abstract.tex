@@ -18,7 +18,8 @@
     
     \vspace{0.3cm}
     \begin{singlespace}
-        \NameofDepartmentInstituteEN, National Yang Ming Chiao Tung University\\[0.1cm]
+        \NameofDepartmentInstituteEN \\
+        National Yang Ming Chiao Tung University \\[0.1cm]
     \end{singlespace}
 
     \textbf{Abstract} \\[0.3cm]
@@ -27,7 +28,7 @@
 
 \normalsize
 
-Knowledge-graph-aware (KG-aware) recommenders work well when the KG is dense, but the sparse regime---common in review-derived, cold-start, and privacy-constrained settings---is underexplored. On a sparse review-derived KG ($2.4$ aspect edges per item), four representative methods (KGAT, KGCL, MCCLK, KGRec) are all outperformed by pure LightGCN: each wires the KG into the scoring path as a mandatory component with no way to disengage when the KG is unreliable, letting KG noise contaminate the collaborative gradient flow.
+Knowledge-graph-aware (KG-aware) recommenders work well when the KG is dense, but the sparse regime---common in review-derived and cold-start settings---is underexplored. On a sparse review-derived KG ($2.4$ aspect edges per item), four representative methods (KGAT, KGCL, MCCLK, KGRec) are all outperformed by pure LightGCN: each wires the KG into the scoring path as a mandatory component, letting KG noise contaminate the collaborative gradient.
 
-We propose RA-GARK (Rationale-Aware Gating over Review-Aspect Knowledge graphs), which treats the KG as a gated side channel. A local-biased fusion gate adjusts the collaborative/KG weight per (user, item); its bias initializes to $+5$, so training starts as effectively pure LightGCN and the KG channel opens only when gradients indicate it helps, providing structural graceful degradation. Each item's KG semantics live in $A=4$ latent aspect slots initialized by truncated SVD of an IDF-weighted item--aspect matrix, with softmax attention selecting the most salient slot per pair. RA-GARK reaches NDCG@20 $= 0.1238$, beating the strongest KG-aware baseline KGRec by $+13.1\%$ and pure LightGCN by $+5.0\%$, flipping the KG's contribution from net-negative to net-positive under a fixed KG. Ablations: replacing softmax with sigmoid costs $7.0\%$; removing the biased gate or the KG-SVD init each costs $5.3\%$. The attention-normalization observation is framed as a single-dataset hypothesis awaiting multi-dataset replication.\\[0.5\baselineskip]
+We propose RA-GARK (Rationale-Aware Gating over Review-Aspect Knowledge graphs), which treats the KG as a gated side channel. A local-biased fusion gate adjusts the collaborative/KG weight per (user, item); its bias initializes to $+5$, so training starts as effectively pure LightGCN and the KG channel opens only when gradients indicate it helps, providing structural graceful degradation. Each item's KG semantics live in $A=4$ latent aspect slots initialized by truncated SVD of an IDF-weighted item--aspect matrix, with softmax attention selecting the most salient slot. RA-GARK reaches NDCG@20 $= 0.1238$, beating KGRec by $+13.1\%$ and pure LightGCN by $+5.0\%$, flipping the KG's contribution from net-negative to net-positive under a fixed KG. Ablations: sigmoid in place of softmax costs $7.0\%$; removing the biased gate or the KG-SVD init each costs $5.3\%$. The attention-normalization observation is a single-dataset hypothesis awaiting multi-dataset replication.\\[0.5\baselineskip]
 \textbf{Keywords: knowledge-graph-aware recommendation; graceful degradation; fusion gate; sparse knowledge graph; collaborative filtering.}
