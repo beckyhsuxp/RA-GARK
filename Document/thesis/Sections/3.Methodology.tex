@@ -81,7 +81,7 @@ $\hat{y}(u, i) \in \mathbb{R}$         & predicted preference score for pair $(u
 \section{Problem Formulation}
 \label{sec:approach-problem}
 
-\paragraph{Task.} We address top-$K$ recommendation in the implicit-feedback regime. Given $\mathcal{U}$, $\mathcal{I}$, observed interactions $\mathcal{R}$, and the item--aspect KG $\mathcal{G}_{\mathrm{KG}}$, the goal is to produce for each user $u \in \mathcal{U}$ a ranked list of items from $\mathcal{I} \setminus \{i : (u, i) \in \mathcal{R}\}$, evaluated by ranking metrics (NDCG@$K$, Recall@$K$, Hit@$K$) against a held-out test interaction set.
+\paragraph{Task.} We address top-$K$ recommendation in the implicit-feedback setting. Given $\mathcal{U}$, $\mathcal{I}$, observed interactions $\mathcal{R}$, and the item--aspect KG $\mathcal{G}_{\mathrm{KG}}$, the goal is to produce for each user $u \in \mathcal{U}$ a ranked list of items from $\mathcal{I} \setminus \{i : (u, i) \in \mathcal{R}\}$, evaluated by ranking metrics (NDCG@$K$, Recall@$K$, Hit@$K$) against a held-out test interaction set.
 
 \paragraph{Scoring function.} RA-GARK assigns to each $(u, i)$ pair the inner-product score
 \begin{equation}
