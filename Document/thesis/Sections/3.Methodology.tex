@@ -16,7 +16,7 @@ This chapter presents RA-GARK in full. The chapter is organized as follows:
 
 The empirical observation in Chapter~\ref{ch:intro} is that four representative KG-aware methods (KGAT, KGCL, MCCLK, KGRec) are uniformly outperformed by pure LightGCN on our sparse review-derived knowledge graph (KG).
 
-The structural cause shared by these baselines is that the KG is wired into the scoring pipeline as a \emph{mandatory} component: KG entity embeddings participate in message passing, and there is no architectural switch by which the model can disengage the KG when it turns out to be unreliable. KG noise therefore enters the same gradient flow that produces the collaborative representation.
+The underlying cause shared by these baselines is that the KG is wired into the scoring pipeline as a \emph{mandatory} component: KG entity embeddings participate in message passing, and there is no architectural switch by which the model can disengage the KG when it turns out to be unreliable. KG noise therefore enters the same gradient flow that produces the collaborative representation.
 
 RA-GARK is organized around a single design principle that addresses this failure mode directly:
 
@@ -24,7 +24,7 @@ RA-GARK is organized around a single design principle that addresses this failur
 \emph{The KG should not be a mandatory component of the scoring pipeline. It should be a side channel whose contribution to the final score is determined by a learned gate, biased at initialization toward a safe default (pure collaborative filtering) and opened only when training signal indicates that the KG channel reduces loss.}
 \end{quote}
 
-Three architectural consequences follow from this principle and define RA-GARK:
+Three design consequences follow from this principle and define RA-GARK:
 
 \begin{enumerate}
   \item \textbf{Two parallel views.} A \emph{local view} produces a purely collaborative representation $(u_{\mathrm{loc}}, i_{\mathrm{loc}})$ via LightGCN over the user--item interaction graph, with no KG involvement. A \emph{global view} produces a KG-derived representation $(u_{\mathrm{glo}}, i_{\mathrm{glo}})$ from a separate user embedding table and the per-item latent aspect slots, with no collaborative signal involvement. The two views remain structurally disjoint up to the fusion stage.
@@ -46,7 +46,7 @@ Figure~\ref{fig:architecture} sketches the data flow at inference time. The mode
 \label{fig:architecture}
 \end{figure}
 
-Two structural properties are worth highlighting before the formal presentation. First, $u_{\mathrm{glo}}$ does not pass through the rationale masking module: it is obtained by a direct embedding lookup, and feeds straight into the user-side fusion gate. The rationale masking applies only on the item side, consistent with the semantic that the rationale answers ``which aspect of \emph{this item} matters to \emph{this user}.'' Second, the KG-SVD step is an initialization, not a forward-pass operation: the SVD is computed once before training and used to set the values of the aspect-slot parameters, after which the slots are updated by gradient descent like any other parameter.
+Two design properties are worth highlighting before the formal presentation. First, $u_{\mathrm{glo}}$ does not pass through the rationale masking module: it is obtained by a direct embedding lookup, and feeds straight into the user-side fusion gate. The rationale masking applies only on the item side, consistent with the semantic that the rationale answers ``which aspect of \emph{this item} matters to \emph{this user}.'' Second, the KG-SVD step is an initialization, not a forward-pass operation: the SVD is computed once before training and used to set the values of the aspect-slot parameters, after which the slots are updated by gradient descent like any other parameter.
 
 \section{Notation}
 \label{sec:approach-notation}
@@ -307,7 +307,7 @@ Implementation-wise this is the ``rationale masking'' step: the softmax weights 
 \subsection{Why Softmax and Not Sigmoid}
 \label{sec:softmax-vs-sigmoid}
 
-A natural alternative is to score each slot independently with a sigmoid: $w_{u,i,k} = \sigma(\ell_{u,i,k})$, with no cross-slot normalization. The two operations differ in a structural property that matters for the downstream fusion gate: softmax produces weights that sum to $1$ and yield an $i_{\mathrm{glo}}$ whose magnitude is bounded by $\max_k \|\mathbf{a}_{i,k}\|$ regardless of the logit scale, whereas the sigmoid output is unconstrained in its sum and produces an $i_{\mathrm{glo}}$ whose magnitude scales with the logit dynamic range.
+A natural alternative is to score each slot independently with a sigmoid: $w_{u,i,k} = \sigma(\ell_{u,i,k})$, with no cross-slot normalization. The two operations differ in a key property that matters for the downstream fusion gate: softmax produces weights that sum to $1$ and yield an $i_{\mathrm{glo}}$ whose magnitude is bounded by $\max_k \|\mathbf{a}_{i,k}\|$ regardless of the logit scale, whereas the sigmoid output is unconstrained in its sum and produces an $i_{\mathrm{glo}}$ whose magnitude scales with the logit dynamic range.
 
 Empirically, the sigmoid variant degrades NDCG@20 by $7.0\%$ on our benchmark (Section~\ref{sec:ablation-softmax}) --- the largest single-component effect we observe. The case study in Section~\ref{sec:eval-case} suggests why: the rationale module operates inside a deliberately throttled KG channel and ends up producing softly-peaked weights ($\max_k w_k \approx 0.28$, the others $\approx 0.24$) rather than the near-one-hot vectors one might assume from the softmax name. Under softmax this means $i_{\mathrm{glo}}$'s magnitude stays bounded and predictable, so the fusion gate's calibration (Section~\ref{sec:gate-bias}) reliably keeps the KG contribution at the intended small fraction of the score; under sigmoid the per-slot magnitudes drift with the logits, destabilizing exactly the bounded-contribution property that the gate relies on. Softmax's load-bearing role is therefore magnitude-controlled normalization for a throttled auxiliary channel, not enforcement of one-hot competition among the slots. We discuss this finding more carefully in Chapter~\ref{ch:conclusion} and explicitly position it as a single-dataset observation pending replication.
 
