@@ -1,6 +1,6 @@
 # RA-GARK Architecture
 
-**Rationale-Aware Gating Network over Review Aspect-Specific Knowledge Graphs**
+**Product Recommendation via Rationale-Aware Gating over Sparse Review-Aspect Knowledge Graphs**
 
 This document describes the RA-GARK architecture and training procedure.
 
