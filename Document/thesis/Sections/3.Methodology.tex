@@ -116,7 +116,7 @@ The local view produces a purely collaborative representation $(u_{\mathrm{loc}}
 \subsection{Motivation}
 \label{sec:local-motivation}
 
-LightGCN is chosen as the local-view backbone for three reasons. First, on the sparse review-derived KG used in this thesis, pure LightGCN already exceeds all four KG-aware baselines we evaluated (Chapter~\ref{ch:intro}), making it the strongest non-KG starting point against which any subsequent design must demonstrably improve. Second, its minimal parameterization --- only the user and item embedding tables, no learned weights in the propagation --- limits the surface area through which KG noise could leak into the collaborative gradient flow when the two views are coupled later. Third, the propagation is purely linear, so each layer's contribution to the final representation can be read off the closed-form layer-wise average, and design decisions about gate placement (Section~\ref{sec:gate}) and contrastive alignment (Section~\ref{sec:cl}) can be reasoned about without nonlinearity confounds.
+LightGCN is chosen as the local-view backbone for three reasons. First, on the sparse review-derived KG used in this thesis, pure LightGCN already exceeds all four KG-aware baselines we evaluated (Chapter~\ref{ch:intro}), making it the strongest non-KG starting point against which any subsequent design must demonstrably improve. Second, its minimal parameterization (only the user and item embedding tables, no learned weights in the propagation) limits the surface area through which KG noise could leak into the collaborative gradient flow when the two views are coupled later. Third, the propagation is purely linear, so each layer's contribution to the final representation can be read off the closed-form layer-wise average, and design decisions about gate placement (Section~\ref{sec:gate}) and contrastive alignment (Section~\ref{sec:cl}) can be reasoned about without nonlinearity confounds.
 
 \subsection{Graph Construction}
 \label{sec:local-graph}
@@ -141,7 +141,7 @@ Let $\mathbf{E}^{(0)} \in \mathbb{R}^{(|\mathcal{U}| + |\mathcal{I}|) \times d}$
 \label{eq:lightgcn-prop}
 \mathbf{E}^{(\ell+1)} = \tilde{\mathbf{A}}\, \mathbf{E}^{(\ell)}, \qquad \ell = 0, 1, \dots, K-1.
 \end{equation}
-There is no learnable weight matrix, no nonlinearity, and no self-loop bias --- the only learnable parameters in the entire local view are the $|\mathcal{U}|d + |\mathcal{I}|d$ entries of $\mathbf{E}^{(0)}$.
+There is no learnable weight matrix, no nonlinearity, and no self-loop bias, the only learnable parameters in the entire local view are the $|\mathcal{U}|d + |\mathcal{I}|d$ entries of $\mathbf{E}^{(0)}$.
 
 \subsection{Layer-wise Aggregation and Output}
 \label{sec:local-output}
@@ -232,7 +232,7 @@ The flat embedding $\mathbf{E}_{\mathrm{KG}}$ of width $k = A d$ is reshaped int
 \end{equation}
 Slots are thus disjoint contiguous chunks of the SVD output; they do not correspond to individually interpretable aspect tags.
 
-Because the magnitudes of $\mathbf{E}_{\mathrm{KG}}$ depend on $|\mathcal{I}|$, $|\mathcal{A}|$, and the spectral profile of $\tilde{\mathbf{M}}$, the unscaled SVD output is not on the same magnitude as the Xavier-initialized parameters elsewhere in the model. We therefore rescale the entire $\mathbf{A}_{\mathrm{KG}}^{(0)}$ so that its empirical standard deviation matches the Xavier-normal target $\sigma = \sqrt{2 / (A + d)}$. The rescaling preserves the angular geometry of the SVD output --- which is what we want to inject --- while making the slot magnitudes compatible with the rest of the optimization.
+Because the magnitudes of $\mathbf{E}_{\mathrm{KG}}$ depend on $|\mathcal{I}|$, $|\mathcal{A}|$, and the spectral profile of $\tilde{\mathbf{M}}$, the unscaled SVD output is not on the same magnitude as the Xavier-initialized parameters elsewhere in the model. We therefore rescale the entire $\mathbf{A}_{\mathrm{KG}}^{(0)}$ so that its empirical standard deviation matches the Xavier-normal target $\sigma = \sqrt{2 / (A + d)}$. The rescaling preserves the angular geometry of the SVD output, which is what we want to inject, while making the slot magnitudes compatible with the rest of the optimization.
 
 \subsection{Algorithm}
 \label{sec:kgsvd-algo}
@@ -309,7 +309,7 @@ Implementation-wise this is the ``rationale masking'' step: the softmax weights 
 
 A natural alternative is to score each slot independently with a sigmoid: $w_{u,i,k} = \sigma(\ell_{u,i,k})$, with no cross-slot normalization. The two operations differ in a key property that matters for the downstream fusion gate: softmax produces weights that sum to $1$ and yield an $i_{\mathrm{glo}}$ whose magnitude is bounded by $\max_k \|\mathbf{a}_{i,k}\|$ regardless of the logit scale, whereas the sigmoid output is unconstrained in its sum and produces an $i_{\mathrm{glo}}$ whose magnitude scales with the logit dynamic range.
 
-Empirically, the sigmoid variant degrades NDCG@20 by $7.0\%$ on our benchmark (Section~\ref{sec:ablation-softmax}) --- the largest single-component effect we observe. The case study in Section~\ref{sec:eval-case} suggests why: the rationale module operates inside a deliberately throttled KG channel and ends up producing softly-peaked weights ($\max_k w_k \approx 0.28$, the others $\approx 0.24$) rather than the near-one-hot vectors one might assume from the softmax name. Under softmax this means $i_{\mathrm{glo}}$'s magnitude stays bounded and predictable, so the fusion gate's calibration (Section~\ref{sec:gate-bias}) reliably keeps the KG contribution at the intended small fraction of the score; under sigmoid the per-slot magnitudes drift with the logits, destabilizing exactly the bounded-contribution property that the gate relies on. Softmax's load-bearing role is therefore magnitude-controlled normalization for a throttled auxiliary channel, not enforcement of one-hot competition among the slots. We discuss this finding more carefully in Chapter~\ref{ch:conclusion} and explicitly position it as a single-dataset observation pending replication.
+Empirically, the sigmoid variant degrades NDCG@20 by $7.0\%$ on our benchmark (Section~\ref{sec:ablation-softmax}), the largest single-component effect we observe. The case study in Section~\ref{sec:eval-case} suggests why: the rationale module operates inside a deliberately throttled KG channel and ends up producing softly-peaked weights ($\max_k w_k \approx 0.28$, the others $\approx 0.24$) rather than the near-one-hot vectors one might assume from the softmax name. Under softmax this means $i_{\mathrm{glo}}$'s magnitude stays bounded and predictable, so the fusion gate's calibration (Section~\ref{sec:gate-bias}) reliably keeps the KG contribution at the intended small fraction of the score; under sigmoid the per-slot magnitudes drift with the logits, destabilizing exactly the bounded-contribution property that the gate relies on. Softmax's load-bearing role is therefore magnitude-controlled normalization for a throttled auxiliary channel, not enforcement of one-hot competition among the slots. We discuss this finding more carefully in Chapter~\ref{ch:conclusion} and explicitly position it as a single-dataset observation pending replication.
 
 \section{Local-Biased Fusion Gate}
 \label{sec:gate}
@@ -382,7 +382,7 @@ This is a graceful degradation property in the precise architectural sense of Hi
 \subsection{Why $+5$ and Not $+\infty$}
 \label{sec:gate-bias-magnitude}
 
-The bias magnitude is chosen by a single principle: large enough that the initial gate output is overwhelmingly local, small enough that gradients on $b$ are nonzero and can adjust the gate during training. At $b = +5$, $\sigma'(5) = \sigma(5)(1 - \sigma(5)) \approx 0.007$ --- small, but not vanishing. With $b = +10$ or beyond, the gradient on $b$ becomes numerically negligible and the gate cannot learn to open at all. The choice $b = +5$ is the smallest integer for which $\alpha^{(0)} > 0.99$ while keeping $\sigma'(b) > 10^{-3}$, and it survives a sensitivity sweep without further tuning (Section~\ref{sec:sens-bias}). Removing the bias initialization entirely (setting $b = 0$) costs $5.3\%$ NDCG@20 (Section~\ref{sec:ablation-gate}).
+The bias magnitude is chosen by a single principle: large enough that the initial gate output is overwhelmingly local, small enough that gradients on $b$ are nonzero and can adjust the gate during training. At $b = +5$, $\sigma'(5) = \sigma(5)(1 - \sigma(5)) \approx 0.007$, small, but not vanishing. With $b = +10$ or beyond, the gradient on $b$ becomes numerically negligible and the gate cannot learn to open at all. The choice $b = +5$ is the smallest integer for which $\alpha^{(0)} > 0.99$ while keeping $\sigma'(b) > 10^{-3}$, and it survives a sensitivity sweep without further tuning (Section~\ref{sec:sens-bias}). Removing the bias initialization entirely (setting $b = 0$) costs $5.3\%$ NDCG@20 (Section~\ref{sec:ablation-gate}).
 
 \section{Cross-View Contrastive Regularization}
 \label{sec:cl}
@@ -392,7 +392,7 @@ The local and global views are structurally heterogeneous: one is a collaborativ
 \subsection{Role in the Architecture}
 \label{sec:cl-role}
 
-In RA-GARK the contrastive losses play an explicitly limited role. They are not the primary integration mechanism --- that role is filled by the fusion gate (Section~\ref{sec:gate}) --- but a regularizer that nudges the two views toward a shared angular geometry. In particular we deliberately do not use contrastive learning to make the KG channel ``earn'' its way into the model, as KGCL~\cite{yang2022kgcl} and MCCLK~\cite{zou2022mcclk} do; that would re-introduce the failure mode of treating KG signal as a mandatory primary fusion path.
+In RA-GARK the contrastive losses play an explicitly limited role. They are not the primary integration mechanism, that role is filled by the fusion gate (Section~\ref{sec:gate}), but a regularizer that nudges the two views toward a shared angular geometry. In particular we deliberately do not use contrastive learning to make the KG channel ``earn'' its way into the model, as KGCL~\cite{yang2022kgcl} and MCCLK~\cite{zou2022mcclk} do; that would re-introduce the failure mode of treating KG signal as a mandatory primary fusion path.
 
 \subsection{Aspect-Level Contrastive Loss}
 \label{sec:cl-acl}
