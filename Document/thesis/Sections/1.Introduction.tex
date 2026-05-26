@@ -11,7 +11,7 @@ A complementary line of research, knowledge-graph-aware recommendation, augments
 \section{An Empirical Anomaly under Sparse KG}
 \label{sec:intro-observation}
 
-Our investigation begins with an empirical observation that motivates the rest of this thesis. On the review-derived KG dataset used throughout this work---an Amazon Books subset with on average $2.4$ aspect edges per item after filtering---all four representative KG-aware methods listed above are outperformed by pure LightGCN that does not consult the KG at all. Table~\ref{tab:intro-baseline} summarizes the gap.
+Our investigation begins with an empirical observation that motivates the rest of this thesis. On the review-derived KG dataset used throughout this work, an Amazon Books subset with on average $2.4$ aspect edges per item after filtering, all four representative KG-aware methods listed above are outperformed by pure LightGCN that does not consult the KG at all. Table~\ref{tab:intro-baseline} summarizes the gap.
 
 \begin{table}[ht]
 \centering
@@ -31,14 +31,14 @@ Pure LightGCN~\cite{he2020lightgcn} (no KG) & \textbf{0.1179} \\
 \end{tabular}
 \end{table}
 
-This is not a claim that the four baselines are flawed---each performs strongly on the dense KG datasets reported in their original papers. Rather, the observation suggests a failure mode shared by deep KG--CF coupling: when the KG is too sparse or noisy to provide reliable item semantics, fusing it directly into the scoring path drags KG noise into the gradient flow that would otherwise produce a clean collaborative signal.
+This is not a claim that the four baselines are flawed, each performs strongly on the dense KG datasets reported in their original papers. Rather, the observation suggests a failure mode shared by deep KG--CF coupling: when the KG is too sparse or noisy to provide reliable item semantics, fusing it directly into the scoring path drags KG noise into the gradient flow that would otherwise produce a clean collaborative signal.
 
 \section{Sparse KG as a Real-World Default}
 \label{sec:intro-sparse-kg}
 
 A natural objection is to treat the empirical anomaly as a dataset peculiarity and either curate a denser KG, or apply KG completion to fill in missing edges. We argue that sparse KG is in fact the more common setting in practical recommendation, and that robustness under unreliable KG signal therefore deserves dedicated study rather than circumvention.
 
-Three sources of sparsity recur in practice. First, \emph{review-derived KGs}---of the kind used in this work---inherit their density from whatever topics users happened to mention; coverage is inherently uneven. Second, \emph{cold-start and emerging domains}---new product categories, low-resource languages, niche verticals---rarely have access to a curated source comparable to Freebase or Wikidata, so the KG must be bootstrapped from limited signal. Third, \emph{privacy-constrained domains} such as medical or financial recommendation deliberately restrict which relational signals can be exposed to a model. In all three settings, an aggressive KG completion step is itself non-trivial: completion introduces its own noise, and typically requires sufficient seed signal to train, which is precisely what is missing in the sparse setting.
+Three sources of sparsity recur in practice. First, \emph{review-derived KGs}, of the kind used in this work, inherit their density from whatever topics users happened to mention; coverage is inherently uneven. Second, \emph{cold-start and emerging domains} (new product categories, low-resource languages, niche verticals) rarely have access to a curated source comparable to Freebase or Wikidata, so the KG must be bootstrapped from limited signal. Third, \emph{privacy-constrained domains} such as medical or financial recommendation deliberately restrict which relational signals can be exposed to a model. In all three settings, an aggressive KG completion step is itself non-trivial: completion introduces its own noise, and typically requires sufficient seed signal to train, which is precisely what is missing in the sparse setting.
 
 The implication is that a recommender's \emph{robustness} when the KG is unreliable is at least as important as its \emph{peak performance} when the KG is dense. This thesis takes that robustness as the primary design objective.
 
@@ -52,7 +52,7 @@ The empirical anomaly and the practical importance of the sparse-KG setting moti
   \item \textbf{(RQ2, prescription)} What design principle allows a model to exploit the KG when its signal is informative, while preventing KG noise from contaminating collaborative filtering when it is not?
 \end{itemize}
 
-The thesis statement of this work is that the KG should not be a mandatory component of the scoring pipeline---as it effectively is in KGAT-style deep fusion---but should instead be a side channel that can be \emph{explicitly gated} based on whether its signal is helpful. Concretely, this idea is realized by three design choices: a softmax aspect-saliency attention that selects KG rationales per user--item pair; a KG-driven SVD initialization that preserves semantic geometry; and a local-biased fusion gate whose initialization implements graceful degradation to pure LightGCN when the KG turns out to be uninformative.
+The thesis statement of this work is that the KG should not be a mandatory component of the scoring pipeline, as it effectively is in KGAT-style deep fusion, but should instead be a side channel that can be \emph{explicitly gated} based on whether its signal is helpful. Concretely, this idea is realized by three design choices: a softmax aspect-saliency attention that selects KG rationales per user--item pair; a KG-driven SVD initialization that preserves semantic geometry; and a local-biased fusion gate whose initialization implements graceful degradation to pure LightGCN when the KG turns out to be uninformative.
 
 \section{Contributions}
 \label{sec:intro-contributions}
@@ -69,7 +69,7 @@ This thesis makes the following contributions:
       \item \textbf{KG-SVD initialization} (Section~\ref{sec:kgsvd}). The aspect-slot embeddings are initialized from a truncated SVD of an IDF-weighted item--aspect matrix, preserving the KG's semantic geometry as the optimization starting point. Replacing this with random initialization costs $5.3\%$ NDCG@20.
     \end{itemize}
 
-  \item \textbf{Empirical validation} on the sparse review-derived KG benchmark, where RA-GARK reaches NDCG@20 $= 0.1238$, exceeding the strongest KG-aware baseline (KGRec) by $+13.1\%$ and---more importantly---exceeding pure LightGCN by $+5.0\%$. The latter gap demonstrates that the proposed design principle flips the contribution of KG signal from \emph{net-negative} (as in the four baselines) to \emph{net-positive}, even when the KG itself is unchanged.
+  \item \textbf{Empirical validation} on the sparse review-derived KG benchmark, where RA-GARK reaches NDCG@20 $= 0.1238$, exceeding the strongest KG-aware baseline (KGRec) by $+13.1\%$ and, more importantly, exceeding pure LightGCN by $+5.0\%$. The latter gap demonstrates that the proposed design principle flips the contribution of KG signal from \emph{net-negative} (as in the four baselines) to \emph{net-positive}, even when the KG itself is unchanged.
 
   \item \textbf{A methodological observation} regarding attention normalization in rationale-aware design. The unusually large effect of softmax versus sigmoid in our setting suggests that the choice of normalization should be aligned with the semantic assumption of the rationale. We discuss this as a single-dataset hypothesis rather than a general claim, pending replication on additional benchmarks (Chapter~\ref{ch:conclusion}).
 \end{enumerate}
@@ -77,4 +77,4 @@ This thesis makes the following contributions:
 \section{Thesis Organization}
 \label{sec:intro-organization}
 
-The remainder of this thesis is organized as follows. Chapter~\ref{ch:relatedwork} reviews related work along four axes: graph collaborative filtering, KG-aware recommendation, gating mechanisms in deep learning, and attention normalization. Chapter~\ref{ch:methodology} presents the RA-GARK architecture in full: it states the design principle, fixes notation and the problem formulation, and develops each module --- the LightGCN local view, the global KG view with its two innovations (KG-SVD initialization and softmax aspect-saliency attention), the local-biased fusion gate, and the cross-view contrastive regularization --- together with the training procedure and computational complexity. Chapter~\ref{ch:experiments} reports experimental results, ablations, sensitivity analyses, stability of results, and a case study. Chapter~\ref{ch:conclusion} discusses the methodological insight on attention normalization, acknowledges the limitations of single-dataset validation, and outlines future work.
+The remainder of this thesis is organized as follows. Chapter~\ref{ch:relatedwork} reviews related work along four axes: graph collaborative filtering, KG-aware recommendation, gating mechanisms in deep learning, and attention normalization. Chapter~\ref{ch:methodology} presents the RA-GARK architecture in full: it states the design principle, fixes notation and the problem formulation, and develops each module, the LightGCN local view, the global KG view with its two innovations (KG-SVD initialization and softmax aspect-saliency attention), the local-biased fusion gate, and the cross-view contrastive regularization, together with the training procedure and computational complexity. Chapter~\ref{ch:experiments} reports experimental results, ablations, sensitivity analyses, stability of results, and a case study. Chapter~\ref{ch:conclusion} discusses the methodological insight on attention normalization, acknowledges the limitations of single-dataset validation, and outlines future work.
