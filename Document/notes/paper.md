@@ -1,4 +1,4 @@
-# RA-GARK: Rationale-Aware Gating over Review-Aspect Knowledge Graphs
+# Product Recommendation via Rationale-Aware Gating over Sparse Review-Aspect Knowledge Graphs (RA-GARK)
 
 > 雙視角推薦：Softmax 面向顯著性 + 本地偏置融合
 
