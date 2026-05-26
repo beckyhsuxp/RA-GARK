@@ -18,6 +18,8 @@ With all three in place, RA-GARK achieves NDCG@$20 = 0.1238$ on our benchmark, a
 
 The single-sentence summary of the thesis is therefore: \emph{when the KG is unreliable, what an architecture most needs is not a better KG aggregator but a structural switch by which the KG can be opted out of.}
 
+The value of the thesis lies less in the specific numbers than in this reframing. It locates the difficulty of sparse-KG recommendation in the architecture rather than in the KG itself: the same KG that is a liability under mandatory fusion becomes an asset once its use is made structurally optional, with no change to the KG. Read this way, graceful degradation, biasing an auxiliary channel toward a safe default and opening it only when training signal warrants, is a reusable principle for integrating any signal whose reliability cannot be assumed in advance, rather than a device specific to review-derived knowledge graphs. Whether that principle holds beyond the single sparse benchmark studied here is the empirical question taken up in Section~\ref{sec:conclude-future}.
+
 \section{Methodological Insight: Attention Normalization}
 \label{sec:conclude-insight}
 
