@@ -36,7 +36,7 @@
 \subsection{知識圖譜建構}
 \label{sec:eval-dataset-kg-zh}
 
-本文所用之物品—面向 KG 由~\cite{ho2024reviewkg}~之流程自原始書評建構，我們不加修改地直接使用。由於建構本身非本文貢獻，僅作扼要描述：對每本書，物品側視覺特徵以 ResNet 與 Qwen-VL 自封面影像萃取，再由 BART 與 Mistral 自評論池生成統一文字摘要；隨後自摘要抽出面向出現，形成 $(\textit{item}, \texttt{has\_aspect}, \textit{aspect})$ 三元組。原始抽取共得 $13{,}905$ 條候選邊。
+本文所用之物品—面向 KG 由~\cite{ho2024reviewkg}~之流程自原始商品評論建構，我們不加修改地直接使用。由於建構本身非本文貢獻，僅作扼要描述：對每本書，物品側視覺特徵以 ResNet 與 Qwen-VL 自封面影像萃取，再由 BART 與 Mistral 自評論池生成統一文字摘要；隨後自摘要抽出面向出現，形成 $(\textit{item}, \texttt{has\_aspect}, \textit{aspect})$ 三元組。原始抽取共得 $13{,}905$ 條候選邊。
 
 兩道過濾將其縮減為工作 KG。其一，移除頻率前 $2\%$ 之面向標籤（這些經驗上歸結為「well-written」「engaging」等通用讚詞）理由是此類標籤幾乎不攜帶物品鑑別資訊，且會主導其後之 SVD 譜（第~\ref{sec:kgsvd-zh}~節）。其二，以一份小型手工策劃之停用詞清單移除領域特定通用詞（如「character\_development」「highly\_recommended」）。兩道一同丟棄 $75.7\%$ 之原始邊，留下分布於 $2{,}098$ 個獨立標籤之 $3{,}370$ 條具體面向附著。
 
