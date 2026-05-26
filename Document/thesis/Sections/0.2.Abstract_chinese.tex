@@ -26,5 +26,5 @@
 
 知識圖譜感知（KG-aware）推薦系統在 KG 稠密且品質良好時普遍能提升準確度，但當 KG 稀疏或品質不佳時（即評論衍生、冷啟動、隱私受限等常見場景），既有研究探討有限。本文以書評衍生 KG 為例（過濾後每件商品平均 2.4 條邊），觀察到四個代表性方法（KGAT、KGCL、MCCLK、KGRec）皆不及完全不使用 KG 的純 LightGCN，原因在於這些方法將 KG 訊號內嵌於計分管線，無結構性開關可在 KG 不可信時將其關閉，KG 雜訊因此污染協同表示之梯度流。
 
-本文提出 RA-GARK（Rationale-Aware Gating over Review-Aspect Knowledge graphs），將 KG 視為起始關閉的可閘控側通道，使訓練起點等同於純 LightGCN，僅在梯度顯示 KG 有助於協同訊號時才逐步開啟，提供結構性優雅退化。在 KG 不變的條件下，RA-GARK 於 NDCG@20 達 0.1238，較最強 KG-aware 基準 KGRec 提升 13.1\%、較純 LightGCN 提升 5.0\%，將 KG 的貢獻自「無益」翻轉為「有益」。消融顯示：注意力歸一化的選擇貢獻 7.0\% NDCG，移除偏置融合閘或 KG-SVD 初始化各損失 5.3\%。注意力歸一化之觀察定位為單一資料集之待驗證假說，留待後續於多資料集上重現。\\[0.5\baselineskip]
+本文提出 RA-GARK（Rationale-Aware Gating over Review-Aspect Knowledge graphs），將 KG 視為起始關閉的可閘控側通道，使訓練起點等同於純 LightGCN，僅在梯度顯示 KG 有助於協同訊號時才逐步開啟，提供結構性優雅退化。在 KG 不變的條件下，RA-GARK 於 NDCG@20 達 0.1238，較最強 KG-aware 基準 KGRec 提升 13.1\%、較純 LightGCN 提升 5.0\%，在不更動 KG 的前提下將其貢獻自「無益」翻轉為「有益」。上述結果取自單一稀疏基準，顯示當 KG 稀疏或不可靠時，將 KG 視為可閘控之側通道是一個有效的設計原則。\\[0.5\baselineskip]
 \textbf{關鍵字：}知識圖譜推薦；可退化機制；融合閘；稀疏知識圖譜；協同過濾
