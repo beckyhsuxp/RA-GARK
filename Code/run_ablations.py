@@ -17,12 +17,20 @@ Three preset groups — pick one with --mode:
     full     (10 presets, ~20 min)
         paper + winner_no_rat + no_global_view.
 
-Run:
-    python run_ablations.py                 # paper (default)
-    python run_ablations.py --mode minimal  # fastest
-    python run_ablations.py --mode full     # everything
+    sensitivity (10 presets, ~15 min)
+        Hyperparameter sensitivity for the §4 sensitivity section:
+        aspect slots A, contrastive weight λ_CL, and fusion-gate bias b,
+        all anchored on `winner`. Also available split: sens_A / sens_lambda
+        / sens_bias. The swept scalars (num_aspects, cl_weight,
+        fusion_init_bias) are written to the CSV so each row is identifiable.
 
-Output: ablation_results.csv
+Run:
+    python run_ablations.py                      # paper (default)
+    python run_ablations.py --mode minimal       # fastest
+    python run_ablations.py --mode sensitivity   # A + λ_CL + b sweeps
+    python run_ablations.py --mode full          # everything
+
+Output: ablation_results_<mode>.csv
 """
 
 from __future__ import annotations
@@ -87,6 +95,21 @@ ALL_PRESETS = {
     "winner_temp_0.5":    {"rationale_temperature": 0.5},
     "winner_temp_0.1":    {"rationale_temperature": 0.1},
     "winner_temp_0.05":   {"rationale_temperature": 0.05},
+
+    # ── Sensitivity: latent aspect slots A (default 4 = winner) ────────
+    # SVD rank scales as k = A·d (handled by model from cfg.num_aspects).
+    "winner_A2":          {"num_aspects": 2},
+    "winner_A8":          {"num_aspects": 8},
+
+    # ── Sensitivity: contrastive weight λ_CL (default 0.005 = winner) ──
+    "winner_cl0":         {"cl_weight": 0.0},
+    "winner_cl0.001":     {"cl_weight": 0.001},
+    "winner_cl0.01":      {"cl_weight": 0.01},
+    "winner_cl0.05":      {"cl_weight": 0.05},
+
+    # ── Sensitivity: fusion-gate bias b (default +5 = winner; b=0 is winner_fb0) ──
+    "winner_fb2":         {"fusion_init_bias": 2.0},
+    "winner_fb10":        {"fusion_init_bias": 10.0},
 }
 
 MODES = {
@@ -112,6 +135,31 @@ MODES = {
         "winner_temp_0.5",
         "winner_temp_0.1",
         "winner_temp_0.05",
+    ],
+    # Each sensitivity mode anchors on `winner` (A=4, λ_CL=0.005, b=+5, τ=0.5).
+    "sens_A": [
+        "winner",           # A=4
+        "winner_A2",
+        "winner_A8",
+    ],
+    "sens_lambda": [
+        "winner",           # λ_CL=0.005
+        "winner_cl0",
+        "winner_cl0.001",
+        "winner_cl0.01",
+        "winner_cl0.05",
+    ],
+    "sens_bias": [
+        "winner",           # b=+5
+        "winner_fb2",
+        "winner_fb0",
+        "winner_fb10",
+    ],
+    "sensitivity": [        # all three axes in one run (~15 min)
+        "winner",
+        "winner_A2", "winner_A8",
+        "winner_cl0", "winner_cl0.001", "winner_cl0.01", "winner_cl0.05",
+        "winner_fb2", "winner_fb0", "winner_fb10",
     ],
     "full": list(ALL_PRESETS.keys()),
 }
@@ -159,6 +207,10 @@ def main():
         row["rationale_style"] = cfg.rationale_style
         row["rationale_temperature"] = cfg.rationale_temperature
         row["fusion_gate_style"] = cfg.fusion_gate_style
+        # Swept scalars — recorded so sensitivity CSVs are self-documenting.
+        row["num_aspects"] = cfg.num_aspects
+        row["cl_weight"] = cfg.cl_weight
+        row["fusion_init_bias"] = cfg.fusion_init_bias
         for m in ("HR", "Precision", "Recall", "F1", "MAP", "NDCG"):
             row[m] = f"{test_res.get(m, float('nan')):.4f}" if test_res else "NaN"
         results.append(row)
