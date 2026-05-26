@@ -47,7 +47,7 @@ slide 來源：`Document/notes/SLIDES.md`（24 張）
 | 1.5 Contributions | 三項設計 + 各搭消融：Softmax (−7.0%) / Bias init (−5.3%) / KG-SVD (−5.3%) | Slide 4 |
 | 1.6 Thesis Organization | 章節導讀 | — |
 
-**敘事弧**：主流在我們設定下失敗 → 失敗共同原因是 KG 必經 → 提出可被閘控的側通道架構。
+**敘事弧**：主流在我們設定下失敗 → 失敗共同原因是 KG 內嵌計分管線、無結構性開關可關閉 → 提出可被閘控的側通道架構。
 
 ---
 
