@@ -135,7 +135,7 @@ slide 來源：`Document/notes/SLIDES.md`（24 張）
 
 | 節 | 內容 | 對應 slide |
 |---|---|---|
-| 5.1 Conclusion | 主要成果 + 三項設計 + 一句結語 | Slide 24 |
+| 5.1 Conclusion | 主要成果 + 三項設計 + 一句結語 + 價值/重新定位段（架構而非資訊問題；優雅退化為可重用原則，呼應摘要結尾） | Slide 24 |
 | 5.2 Methodological Insight: Attention Normalization | sigmoid vs softmax 觀察 + DIN/NAIS/AFM 文獻背景 + **單資料集假說 hedging** | Slide 23 |
 | 5.3 Limitations | 單一稀疏資料集、KG 建構非本文貢獻、KG 豐富設定未驗證、**seed sensitivity** | Slide 24 局限 |
 | 5.4 Future Work | KG 豐富資料集驗證、其他領域 / 任務、softmax-vs-sigmoid 多資料集複現、**反向稀疏情境（CF 稀疏 + KG 豐富）** | — |
