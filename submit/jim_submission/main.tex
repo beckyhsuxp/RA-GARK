@@ -34,6 +34,7 @@
 \singlespacing
 \usepackage{enumitem}
 \setlist{nosep,leftmargin=1.6em}
+\usepackage{indentfirst}   % indent the first paragraph after each heading (as in the sample)
 \usepackage[hidelinks]{hyperref}
 
 % ---- JIM heading scheme -----------------------------------------------
@@ -47,8 +48,9 @@
 \titlespacing*{\subsection}{0pt}{0.8em}{0.4em}
 \titlespacing*{\subsubsection}{0pt}{0.6em}{0.3em}
 
-\setlength{\parskip}{0.35em}
-\setlength{\parindent}{0pt}
+% Sample style: first-line indented paragraphs, no inter-paragraph gap
+\setlength{\parskip}{0pt}
+\setlength{\parindent}{2em}   % ~24pt first-line indent, matching the JIM sample
 
 % table/figure numbering "Table 1", "Figure 1"
 \renewcommand{\thetable}{\arabic{table}}
