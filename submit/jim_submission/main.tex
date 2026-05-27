@@ -115,7 +115,7 @@ KGRec~\cite{yang2023kgrec} is the most directly related work: it makes rationale
 
 Two gating analogues inform our design. Highway Networks~\cite{srivastava2015highway} interpolate between a transformed signal and an identity skip via a learnable gate whose \emph{negative bias initialization} makes the network behave as the identity at training start, opening only where the transformation helps. Mixture-of-experts gating (MMoE~\cite{ma2018mmoe}, PLE~\cite{tang2020ple}) weights multiple \emph{homogeneous} expert towers with symmetric initialization, appropriate when no expert is intrinsically less reliable, unlike our asymmetric setting where LightGCN is a strong default and the KG is sometimes uninformative. Despite the maturity of gating, none of the KG-aware methods we surveyed, including CKAN~\cite{wang2020ckan}, MKR~\cite{wang2019mkr}, and KGIN~\cite{wang2021kgin}, employs a fusion gate that can \emph{architecturally disengage} the KG channel (Table~\ref{tab:gap}). We make a deliberately narrow claim: within the methods we examined, none uses a bias-initialized fusion gate to provide graceful degradation under unreliable KG.
 
-\begin{table}[t]
+\begin{table}[ht]
 \centering
 \caption{Integration mechanisms used by representative KG-aware recommenders; none provides architectural graceful degradation under unreliable KG.}
 \label{tab:gap}
@@ -171,7 +171,7 @@ The design principle that organizes these components is borrowed from Highway Ne
 
 The cause shared by the deep-fusion baselines is that the KG is wired into the scoring pipeline as a mandatory component, with no switch to disengage it when unreliable, so KG noise enters the same gradient that produces the collaborative representation. RA-GARK is organized around one principle: \emph{the KG should be a side channel whose contribution to the final score is set by a learned gate, biased at initialization toward a safe default (pure CF) and opened only when training signal indicates the KG channel reduces loss.} Three consequences follow and define the model: (i) two structurally disjoint views, a \emph{local view} (LightGCN, no KG) producing $(u_{\mathrm{loc}},i_{\mathrm{loc}})$ and a \emph{global view} (KG-derived, no CF) producing $(u_{\mathrm{glo}},i_{\mathrm{glo}})$; (ii) late, gated fusion combining them only at scoring time; and (iii) rationale-aware item-side aggregation over $A{=}4$ latent aspect slots.
 
-\begin{figure}[t]
+\begin{figure}[ht]
 \centering
 \includegraphics[width=\textwidth]{img/architecture.png}
 \caption{RA-GARK architecture. A local LightGCN view and a KG-derived global view are kept disjoint and combined only by bias-initialized fusion gates.}
@@ -220,7 +220,7 @@ The fusion gate turns the design principle into an operation. Two independent sc
 \mathrm{Gate}(\mathbf{z})=\sigma\!\bigl(\mathbf{w}^{\top}\tanh(\mathbf{W}\mathbf{z})+b\bigr)\in(0,1).
 \end{equation}
 
-\begin{figure}[t]
+\begin{figure}[ht]
 \centering
 \includegraphics[width=0.52\textwidth]{img/gate.png}
 \caption{Local-biased fusion gate (item side is analogous); the bias $b=+5$ keeps the gate near-closed at training start.}
@@ -241,7 +241,7 @@ Because the two views live in heterogeneous subspaces, an InfoNCE-style aspect-l
 
 Experiments use a subset of the Amazon Books review corpus processed into a user--item interaction graph and an item--aspect KG (Table~\ref{tab:data}). The item--aspect KG is built by the prior pipeline of~\cite{ho2024reviewkg} and used without modification; we describe it only briefly as it is not our contribution. Per book, visual and textual features are extracted (ResNet, Qwen-VL, BART, Mistral) and aspect mentions are extracted as $(\textit{item},\texttt{has\_aspect},\textit{aspect})$ triples, yielding $13{,}905$ raw edges. Two filtering passes, removing the top $2\%$ most frequent (generic-praise) tags and a small curated stopword list, drop $75.7\%$ of edges, leaving $3{,}370$ specific attachments over $2{,}098$ tags, i.e.\ $2.4$ edges per item. Interactions are split user-stratified $70/15/15$ with a fixed seed shared across all baselines.
 
-\begin{table}[t]
+\begin{table}[ht]
 \centering
 \caption{Dataset statistics after preprocessing.}
 \label{tab:data}
@@ -266,7 +266,7 @@ We compare against pure LightGCN~\cite{he2020lightgcn} (the non-KG anchor) and f
 
 Table~\ref{tab:main} reports the test results. RA-GARK attains NDCG@20 $=0.1242$, $+13.4\%$ over the strongest KG-aware baseline (KGRec) and $+5.3\%$ over pure LightGCN, with consistent gains on all secondary metrics (largest $+18.6\%$ on MAP@20 vs.\ KGRec). Two readings matter. The $+13.4\%$ over KGRec shows that, holding the KG fixed, RA-GARK's design produces a substantially better recommender than the strongest published KG-aware method. The $+5.3\%$ over pure LightGCN is the methodologically more interesting one: all four KG-aware baselines fall \emph{below} the no-KG anchor, and RA-GARK is the only configuration that turns the KG signal from a net liability into a net asset, attributable to gating the KG behind a bias-initialized fusion gate that engages it only when it reduces loss.
 
-\begin{table}[t]
+\begin{table}[ht]
 \centering
 \caption{Main test results (full-ranking, $K=20$). Best in bold.}
 \label{tab:main}
@@ -293,7 +293,7 @@ $\Delta$ vs.\ LightGCN & $+5.3\%$  & $+1.3\%$ & $+4.4\%$ & $+6.8\%$ \\
 
 We revert each headline design choice individually and retrain (Table~\ref{tab:abl}). All four targeted components contribute positively. Reverting softmax to a sigmoid head ($-15.5\%$) or KG-SVD to random init ($-5.9\%$) drops the model \emph{below} the pure-LightGCN floor of $0.1179$, so without either RA-GARK is no longer a positive-contribution KG-aware method; reverting the fusion-gate bias ($-4.5\%$) or the per-(u,i) MLP gate ($-4.7\%$) stays marginally above the floor but well below the full model. The softmax--sigmoid effect is by far the largest single-component swing, several times ordinary tuning noise. Reverting both broken defaults simultaneously (sigmoid $+\,b{=}0$) gives $0.1050$, below \emph{all} four baselines: the dual-view skeleton alone replicates the baselines' failure mode, exactly as the design principle predicts. The contrastive losses contribute smaller, consistent amounts ($-4.3\%$ user, $-3.1\%$ aspect), matching their auxiliary role.
 
-\begin{table}[t]
+\begin{table}[ht]
 \centering
 \caption{Ablation: each row flips one component and retrains. $\Delta$ is relative NDCG@20 vs.\ the full model.}
 \label{tab:abl}
@@ -321,7 +321,7 @@ Pre-fix (sigmoid $+\,b{=}0$)       & $0.1050$ & $-15.5\%$ & both broken defaults
 
 Sweeping the four hyperparameter axes (softmax temperature $\tau$, slot count $A$, gate bias $b$, contrastive weight $\lambda_{\mathrm{CL}}$) with all else fixed, each axis has a clear optimum at the chosen default. The gate-bias sweep is the most informative (Table~\ref{tab:bias}): the design works only in a narrow window $b\in(0,+10)$; at $b{=}0$ the model loses $4.5\%$, and at $b{=}+10$ the gradient is too small to adapt and performance falls slightly below the $b{=}0$ level, validating $b{=}+5$. The remaining axes likewise peak at their defaults: $\tau{=}0.5$ is best (sharpening to $0.05$ costs $1.9\%$), slot count peaks at $A{=}4$ ($A{=}2$ $-4.3\%$, $A{=}8$ $-5.1\%$), and $\lambda_{\mathrm{CL}}{=}0.005$ is a sharp optimum (dropping to $0$ loses $4.9\%$; raising to $0.05$ lets the contrastive gradient compete with BPR, $-4.7\%$). Exploratory runs varying incidental optimization details (weight decay, scheduler, multi-negative sampling) all sit within $\pm0.003$ NDCG@20 of the reported value, so the effective ceiling on this small dataset is $\approx 0.124$ and the qualitative ordering in Tables~\ref{tab:main}--\ref{tab:abl} is robust.
 
-\begin{table}[t]
+\begin{table}[ht]
 \centering
 \caption{Sensitivity to fusion-gate bias $b$ (other settings fixed).}
 \label{tab:bias}
@@ -339,7 +339,7 @@ NDCG@20 & $0.1186$ & $0.1214$ & $\mathbf{0.1242}$ & $0.1174$ \\
 
 To inspect what the rationale module learns, we printed the softmax aspect weights $w_{u,i,k}$ for several popular items (Table~\ref{tab:case}). Two patterns emerge, neither matching a strong per-user selection story. \emph{Item-level slot specialization is present:} across items the argmax slot differs, and the dominant slot carries a small consistent excess of mass ($\approx 0.27$--$0.29$ vs.\ $\approx 0.24$). \emph{User-conditioned selectivity is essentially absent:} for a given item, different users produce near-identical weights (within $\pm0.003$). This is consistent with, not contradictory to, the design principle: the gate keeps the KG channel a small fraction of the score, so the gradient into the rationale is enough to fix \emph{which slot} each item uses (an $|\mathcal{I}|\times A$ problem) but too small to additionally learn a user-specific re-weighting. The $+5.3\%$ over LightGCN is therefore attributable to item-level slot routing over KG-SVD geometry, and the case study reads as direct evidence of graceful degradation: the channel learns only as much structure as the gate lets it influence the loss.
 
-\begin{table}[t]
+\begin{table}[ht]
 \centering
 \caption{Softmax aspect weights from the trained rationale module (one representative user per item; bold marks the argmax slot).}
 \label{tab:case}
