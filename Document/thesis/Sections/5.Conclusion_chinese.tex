@@ -9,12 +9,12 @@
 我們的回應 RA-GARK（第~\ref{ch:methodology-zh}~章）圍繞單一設計原則組織（第~\ref{sec:approach-principle-zh}~節）：KG 應作為一條\emph{旁路通道}，其對最終分數之貢獻由一可學習閘決定，此閘於初始化即偏向安全預設（純協同過濾），僅在訓練訊號指示 KG 通道能降低損失時才被打開。三項具體設計選擇落實此原則，並於第~\ref{sec:eval-ablation-zh}~節逐一衡量：
 
 \begin{itemize}
-  \item \textbf{KG-SVD 初始化}逐物品面向槽，於訓練起點即保留面向誘導語意子空間之角度幾何。移除其代價為 $3.5\%$ NDCG@$20$。
-  \item \textbf{Softmax 合理化遮罩}對 $A$ 個潛在槽進行歸一化，編碼「使用者對某物品之偏好由少數互相競爭之語意面向所主導」之假設。將跨槽 Softmax 換為元素級 sigmoid 之代價為 $17.6\%$ NDCG@$20$，是本論文中單一元件影響最大者。
-  \item \textbf{區域偏置融合閘}，其純量偏置 $b = +5$ 之初始化使 $\alpha^{(0)} \approx 0.993$，RA-GARK 訓練起點本質上即為純 LightGCN。還原為 $b = 0$ 之代價為 $1.8\%$ NDCG@$20$。
+  \item \textbf{KG-SVD 初始化}逐物品面向槽，於訓練起點即保留面向誘導語意子空間之角度幾何。移除其代價為 $5.9\%$ NDCG@$20$。
+  \item \textbf{Softmax 合理化遮罩}對 $A$ 個潛在槽進行歸一化，編碼「使用者對某物品之偏好由少數互相競爭之語意面向所主導」之假設。將跨槽 Softmax 換為元素級 sigmoid 之代價為 $15.5\%$ NDCG@$20$，是本論文中單一元件影響最大者。
+  \item \textbf{區域偏置融合閘}，其純量偏置 $b = +5$ 之初始化使 $\alpha^{(0)} \approx 0.993$，RA-GARK 訓練起點本質上即為純 LightGCN。還原為 $b = 0$ 之代價為 $4.5\%$ NDCG@$20$。
 \end{itemize}
 
-三項齊備下，RA-GARK 於本基準上取得 NDCG@$20 = 0.1213$，較最強 KG-aware baseline（KGRec）提升 $+10.8\%$，較純 LightGCN 提升 $+2.9\%$，且每 epoch 牆鐘成本基本相當（第~\ref{sec:eval-cost-zh}~節）。其中 $+2.9\%$ 在方法論上更具意義：於同一筆資料上，四個既發表之 KG-aware 方法將 KG 訊號變為淨負債，RA-GARK 之設計選擇則將其翻回淨資產。
+三項齊備下，RA-GARK 於本基準上取得 NDCG@$20 = 0.1242$，較最強 KG-aware baseline（KGRec）提升 $+13.4\%$，較純 LightGCN 提升 $+5.3\%$，且每 epoch 牆鐘成本基本相當（第~\ref{sec:eval-cost-zh}~節）。其中 $+5.3\%$ 在方法論上更具意義：於同一筆資料上，四個既發表之 KG-aware 方法將 KG 訊號變為淨負債，RA-GARK 之設計選擇則將其翻回淨資產。
 
 因此本論文之一句話總結為：\emph{當 KG 不可靠時，架構最需要的不是更好的 KG 聚合器，而是一個能將 KG 結構性脫接之開關}。
 
@@ -23,9 +23,9 @@
 \section{方法論啟示：注意力歸一化}
 \label{sec:conclude-insight-zh}
 
-本論文觀察到之單一元件最大影響並不在 RA-GARK 所貢獻之任何新架構元件，而在於推薦文獻中常被視為調參細節之選擇：合理化模組之注意力頭採用 Softmax（跨面向競爭）或 sigmoid（逐面向獨立）。於本基準上，僅將此單一模組之 Softmax 替換為 sigmoid 即損失 $17.6\%$ NDCG@$20$（第~\ref{sec:ablation-softmax-zh}~節），較一般超參數調參之 $1$--$3\%$ 擺動高出一個數量級。
+本論文觀察到之單一元件最大影響並不在 RA-GARK 所貢獻之任何新架構元件，而在於推薦文獻中常被視為調參細節之選擇：合理化模組之注意力頭採用 Softmax（跨面向競爭）或 sigmoid（逐面向獨立）。於本基準上，僅將此單一模組之 Softmax 替換為 sigmoid 即損失 $15.5\%$ NDCG@$20$（第~\ref{sec:ablation-softmax-zh}~節），達一般超參數調參之 $1$--$3\%$ 擺動的數倍。
 
-推薦文獻對此選擇無共識。DIN~\cite{zhou2018din} 對歷史物品採用 per-target sigmoid 注意力；NAIS~\cite{he2018nais}、AFM~\cite{xiao2017afm} 對特徵互動採用 Softmax 歸一化；KGRec~\cite{yang2023kgrec} 採邊層級 Bernoulli 決策，結構上接近 sigmoid。此等選擇皆與其目標任務之語意內部一致。我們於第~\ref{sec:eval-case-zh}~節之個案研究檢視顯示，本設定下訓練完成之 Softmax 權重並非近 one-hot，而僅為軟尖峰（四槽中 $\max_k w_k \approx 0.28$），因此實際發揮作用之機制不可能為 one-hot 之競爭選擇。Softmax 提供而 sigmoid 不具之性質實為結構性者：權重和為 $1$ 之歸一化使全域視角物品嵌入之模長無論 logit 尺度為何皆有界於 $\max_k \|\mathbf{a}_{i,k}\|$，而 sigmoid 所產生之模長則隨 logit 漂移。於 KG 通道刻意被融合閘節制（第~\ref{sec:gate-bias-zh}~節）之設計中，將通道貢獻維持有界且可預測，正為閘之校準所依賴；sigmoid 引入之模長漂移即為我們所相信導致 $17.6\%$ 退化之原因。
+推薦文獻對此選擇無共識。DIN~\cite{zhou2018din} 對歷史物品採用 per-target sigmoid 注意力；NAIS~\cite{he2018nais}、AFM~\cite{xiao2017afm} 對特徵互動採用 Softmax 歸一化；KGRec~\cite{yang2023kgrec} 採邊層級 Bernoulli 決策，結構上接近 sigmoid。此等選擇皆與其目標任務之語意內部一致。我們於第~\ref{sec:eval-case-zh}~節之個案研究檢視顯示，本設定下訓練完成之 Softmax 權重並非近 one-hot，而僅為軟尖峰（四槽中 $\max_k w_k \approx 0.28$），因此實際發揮作用之機制不可能為 one-hot 之競爭選擇。Softmax 提供而 sigmoid 不具之性質實為結構性者：權重和為 $1$ 之歸一化使全域視角物品嵌入之模長無論 logit 尺度為何皆有界於 $\max_k \|\mathbf{a}_{i,k}\|$，而 sigmoid 所產生之模長則隨 logit 漂移。於 KG 通道刻意被融合閘節制（第~\ref{sec:gate-bias-zh}~節）之設計中，將通道貢獻維持有界且可預測，正為閘之校準所依賴；sigmoid 引入之模長漂移即為我們所相信導致 $15.5\%$ 退化之原因。
 
 我們將此定位為假說而非方法論主張。證據僅來自單一資料集，於其他資料集、其他被節制方式不同之架構上其效應大小與機制皆未知。此假說具體至足以由複製驗證證偽：\emph{當合理化式之注意力頭饋入一輔助通道，且其貢獻由融合閘約束為分數中一小比例時，承載性之性質為該頭之模長控制（和為一之歸一化），而非 one-hot 競爭；以獨立 sigmoid 頭替換 Softmax 頭將以遠超一般超參數雜訊之幅度降低排序品質}。若此於我們的設定之外仍成立，歸一化對競爭即成為合理化結構之顯式設計軸，而非調參細節。
 

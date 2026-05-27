@@ -103,14 +103,14 @@ KGIN~\cite{wang2021kgin}      & Intent disentanglement over KG           & No \\
 \end{tabular}
 \end{table}
 
-We make a deliberately narrow claim. We do not claim that RA-GARK is the first to use a gate of any kind in KG-aware recommendation, since the KG-aware literature is large and exhaustive enumeration is infeasible. The defensible claim is the following: \emph{within the methods we examined, none uses a bias-initialized fusion gate to provide architectural graceful degradation under sparse or unreliable KG.} Our ablation in Chapter~\ref{ch:evaluation} attributes a $1.8\%$ NDCG@20 contribution specifically to this gate's bias initialization, supporting the claim that the design choice is non-trivial in this setting.
+We make a deliberately narrow claim. We do not claim that RA-GARK is the first to use a gate of any kind in KG-aware recommendation, since the KG-aware literature is large and exhaustive enumeration is infeasible. The defensible claim is the following: \emph{within the methods we examined, none uses a bias-initialized fusion gate to provide architectural graceful degradation under sparse or unreliable KG.} Our ablation in Chapter~\ref{ch:evaluation} attributes a $4.5\%$ NDCG@20 contribution specifically to this gate's bias initialization, supporting the claim that the design choice is non-trivial in this setting.
 
 \section{Attention Normalization}
 \label{sec:rw-attention-norm}
 
 A relevant cross-cutting question is which normalization, sigmoid or softmax, should be applied to attention weights when selecting rationales. The literature does not converge on a single answer. DIN~\cite{zhou2018din} applies a sigmoid attention over user behavior history under the assumption that each historical behavior is independently relevant to a candidate. NAIS~\cite{he2018nais} applies softmax attention over historical interactions for item similarity, and AFM~\cite{xiao2017afm} uses softmax over feature interactions. The choice in each work is justified by the semantic assumption underlying the attention.
 
-In Chapter~\ref{ch:evaluation} we report a single-dataset observation that, for our aspect-saliency rationale, replacing softmax with sigmoid costs $17.6\%$ NDCG@20, the largest single-component effect we measure. We interpret this as supporting the design heuristic that normalization should match the semantic assumption of the rationale, but explicitly frame the observation as a hypothesis pending multi-dataset replication (Chapter~\ref{ch:conclusion}).
+In Chapter~\ref{ch:evaluation} we report a single-dataset observation that, for our aspect-saliency rationale, replacing softmax with sigmoid costs $15.5\%$ NDCG@20, the largest single-component effect we measure. We interpret this as supporting the design heuristic that normalization should match the semantic assumption of the rationale, but explicitly frame the observation as a hypothesis pending multi-dataset replication (Chapter~\ref{ch:conclusion}).
 
 \section{Summary and Positioning of RA-GARK}
 \label{sec:rw-summary}
@@ -130,7 +130,7 @@ KGCL       & KGAT-style      & Propagation + CL           & None             & 0
 MCCLK      & Multi-view      & Multi-view CL              & None             & 0.1067 \\
 KGRec      & KGAT-style      & Propagation + edge dropout & Edge Bernoulli  & 0.1095 \\
 \midrule
-\textbf{RA-GARK} & \textbf{Pure LightGCN} & \textbf{Gated late fusion} & \textbf{Aspect softmax} & \textbf{0.1213} \\
+\textbf{RA-GARK} & \textbf{Pure LightGCN} & \textbf{Gated late fusion} & \textbf{Aspect softmax} & \textbf{0.1242} \\
 \bottomrule
 \end{tabular}
 \end{table}

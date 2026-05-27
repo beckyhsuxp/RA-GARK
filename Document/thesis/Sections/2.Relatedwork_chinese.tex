@@ -103,14 +103,14 @@ KGIN~\cite{wang2021kgin}      & KG 上的意圖解耦        & 否 \\
 \end{tabular}
 \end{table}
 
-我們刻意作出一個範圍狹義的主張。我們不主張 RA-GARK 是 KG-aware 推薦中首個使用「任何閘」的方法，因 KG-aware 文獻浩繁，無法窮舉列舉。可辯護的主張為：\emph{在我們所檢視的方法中，沒有任何一個以偏置初始化的融合閘於稀疏或不可靠 KG 下提供架構優雅退化}。我們在第~\ref{ch:experiments-zh}~章的消融將 $1.8\%$ NDCG@20 的貢獻明確歸因於此閘的偏置初始化，支持上述主張在此情境中並非微不足道。
+我們刻意作出一個範圍狹義的主張。我們不主張 RA-GARK 是 KG-aware 推薦中首個使用「任何閘」的方法，因 KG-aware 文獻浩繁，無法窮舉列舉。可辯護的主張為：\emph{在我們所檢視的方法中，沒有任何一個以偏置初始化的融合閘於稀疏或不可靠 KG 下提供架構優雅退化}。我們在第~\ref{ch:experiments-zh}~章的消融將 $4.5\%$ NDCG@20 的貢獻明確歸因於此閘的偏置初始化，支持上述主張在此情境中並非微不足道。
 
 \section{注意力正規化}
 \label{sec:rw-attention-norm-zh}
 
 一個橫跨多領域的相關問題是：在選擇合理化依據時，應對注意力權重套用 sigmoid 或 softmax？文獻並未匯聚於單一答案。DIN~\cite{zhou2018din} 對使用者行為歷史套用 sigmoid 注意力，所基於的假設是每筆歷史行為與候選物品的相關性彼此獨立。NAIS~\cite{he2018nais} 對歷史互動套用 softmax 注意力以衡量物品相似度，AFM~\cite{xiao2017afm} 則對特徵交互套用 softmax。各工作中的選擇皆以其注意力所依附的語意假設為依據。
 
-我們在第~\ref{ch:experiments-zh}~章報告一項單一資料集的觀察：對於我們的 aspect-saliency 合理化，將 softmax 替換為 sigmoid 會損失 $17.6\%$ NDCG@20，這是我們所量測到單一元件影響最大者。我們將其解讀為支持「正規化應與合理化的語意假設相符」此一設計啟發，但明確將此觀察定位為待多資料集複製驗證的假設（第~\ref{ch:conclusion-zh}~章）。
+我們在第~\ref{ch:experiments-zh}~章報告一項單一資料集的觀察：對於我們的 aspect-saliency 合理化，將 softmax 替換為 sigmoid 會損失 $15.5\%$ NDCG@20，這是我們所量測到單一元件影響最大者。我們將其解讀為支持「正規化應與合理化的語意假設相符」此一設計啟發，但明確將此觀察定位為待多資料集複製驗證的假設（第~\ref{ch:conclusion-zh}~章）。
 
 \section{總結與 RA-GARK 的定位}
 \label{sec:rw-summary-zh}
@@ -130,7 +130,7 @@ KGCL       & KGAT 式          & 傳播 + CL            & 無             & 0.10
 MCCLK      & 多視角           & 多視角 CL            & 無             & 0.1067 \\
 KGRec      & KGAT 式          & 傳播 + 邊 dropout    & 邊 Bernoulli    & 0.1095 \\
 \midrule
-\textbf{RA-GARK} & \textbf{純 LightGCN} & \textbf{閘控後期融合} & \textbf{Aspect softmax} & \textbf{0.1213} \\
+\textbf{RA-GARK} & \textbf{純 LightGCN} & \textbf{閘控後期融合} & \textbf{Aspect softmax} & \textbf{0.1242} \\
 \bottomrule
 \end{tabular}
 \end{table}
