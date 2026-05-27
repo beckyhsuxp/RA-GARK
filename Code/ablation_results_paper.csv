@@ -1,0 +1,10 @@
+preset,elapsed_s,use_rationale,use_svd_init,use_acl,use_ucl,use_global_view,rationale_style,rationale_temperature,fusion_gate_style,num_aspects,cl_weight,fusion_init_bias,HR,Precision,Recall,F1,MAP,NDCG
+winner,96,1,1,1,1,1,mlp_softmax,0.5,mlp,4,0.005,5.0,0.4972,0.0355,0.2007,0.0585,0.0568,0.1213
+winner_sigmoid_rat,51,1,1,1,1,1,mlp_sigmoid,0.5,mlp,4,0.005,5.0,0.4564,0.0306,0.1664,0.0499,0.0451,0.0999
+winner_no_svd,85,1,0,1,1,1,mlp_softmax,0.5,mlp,4,0.005,5.0,0.4906,0.0345,0.1945,0.0567,0.0545,0.1170
+winner_fb0,86,1,1,1,1,1,mlp_softmax,0.5,mlp,4,0.005,0.0,0.4961,0.0347,0.1963,0.0572,0.0555,0.1191
+winner_scalar_gate,85,1,1,1,1,1,mlp_softmax,0.5,scalar,4,0.005,5.0,0.4884,0.0343,0.1934,0.0564,0.0552,0.1180
+winner_no_acl,64,1,1,0,1,1,mlp_softmax,0.5,mlp,4,0.005,5.0,0.5017,0.0351,0.1962,0.0577,0.0572,0.1203
+winner_no_ucl,58,1,1,1,0,1,mlp_softmax,0.5,mlp,4,0.005,5.0,0.4994,0.0353,0.1961,0.0579,0.0564,0.1192
+old_full,51,1,1,1,1,1,mlp_sigmoid,0.5,mlp,4,0.005,0.0,0.4663,0.0314,0.1734,0.0515,0.0481,0.1050
+lightgcn_only,40,0,1,0,0,0,mlp_softmax,0.5,mlp,4,0.005,5.0,0.4917,0.0348,0.1937,0.0571,0.0555,0.1179
