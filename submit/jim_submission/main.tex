@@ -1,0 +1,460 @@
+% =====================================================================
+%  Journal of Information Management (JIM) submission
+%  Title : Product Recommendation via Rationale-Aware Gating over
+%          Sparse Review-Aspect Knowledge Graphs
+%  Engine: XeLaTeX  (Latin = TeX Gyre Termes / Times New Roman ;
+%                    CJK   = BiauKaiTC / 標楷體)
+%  Format: 12pt, single line spacing, single column, A4, numeric citations
+% =====================================================================
+\documentclass[12pt,a4paper]{article}
+
+\usepackage{geometry}
+\geometry{a4paper,top=2.54cm,bottom=2.54cm,left=2.54cm,right=2.54cm}
+
+\usepackage[no-math]{fontspec}
+\usepackage{xeCJK}
+\setmainfont{texgyretermes}[       % Times New Roman metric-compatible
+  Extension      = .otf,
+  UprightFont    = *-regular,
+  BoldFont       = *-bold,
+  ItalicFont     = *-italic,
+  BoldItalicFont = *-bolditalic ]
+\setCJKmainfont[AutoFakeBold=4]{BiauKaiTC}  % 標楷體 (macOS system font; 無粗體故合成)
+
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{bm}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{array}
+\usepackage{caption}
+\captionsetup{font=small,labelsep=colon}
+\usepackage{titlesec}
+\usepackage{setspace}
+\singlespacing
+\usepackage{enumitem}
+\setlist{nosep,leftmargin=1.6em}
+\usepackage[hidelinks]{hyperref}
+
+% ---- JIM heading scheme -----------------------------------------------
+% Level 1 : centered, bold, UPPERCASE  "1. INTRODUCTION"
+% Level 2 : bold, flush left            "2.1 ..."
+% Level 3 : bold italic, flush left
+\titleformat{\section}{\centering\bfseries\normalsize}{\thesection.}{0.5em}{}
+\titleformat{\subsection}{\bfseries\normalsize}{\thesubsection}{0.6em}{}
+\titleformat{\subsubsection}{\bfseries\itshape\normalsize}{\thesubsubsection}{0.6em}{}
+\titlespacing*{\section}{0pt}{1.1em}{0.6em}
+\titlespacing*{\subsection}{0pt}{0.8em}{0.4em}
+\titlespacing*{\subsubsection}{0pt}{0.6em}{0.3em}
+
+\setlength{\parskip}{0.35em}
+\setlength{\parindent}{0pt}
+
+% table/figure numbering "Table 1", "Figure 1"
+\renewcommand{\thetable}{\arabic{table}}
+\renewcommand{\thefigure}{\arabic{figure}}
+
+\begin{document}
+
+% =====================================================================
+%  TITLE + AUTHORS
+% =====================================================================
+\begin{center}
+{\large\bfseries Product Recommendation via Rationale-Aware Gating\\ over Sparse Review-Aspect Knowledge Graphs}\\[0.9em]
+{\normalsize Pei-Chih Hsu \quad Duen-Ren Liu$^{*}$}\\[0.3em]
+{\small Institute of Information Management,
+National Yang Ming Chiao Tung University, Hsinchu 300, Taiwan}\\[0.2em]
+{\small $^{*}$Corresponding author: dliu@nycu.edu.tw}
+\end{center}
+
+\vspace{0.4em}
+
+% =====================================================================
+%  CHINESE ABSTRACT  (摘要, 標楷體)
+% =====================================================================
+\begin{center}
+{\bfseries 基於理由感知門控與稀疏評論面向知識圖譜之產品推薦}\\[0.5em]
+{\bfseries 摘\hspace{1em}要}
+\end{center}
+
+{\setstretch{1.0}
+知識圖譜感知推薦在圖譜稠密且品質良好時普遍能提升準確度，但當圖譜稀疏或品質不佳時，例如評論衍生、冷啟動或隱私受限等常見情境，既有研究探討仍十分有限。本文以商品評論衍生的圖譜為例，過濾後每件商品平均僅 2.4 條邊，觀察到代表性的知識圖譜感知方法，其表現皆不如完全不使用圖譜的純協同過濾模型（LightGCN）。原因在於這些方法將圖譜硬性嵌入評分流程，缺乏可在其不可信時將之關閉的開關，雜訊因而干擾了協同訊號的學習。本文提出 RA-GARK，將圖譜當作一條可開關的側通道，而非評分流程中非用不可的組件，並以三個步驟實現：其一，把每件商品的圖譜內容整理成少數幾個代表性的潛在面向，並讓這些面向從帶有語意的奇異值分解（SVD）起始值出發，而非隨機初始化；其二，再依使用者與商品自動挑出最相關的面向；其三，由一個融合閘決定是否啟用這條側通道，它起初幾乎關閉，使訓練起點等同於純協同過濾，只有當側通道確實有幫助時才逐步打開，讓模型在其無用時能平順退回。在不更動圖譜的前提下，RA-GARK 將圖譜的貢獻由無益翻轉為有益，於基準資料集達到 NDCG@20 = 0.1213，較最強的知識圖譜基準（KGRec）高出 10.8\%，亦較純 LightGCN 高出 2.9\%。本研究指出：知識圖譜感知方法在稀疏圖譜上表現不佳，是架構問題而非資訊問題；此種優雅退化的設計對任何需結合可靠主訊號與品質不穩定輔助訊號的情境，如冷啟動、多模態或跨領域推薦，皆具應用價值。
+\par}
+
+\vspace{0.3em}
+{\noindent\bfseries 關鍵字：}知識圖譜推薦、可退化機制、融合閘、稀疏知識圖譜、協同過濾
+
+\vspace{0.6em}
+
+% =====================================================================
+%  ENGLISH ABSTRACT
+% =====================================================================
+\begin{center}{\bfseries ABSTRACT}\end{center}
+
+Knowledge-graph-aware recommenders work well on dense, high-quality knowledge graphs (KGs), but the sparse-KG setting that arises in review-derived, cold-start, and privacy-constrained domains remains underexplored. On a sparse review-derived KG with only $2.4$ aspect edges per item on average, we find that four representative KG-aware methods (KGAT, KGCL, MCCLK, KGRec) are all outperformed by a plain collaborative-filtering model (LightGCN) that ignores the KG entirely. Each baseline wires the KG into the scoring pipeline with no structural switch to disengage it when unreliable, letting KG noise contaminate the collaborative gradient. We propose RA-GARK, which treats the KG as a side channel that can be switched on or off rather than a mandatory component, realized in three steps: (i) each item's KG content is summarized into a few latent aspect slots initialized from a truncated SVD that carries the KG's semantic geometry rather than from random values; (ii) a softmax rationale module selects the most relevant aspect per user--item pair; and (iii) a fusion gate, bias-initialized almost closed, begins training as pure collaborative filtering and opens the KG channel only when it reduces loss, yielding graceful degradation when the KG is uninformative. Without altering the KG, RA-GARK turns its contribution from net-negative into net-positive, reaching NDCG@20 $=0.1213$, $+10.8\%$ over the strongest KG-aware baseline and $+2.9\%$ over pure LightGCN at essentially identical cost. The contribution is to show that the poor performance of KG-aware recommenders on sparse KGs is an architectural rather than an informational problem; the same graceful-degradation principle applies to any setting that must combine a reliable primary signal with an auxiliary one of uncertain quality.
+
+\vspace{0.3em}
+{\noindent\bfseries Keywords:} knowledge-graph-aware recommendation, graceful degradation, fusion gate, sparse knowledge graph, collaborative filtering
+
+% =====================================================================
+\section{INTRODUCTION}
+\label{sec:intro}
+
+Graph neural networks (GNNs) have become the dominant model family for collaborative filtering (CF). LightGCN~\cite{he2020lightgcn} showed that removing the non-linear activation and feature transformation from a graph convolutional network, retaining only linear neighborhood aggregation, suffices to surpass deeper alternatives such as NGCF~\cite{wang2019ngcf}, and it has since become a strong, parameter-efficient backbone on top of which self-supervised methods such as SGL~\cite{wu2021sgl} and DCCF~\cite{ren2023dccf} are layered. A complementary line, knowledge-graph-aware recommendation, augments collaborative signals with item-side semantics encoded in a knowledge graph (KG). Representative methods include KGAT~\cite{wang2019kgat}, which propagates messages over a unified user--item--entity graph; KGCL~\cite{yang2022kgcl} and MCCLK~\cite{zou2022mcclk}, which align KG-derived and collaborative views via contrastive learning; and KGRec~\cite{yang2023kgrec}, which rationalizes which KG triples drive a recommendation. When the KG is dense and high-quality, these methods consistently outperform pure CF baselines.
+
+This study begins from an empirical anomaly. On a review-derived KG built from an Amazon Books subset with on average only $2.4$ aspect edges per item after filtering, all four KG-aware methods above are \emph{outperformed} by pure LightGCN, which does not consult the KG at all: their NDCG@20 ranges over $0.1067$--$0.1095$, while pure LightGCN reaches $0.1179$ (Table~\ref{tab:main}). This is not a claim that the baselines are flawed: each performs strongly on the dense KGs in its original paper. Rather, it points to a failure mode shared by deep KG--CF coupling: when the KG is too sparse or noisy to provide reliable item semantics, fusing it directly into the scoring path drags KG noise into the gradient that would otherwise produce a clean collaborative signal.
+
+A natural objection is to treat this as a dataset peculiarity and curate a denser KG. We argue instead that \emph{sparse KG is the more common setting} in practical recommendation and deserves dedicated study. Three sources of sparsity recur: (i) review-derived KGs inherit uneven density from whatever topics users happened to mention; (ii) cold-start and emerging domains rarely have a curated source comparable to Freebase or Wikidata; and (iii) privacy-constrained domains (medical, financial) deliberately restrict the relational signal exposed to a model. In all three, aggressive KG completion is itself non-trivial, since completion introduces its own noise and needs the very seed signal that is missing. A recommender's \emph{robustness} when the KG is unreliable is therefore at least as important as its peak performance when the KG is dense; we take robustness as the primary design objective.
+
+The anomaly motivates two research questions. \textbf{(RQ1)} Why do existing KG-aware methods underperform pure LightGCN under sparse KG, and what structural failure mode do they share? \textbf{(RQ2)} What design principle lets a model exploit the KG when its signal is informative while preventing KG noise from contaminating CF when it is not? Our thesis statement is that the KG should not be a mandatory component of the scoring pipeline, as it effectively is in KGAT-style deep fusion, but a side channel that can be \emph{explicitly gated} based on whether its signal helps.
+
+This paper makes the following contributions. (1) An empirical study showing that, under a sparse review-derived KG, four representative KG-aware methods are uniformly outperformed by pure LightGCN, attributable to the absence of a mechanism that disengages the KG when it is unreliable. (2) \textbf{RA-GARK}, a dual-view architecture that integrates collaborative and KG-derived signals through a side-channel design rather than deep fusion, built from three independently necessary ingredients: a \emph{KG-SVD initialization} of per-item latent aspect slots, a \emph{softmax aspect-saliency} rationale, and a \emph{local-biased fusion gate} that provides architectural graceful degradation. (3) Empirical validation in which RA-GARK reaches NDCG@20 $=0.1213$, exceeding the strongest KG-aware baseline (KGRec) by $+10.8\%$ and, more importantly, pure LightGCN by $+2.9\%$, flipping the KG's contribution from net-negative to net-positive without changing the KG. (4) A methodological observation that, for the rationale module, attention normalization (softmax vs.\ sigmoid) is a load-bearing design choice rather than a tuning detail.
+
+% =====================================================================
+\section{LITERATURE REVIEW}
+\label{sec:lit}
+
+\subsection{Graph Collaborative Filtering and Deep KG Fusion}
+
+LightGCN~\cite{he2020lightgcn} strips a GCN to a normalized neighborhood aggregation over the user--item bipartite graph followed by a layer-wise average, outperforming NGCF~\cite{wang2019ngcf} while being faster and more stable; it is the immediate predecessor of our local view. KGAT~\cite{wang2019kgat} represents the canonical \emph{deep fusion} approach: it merges the interaction graph and KG into one collaborative knowledge graph and propagates messages with a bi-interaction aggregator, so KG entity embeddings participate directly in forming user/item representations. The implicit assumption is that the KG can be trusted everywhere it appears in the propagation path; under sparse KG this breaks down, and subsequent methods that retain a KGAT-style aggregator inherit the same vulnerability.
+
+\subsection{Contrastive Knowledge-Graph Methods}
+
+KGCL~\cite{yang2022kgcl} perturbs KG structure and aligns the perturbed and original views with an InfoNCE objective, on the intuition that informative structure is invariant under perturbation while noisy edges are not. MCCLK~\cite{zou2022mcclk} extends contrastive alignment to collaborative, semantic, and structural views simultaneously. Both achieve state-of-the-art on dense KGs but inherit a dense-KG assumption: under sparse KG the perturbed/auxiliary views retain too few edges, and contrastive alignment becomes a regularizer dominated by noise rather than structure. RA-GARK also uses cross-view contrastive learning, but in a deliberately limited role (small weight, stop-gradient on the KG side), not as the primary fusion mechanism.
+
+\subsection{Rationale-Aware Recommendation and the KG-Trust Assumption}
+
+KGRec~\cite{yang2023kgrec} is the most directly related work: it makes rationale selection explicit by scoring each KG edge and using Bernoulli dropout plus a contrastive objective so the model does not depend on a few dominant edges. The rationalization is built on a KGAT-style aggregator, so it operates within the message-passing path. RA-GARK adopts the rationale-aware paradigm but differs in its premise about \emph{KG trust}. KGRec assumes informative edges \emph{exist} within a reliable KG, so rationalization reduces to finding them. RA-GARK's premise is weaker: it does not assume the KG as a whole is reliable. Beyond selecting rationales when the KG is informative, its fusion gate can \emph{disengage the entire KG channel} when gradients indicate it is not. This manifests in four design divergences (Table~\ref{tab:gap}): rationale granularity (latent aspect slots vs.\ KG edges), selection mechanism (differentiable softmax vs.\ Bernoulli dropout), site of action (separate side channel vs.\ inside KGAT propagation), and treatment of KG trust (a bias-initialized disengage gate vs.\ none).
+
+\subsection{Gating Mechanisms and the Gap in KG-Aware Recommendation}
+
+Two gating analogues inform our design. Highway Networks~\cite{srivastava2015highway} interpolate between a transformed signal and an identity skip via a learnable gate whose \emph{negative bias initialization} makes the network behave as the identity at training start, opening only where the transformation helps. Mixture-of-experts gating (MMoE~\cite{ma2018mmoe}, PLE~\cite{tang2020ple}) weights multiple \emph{homogeneous} expert towers with symmetric initialization, appropriate when no expert is intrinsically less reliable, unlike our asymmetric setting where LightGCN is a strong default and the KG is sometimes uninformative. Despite the maturity of gating, none of the KG-aware methods we surveyed, including CKAN~\cite{wang2020ckan}, MKR~\cite{wang2019mkr}, and KGIN~\cite{wang2021kgin}, employs a fusion gate that can \emph{architecturally disengage} the KG channel (Table~\ref{tab:gap}). We make a deliberately narrow claim: within the methods we examined, none uses a bias-initialized fusion gate to provide graceful degradation under unreliable KG.
+
+\begin{table}[t]
+\centering
+\caption{Integration mechanisms used by representative KG-aware recommenders; none provides architectural graceful degradation under unreliable KG.}
+\label{tab:gap}
+\small
+\begin{tabular}{lcc}
+\toprule
+Method & KG integration mechanism & Disengageable? \\
+\midrule
+KGAT~\cite{wang2019kgat}   & Direct entity-message propagation     & No \\
+KGCL~\cite{yang2022kgcl}   & Perturbed-KG contrastive learning     & No \\
+MCCLK~\cite{zou2022mcclk}  & Multi-view contrastive alignment      & No \\
+KGRec~\cite{yang2023kgrec} & Edge-level dropout + KGAT aggregator  & No \\
+CKAN~\cite{wang2020ckan}   & Collaborative-knowledge attention     & No \\
+MKR~\cite{wang2019mkr}     & Cross-feature transfer unit           & No \\
+KGIN~\cite{wang2021kgin}   & Intent disentanglement over KG        & No \\
+\midrule
+\textbf{RA-GARK} (this work) & \textbf{Bias-initialized fusion gate} & \textbf{Yes} \\
+\bottomrule
+\end{tabular}
+\\[0.3em]
+{\footnotesize Note: ``Disengageable'' means the architecture can drive the KG contribution to $\approx 0$ during training.}
+\end{table}
+
+\subsection{Attention Normalization}
+
+Whether attention weights should be normalized by sigmoid or softmax when selecting rationales has no consensus. DIN~\cite{zhou2018din} uses sigmoid attention over user behavior under the assumption that each behavior is independently relevant; NAIS~\cite{he2018nais} and AFM~\cite{xiao2017afm} use softmax over interactions/feature combinations. Each choice is justified by the semantic assumption of its task. We later report a single-dataset observation that, for our aspect-saliency rationale, replacing softmax with sigmoid costs $17.6\%$ NDCG@20, the largest single-component effect we measure, and interpret it as evidence that normalization should match the rationale's semantic assumption.
+
+% =====================================================================
+\section{THEORETICAL FOUNDATION}
+\label{sec:theory}
+
+RA-GARK builds on four well-established components, summarized here to fix notation.
+
+\textbf{LightGCN propagation.} Let $\mathbf{R}\in\{0,1\}^{|\mathcal{U}|\times|\mathcal{I}|}$ be the user--item interaction matrix and $\mathbf{A}=\bigl[\begin{smallmatrix}\mathbf{0}&\mathbf{R}\\ \mathbf{R}^{\top}&\mathbf{0}\end{smallmatrix}\bigr]$ the bipartite adjacency, with symmetric normalization $\tilde{\mathbf{A}}=\mathbf{D}^{-1/2}\mathbf{A}\mathbf{D}^{-1/2}$. From an embedding table $\mathbf{E}^{(0)}$, LightGCN computes $\mathbf{E}^{(\ell+1)}=\tilde{\mathbf{A}}\mathbf{E}^{(\ell)}$ with no learnable weights or non-linearity, and reads the final representation off the layer-wise average $\bar{\mathbf{E}}=\frac{1}{K+1}\sum_{\ell=0}^{K}\mathbf{E}^{(\ell)}$.
+
+\textbf{BPR objective.} For top-$K$ recommendation under implicit feedback, Bayesian Personalized Ranking~\cite{rendle2009bpr} optimizes, for each observed pair $(u,i^{+})$ and a sampled negative $i^{-}$,
+\begin{equation}
+\label{eq:bpr}
+\mathcal{L}_{\mathrm{BPR}}=-\log\sigma\!\bigl(\hat{y}(u,i^{+})-\hat{y}(u,i^{-})\bigr).
+\end{equation}
+
+\textbf{InfoNCE contrastive learning.} Self-supervised alignment is achieved by the InfoNCE loss~\cite{oord2018infonce}, which pulls a positive pair together while pushing in-batch negatives apart in a temperature-scaled, $\ell_2$-normalized inner-product space.
+
+\textbf{Truncated SVD as a semantic prior.} Given an item--aspect matrix, a rank-$k$ truncated SVD $\tilde{\mathbf{M}}\approx\mathbf{U}_k\boldsymbol{\Sigma}_k\mathbf{V}_k^{\top}$ yields per-item latent embeddings $\mathbf{E}_{\mathrm{KG}}=\mathbf{U}_k\boldsymbol{\Sigma}_k^{1/2}$ whose pairwise inner products approximate the (IDF-weighted) co-occurrence content; we use it to install the KG's angular geometry as an initialization rather than as a runtime path.
+
+The design principle that organizes these components is borrowed from Highway Networks~\cite{srivastava2015highway}: \emph{bias an auxiliary channel toward a known-safe default and let training override the default only when justified.} RA-GARK transplants this from in-network skip connections to dual-view fusion.
+
+% =====================================================================
+\section{RESEARCH FRAMEWORK AND METHODS}
+\label{sec:method}
+
+\subsection{Design Principle: KG as a Gateable Side Channel}
+
+The cause shared by the deep-fusion baselines is that the KG is wired into the scoring pipeline as a mandatory component, with no switch to disengage it when unreliable, so KG noise enters the same gradient that produces the collaborative representation. RA-GARK is organized around one principle: \emph{the KG should be a side channel whose contribution to the final score is set by a learned gate, biased at initialization toward a safe default (pure CF) and opened only when training signal indicates the KG channel reduces loss.} Three consequences follow and define the model: (i) two structurally disjoint views, a \emph{local view} (LightGCN, no KG) producing $(u_{\mathrm{loc}},i_{\mathrm{loc}})$ and a \emph{global view} (KG-derived, no CF) producing $(u_{\mathrm{glo}},i_{\mathrm{glo}})$; (ii) late, gated fusion combining them only at scoring time; and (iii) rationale-aware item-side aggregation over $A{=}4$ latent aspect slots.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\textwidth]{img/architecture.png}
+\caption{RA-GARK architecture. A local LightGCN view and a KG-derived global view are kept disjoint and combined only by bias-initialized fusion gates.}
+\label{fig:arch}
+\end{figure}
+
+\subsection{Problem Formulation}
+
+Given users $\mathcal{U}$, items $\mathcal{I}$, observed interactions $\mathcal{R}$, and an item--aspect KG $\mathcal{G}_{\mathrm{KG}}$, the goal is to rank, for each user, the unseen items. RA-GARK scores a pair by the inner product $\hat{y}(u,i)=\langle u_{\mathrm{final}},i_{\mathrm{final}}\rangle$, where the final embeddings are convex combinations of the two views:
+\begin{equation}
+\label{eq:fusion}
+u_{\mathrm{final}}=\alpha_u\,u_{\mathrm{loc}}+(1-\alpha_u)\,u_{\mathrm{glo}},\qquad
+i_{\mathrm{final}}=\alpha_i\,i_{\mathrm{loc}}+(1-\alpha_i)\,i_{\mathrm{glo}}.
+\end{equation}
+With the bias initialization used throughout, $\alpha_u^{(0)},\alpha_i^{(0)}\approx0.993$, so $\hat{y}^{(0)}(u,i)\approx\langle u_{\mathrm{loc}},i_{\mathrm{loc}}\rangle$: the score starts as essentially pure LightGCN until the gate learns otherwise. Training minimizes $\mathcal{L}=\mathcal{L}_{\mathrm{BPR}}+\lambda_{\mathrm{CL}}(\mathcal{L}_{\mathrm{aCL}}+\mathcal{L}_{\mathrm{uCL}})$ with $\lambda_{\mathrm{CL}}=0.005$.
+
+\subsection{Local View: LightGCN}
+
+The local view is LightGCN applied verbatim ($K{=}2$) to the user--item graph, with no KG operation inside the branch. It is chosen because (i) on our sparse KG it already exceeds all four KG-aware baselines, making it the strongest non-KG starting point; (ii) its minimal parameterization limits the surface through which KG noise could later leak into the collaborative gradient; and (iii) its linearity lets gate placement and contrastive alignment be reasoned about without non-linearity confounds. No KG signal is allowed to alter $u_{\mathrm{loc}}$ or $i_{\mathrm{loc}}$ during training.
+
+\subsection{Global View: KG-SVD Initialization}
+
+Each item $i$ is represented in the global view by an aspect-slot tensor $\mathbf{a}_i\in\mathbb{R}^{A\times d}$, $A{=}4$, collected into a learnable parameter $\mathbf{A}_{\mathrm{KG}}\in\mathbb{R}^{|\mathcal{I}|\times A\times d}$. Crucially, $A$ is a model hyperparameter and does \emph{not} correspond to a fixed number of raw aspect tags per item: with only $2.4$ edges per item and a much larger tag vocabulary $|\mathcal{A}|$, the four slots are \emph{latent} directions in an aspect-induced subspace learned across all items.
+
+To initialize $\mathbf{A}_{\mathrm{KG}}$, we (1) build a binary item--aspect co-occurrence matrix $\mathbf{M}\in\{0,1\}^{|\mathcal{I}|\times|\mathcal{A}|}$; (2) reweight columns by inverse document frequency, $\tilde{\mathbf{M}}_{i,a}=\mathrm{idf}(a)\cdot\mathbf{M}_{i,a}$, so high-frequency generic tags do not dominate the spectrum; (3) compute a rank-$k$ truncated SVD with $k=A\cdot d$ and form
+\begin{equation}
+\label{eq:svd}
+\mathbf{E}_{\mathrm{KG}}=\mathbf{U}_k\,\boldsymbol{\Sigma}_k^{1/2}\in\mathbb{R}^{|\mathcal{I}|\times k};
+\end{equation}
+(4) reshape each item's row into $A$ slots of width $d$; and (5) rescale the tensor so its standard deviation matches the Xavier-normal target, preserving the SVD's angular geometry while making magnitudes compatible with the rest of the model. The SVD is computed once before training; the slots are then ordinary gradient-updated parameters. Replacing this initialization with random Xavier costs $3.5\%$ NDCG@20 (Table~\ref{tab:abl}): the gradient that would otherwise recover the geometry flows only through the small-weight contrastive losses and is too weak to do so under sparse KG.
+
+\subsection{Global View: Softmax Rationale Masking}
+
+The user-side global embedding is a direct lookup $u_{\mathrm{glo}}=\mathbf{E}^{\mathrm{glo}}_u$ (no rationale on the user side). For the item side, a rationale module selects which of the $A$ slots best represents the item for a given user. For each slot $k$ it computes a logit $\ell_{u,i,k}=\mathrm{MLP}([u_{\mathrm{glo}}\,\Vert\,\mathbf{a}_{i,k}])$ with parameters \emph{shared} across slots, normalizes by a temperature-$\tau$ softmax,
+\begin{equation}
+\label{eq:softmax}
+w_{u,i,k}=\frac{\exp(\ell_{u,i,k}/\tau)}{\sum_{k'}\exp(\ell_{u,i,k'}/\tau)},\qquad \tau=0.5,
+\end{equation}
+and aggregates $i_{\mathrm{glo}}=\sum_{k}w_{u,i,k}\,\mathbf{a}_{i,k}$. The choice of softmax over an independent per-slot sigmoid is load-bearing: softmax weights sum to one, so $\|i_{\mathrm{glo}}\|$ stays bounded by $\max_k\|\mathbf{a}_{i,k}\|$ regardless of logit scale, whereas a sigmoid output drifts with the logits. Because the KG channel is throttled by the fusion gate, keeping its contribution bounded and predictable is exactly what the gate's calibration depends on; empirically the sigmoid variant degrades NDCG@20 by $17.6\%$ (Table~\ref{tab:abl}), the largest single-component effect we observe.
+
+\subsection{Local-Biased Fusion Gate}
+
+The fusion gate turns the design principle into an operation. Two independent scalar gates, one per side, are small MLPs with a sigmoid head conditioned on the concatenated local and global embeddings:
+\begin{equation}
+\label{eq:gate}
+\mathrm{Gate}(\mathbf{z})=\sigma\!\bigl(\mathbf{w}^{\top}\tanh(\mathbf{W}\mathbf{z})+b\bigr)\in(0,1).
+\end{equation}
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.52\textwidth]{img/gate.png}
+\caption{Local-biased fusion gate (item side is analogous); the bias $b=+5$ keeps the gate near-closed at training start.}
+\label{fig:gate}
+\end{figure}
+
+The crucial choice is the bias $b$. With $b=0$ the gate starts at $\sigma(0)=0.5$, a 50/50 mix that exposes the collaborative representation to KG noise throughout training, the very failure mode of the baselines. We instead set $b=+5$, so $\alpha^{(0)}\approx\sigma(5)\approx0.993$ and the initial mix is $\approx 0.993\,u_{\mathrm{loc}}+0.007\,u_{\mathrm{glo}}$: RA-GARK begins as effectively pure LightGCN, and the KG channel widens only if the BPR gradient on $b$ pushes it open because doing so reduces loss. This gives a structural \emph{graceful-degradation} guarantee: if the KG is uninformative, the gate stays near $\alpha\approx1$ and the model is empirically indistinguishable from pure LightGCN, a property none of the baselines provide. The magnitude $+5$ is the smallest integer with $\alpha^{(0)}>0.99$ while keeping $\sigma'(b)>10^{-3}$ so the gate can still learn (at $b=+10$ the gradient vanishes numerically). Reverting to $b=0$ costs $1.8\%$ NDCG@20.
+
+\subsection{Cross-View Contrastive Regularization and Training}
+
+Because the two views live in heterogeneous subspaces, an InfoNCE-style aspect-level loss $\mathcal{L}_{\mathrm{aCL}}$ and user-level loss $\mathcal{L}_{\mathrm{uCL}}$ align them, each with a \emph{stop-gradient on the KG side} so the contrastive gradient cannot disturb the SVD-initialized slots; a shared projection head is applied only to the local-side input. The contrastive weight is fixed small ($\lambda_{\mathrm{CL}}=0.005$): contrastive learning here is a geometric regularizer, not the integration mechanism (that role is the gate's). We optimize with Adam (lr $10^{-3}$, batch size $128$, up to $30$ epochs, early stopping with patience $10$ on validation NDCG@20). The LightGCN propagation dominates cost; the KG-side additions (slot read, rationale masking, two gates) are linear in $A$ and $d$, so RA-GARK's per-epoch wall-clock time is within a small constant of pure LightGCN.
+
+% =====================================================================
+\section{DATA ANALYSIS AND RESULTS}
+\label{sec:exp}
+
+\subsection{Dataset and KG Construction}
+
+Experiments use a subset of the Amazon Books review corpus processed into a user--item interaction graph and an item--aspect KG (Table~\ref{tab:data}). The item--aspect KG is built by the prior pipeline of~\cite{ho2024reviewkg} and used without modification; we describe it only briefly as it is not our contribution. Per book, visual and textual features are extracted (ResNet, Qwen-VL, BART, Mistral) and aspect mentions are extracted as $(\textit{item},\texttt{has\_aspect},\textit{aspect})$ triples, yielding $13{,}905$ raw edges. Two filtering passes, removing the top $2\%$ most frequent (generic-praise) tags and a small curated stopword list, drop $75.7\%$ of edges, leaving $3{,}370$ specific attachments over $2{,}098$ tags, i.e.\ $2.4$ edges per item. Interactions are split user-stratified $70/15/15$ with a fixed seed shared across all baselines.
+
+\begin{table}[t]
+\centering
+\caption{Dataset statistics after preprocessing.}
+\label{tab:data}
+\small
+\begin{tabular}{lr@{\hskip 2.5em}lr}
+\toprule
+Statistic & Value & Statistic & Value \\
+\midrule
+\#Users        & $905$    & \#KG edges (filtered) & $3{,}370$ \\
+\#Items        & $1{,}399$ & \#Unique aspects      & $2{,}098$ \\
+\#Interactions & $22{,}265$ & Avg.\ edges per item & $2.4$ \\
+Interaction density & $1.76\%$ & & \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Experimental Setup}
+
+We compare against pure LightGCN~\cite{he2020lightgcn} (the non-KG anchor) and four KG-aware recommenders spanning the dominant paradigms: deep aggregator fusion (KGAT~\cite{wang2019kgat}), contrastive cross-view learning (KGCL~\cite{yang2022kgcl}, MCCLK~\cite{zou2022mcclk}), and edge-level rationale learning (KGRec~\cite{yang2023kgrec}). All baselines are reproduced from the authors' code on the same processed KG and split, retaining their published hyperparameter defaults; the only intervention is to fix the embedding dimension at $d{=}128$ and align the optimization budget. These conservative choices may understate the baselines but ensure the comparison reflects modeling rather than uneven tuning. Evaluation uses the strict full-ranking protocol (every unobserved item ranked), with NDCG@20 as the primary metric and HR@20, Recall@20, MAP@20 as secondary.
+
+\subsection{Main Results}
+
+Table~\ref{tab:main} reports the test results. RA-GARK attains NDCG@20 $=0.1213$, $+10.8\%$ over the strongest KG-aware baseline (KGRec) and $+2.9\%$ over pure LightGCN, with consistent gains on all secondary metrics (largest $+13.6\%$ on MAP@20 vs.\ KGRec). Two readings matter. The $+10.8\%$ over KGRec shows that, holding the KG fixed, RA-GARK's design produces a substantially better recommender than the strongest published KG-aware method. The $+2.9\%$ over pure LightGCN is the methodologically more interesting one: all four KG-aware baselines fall \emph{below} the no-KG anchor, and RA-GARK is the only configuration that turns the KG signal from a net liability into a net asset, attributable to gating the KG behind a bias-initialized fusion gate that engages it only when it reduces loss.
+
+\begin{table}[t]
+\centering
+\caption{Main test results (full-ranking, $K=20$). Best in bold.}
+\label{tab:main}
+\small
+\begin{tabular}{lcccc}
+\toprule
+Model & NDCG@20 & HR@20 & Recall@20 & MAP@20 \\
+\midrule
+MCCLK~\cite{zou2022mcclk}   & $0.1067$ & $0.4530$ & $0.1720$ & $0.0497$ \\
+KGCL~\cite{yang2022kgcl}    & $0.1073$ & $0.4696$ & $0.1827$ & $0.0479$ \\
+KGAT~\cite{wang2019kgat}    & $0.1079$ & $0.4773$ & $0.1807$ & $0.0491$ \\
+KGRec~\cite{yang2023kgrec}  & $0.1095$ & $0.4729$ & $0.1834$ & $0.0500$ \\
+LightGCN~\cite{he2020lightgcn} (no KG) & $0.1179$ & $0.4917$ & $0.1937$ & $0.0555$ \\
+\midrule
+\textbf{RA-GARK (ours)} & $\mathbf{0.1213}$ & $\mathbf{0.4972}$ & $\mathbf{0.2007}$ & $\mathbf{0.0568}$ \\
+\midrule
+$\Delta$ vs.\ KGRec    & $+10.8\%$ & $+5.1\%$ & $+9.4\%$ & $+13.6\%$ \\
+$\Delta$ vs.\ LightGCN & $+2.9\%$  & $+1.1\%$ & $+3.6\%$ & $+2.3\%$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Ablation Study}
+
+We revert each headline design choice individually and retrain (Table~\ref{tab:abl}). All four targeted components contribute positively. Reverting softmax to a sigmoid head ($-17.6\%$) or KG-SVD to random init ($-3.5\%$) drops the model \emph{below} the pure-LightGCN floor of $0.1179$, so without either RA-GARK is no longer a positive-contribution KG-aware method; reverting the fusion-gate bias ($-1.8\%$) or the per-(u,i) MLP gate ($-2.7\%$) stays marginally above the floor but well below the full model. The softmax--sigmoid effect is by far the largest single-component swing, an order of magnitude beyond ordinary tuning noise. Reverting both broken defaults simultaneously (sigmoid $+\,b{=}0$) gives $0.1050$, below \emph{all} four baselines: the dual-view skeleton alone replicates the baselines' failure mode, exactly as the design principle predicts. The contrastive losses contribute smaller, consistent amounts ($-1.7\%$ user, $-0.8\%$ aspect), matching their auxiliary role.
+
+\begin{table}[t]
+\centering
+\caption{Ablation: each row flips one component and retrains. $\Delta$ is relative NDCG@20 vs.\ the full model.}
+\label{tab:abl}
+\small
+\begin{tabular}{lccl}
+\toprule
+Configuration & NDCG@20 & $\Delta$ & What is removed \\
+\midrule
+\textbf{RA-GARK (full)} & $\mathbf{0.1213}$ & $0\%$ & none \\
+\midrule
+$-$ Softmax $\to$ sigmoid head     & $0.0999$ & $-17.6\%$ & cross-aspect competition \\
+$-$ KG-SVD init $\to$ Xavier       & $0.1170$ & $-3.5\%$  & angular geometry at init \\
+$-$ MLP gate $\to$ scalar $\alpha$ & $0.1180$ & $-2.7\%$  & per-(u,i) gate conditioning \\
+$-$ Fusion-gate bias $b{=}5\to0$   & $0.1191$ & $-1.8\%$  & local-biased safe default \\
+$-$ User CL ($\mathcal{L}_{\mathrm{uCL}}$)   & $0.1192$ & $-1.7\%$ & user-side alignment \\
+$-$ Aspect CL ($\mathcal{L}_{\mathrm{aCL}}$) & $0.1203$ & $-0.8\%$ & item-side alignment \\
+\midrule
+LightGCN only (no-KG floor)        & $0.1179$ & ref.\ & no global view; CF only \\
+Pre-fix (sigmoid $+\,b{=}0$)       & $0.1050$ & $-13.4\%$ & both broken defaults \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Sensitivity and Stability}
+
+Sweeping the four hyperparameter axes (softmax temperature $\tau$, slot count $A$, gate bias $b$, contrastive weight $\lambda_{\mathrm{CL}}$) with all else fixed leaves the chosen defaults best or on a plateau. The gate-bias sweep is the most informative (Table~\ref{tab:bias}): the design works only in a narrow window $b\in(0,+10]$; at $b{=}0$ the model loses $5.3\%$ within the sweep, and at $b{=}+10$ the gradient is too small to adapt and performance returns to the $b{=}0$ level, validating $b{=}+5$. The temperature curve is flat for $\tau\le0.5$, the slot-count curve is flat from $A{=}4$ onward, and $\lambda_{\mathrm{CL}}{=}0.005$ is near-optimal (dropping to $0$ loses $2$--$3\%$; raising to $0.05$ lets the contrastive gradient dominate BPR). Exploratory runs varying incidental optimization details (weight decay, scheduler, multi-negative sampling) all sit within $\pm0.003$ NDCG@20 of the reported value, so the effective ceiling on this small dataset is $\approx 0.124$ and the qualitative ordering in Tables~\ref{tab:main}--\ref{tab:abl} is robust.
+
+\begin{table}[t]
+\centering
+\caption{Sensitivity to fusion-gate bias $b$ (other settings fixed).}
+\label{tab:bias}
+\small
+\begin{tabular}{lcccc}
+\toprule
+$b$ & $0$ & $+2$ & $\mathbf{+5}$ (default) & $+10$ \\
+\midrule
+NDCG@20 & $0.1173$ & $0.1206$ & $\mathbf{0.1238}$ & $0.1175$ \\
+\bottomrule
+\end{tabular}
+\\[0.3em]
+{\footnotesize Note: absolute values are anchored on an earlier full-model run (NDCG@20 $=0.1238$); curve shape and the chosen default are unaffected by the $0.0025$ offset from Table~\ref{tab:main}.}
+\end{table}
+
+\subsection{Case Study}
+
+To inspect what the rationale module learns, we printed the softmax aspect weights $w_{u,i,k}$ for several popular items (Table~\ref{tab:case}). Two patterns emerge, neither matching a strong per-user selection story. \emph{Item-level slot specialization is present:} across items the argmax slot differs, and the dominant slot carries a small consistent excess of mass ($\approx 0.27$--$0.29$ vs.\ $\approx 0.24$). \emph{User-conditioned selectivity is essentially absent:} for a given item, different users produce near-identical weights (within $\pm0.003$). This is consistent with, not contradictory to, the design principle: the gate keeps the KG channel a small fraction of the score, so the gradient into the rationale is enough to fix \emph{which slot} each item uses (an $|\mathcal{I}|\times A$ problem) but too small to additionally learn a user-specific re-weighting. The $+2.9\%$ over LightGCN is therefore attributable to item-level slot routing over KG-SVD geometry, and the case study reads as direct evidence of graceful degradation: the channel learns only as much structure as the gate lets it influence the loss.
+
+\begin{table}[t]
+\centering
+\caption{Softmax aspect weights from the trained rationale module (one representative user per item; bold marks the argmax slot).}
+\label{tab:case}
+\small
+\begin{tabular}{llcccc}
+\toprule
+Item (asin) & Top KG aspects & $w_0$ & $w_1$ & $w_2$ & $w_3$ \\
+\midrule
+1594633665 & character\_complexity, unreliable\_narrators & $0.230$ & $\mathbf{0.282}$ & $0.231$ & $0.257$ \\
+0553418025 & science\_fiction, survival, space\_exploration & $\mathbf{0.285}$ & $0.239$ & $0.241$ & $0.235$ \\
+0312641893 & cyberpunk, cyborg\_elements, future\_setting & $0.250$ & $\mathbf{0.267}$ & $0.250$ & $0.232$ \\
+0062024027 & dystopian, post\_apocalyptic, action\_suspense & $\mathbf{0.284}$ & $0.238$ & $0.239$ & $0.238$ \\
+0307887448 & dystopian\_sci\_fi, video\_games, 80s\_culture & $0.238$ & $0.246$ & $0.240$ & $\mathbf{0.276}$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Computational Cost}
+
+Per-epoch training time is $\approx 1.5$\,s for RA-GARK, indistinguishable from pure LightGCN ($1.4$\,s) and KGRec ($1.5$\,s) at matched embedding dimension; the dominant cost in all three is the shared LightGCN propagation. The gains in Table~\ref{tab:main} therefore come from design choices, not a larger compute envelope.
+
+% =====================================================================
+\section{CONCLUSION}
+\label{sec:conclude}
+
+This paper began from a specific anomaly: on a sparse review-derived KG, four representative KG-aware recommenders are uniformly outperformed by pure LightGCN. The architectural cause is that the KG is a mandatory pipeline component with no switch to disengage it, so its noise contaminates the collaborative gradient. Our response, RA-GARK, treats the KG as a side channel whose contribution is set by a learned gate biased toward a safe default and opened only when it reduces loss, realized through KG-SVD initialization ($-3.5\%$ if removed), softmax rationale masking ($-17.6\%$ if replaced by sigmoid), and a local-biased fusion gate ($-1.8\%$ if the bias is removed). With all three, RA-GARK reaches NDCG@20 $=0.1213$, $+10.8\%$ over KGRec and $+2.9\%$ over pure LightGCN at essentially identical cost, flipping the KG's contribution from net-negative to net-positive without changing the KG.
+
+The value lies in the reframing: the difficulty of sparse-KG recommendation is located in the architecture rather than the KG. Read this way, graceful degradation, biasing an auxiliary channel toward a safe default and opening it only when training warrants, is a reusable principle for integrating any signal of uncertain reliability, not a device specific to review-derived KGs. A secondary methodological observation is that, for a rationale head feeding a throttled auxiliary channel, the load-bearing property of softmax is magnitude control (sum-to-one normalization) rather than one-hot competition; we frame this as a hypothesis falsifiable by replication.
+
+We state three limitations. (i) All results are on a single sparse benchmark; the headline observation need not hold where the KG is denser or better curated. (ii) The KG construction is prior work~\cite{ho2024reviewkg}, used as fixed input; our contributions are on the modeling side. (iii) The dense-KG regime is not validated; there, a gate defaulting to ``KG off'' is the wrong prior, and deep-fusion baselines may be preferable. Future work includes multi-dataset replication of the attention-normalization finding, dense-KG validation, cross-domain transfer of the gating principle, and a symmetric ``sparse-CF, dense-KG'' regime in which the gate's default bias would flip so the KG channel is open by default.
+
+% =====================================================================
+%  REFERENCES  (numeric; entries ordered alphabetically by first-author
+%  surname per JIM §XII -> labels [1]..[20] follow that order)
+% =====================================================================
+\begin{thebibliography}{99}
+\setlength{\itemsep}{0.15em}
+
+\bibitem{he2018nais}
+He, X., He, Z., Song, J., Liu, Z., Jiang, Y.-G., \& Chua, T.-S. (2018). NAIS: Neural attentive item similarity model for recommendation. \textit{IEEE Transactions on Knowledge and Data Engineering, 30}(12), 2354--2366.
+
+\bibitem{he2020lightgcn}
+He, X., Deng, K., Wang, X., Li, Y., Zhang, Y., \& Wang, M. (2020). LightGCN: Simplifying and powering graph convolution network for recommendation. \textit{Proceedings of the 43rd International ACM SIGIR Conference on Research and Development in Information Retrieval}, 639--648.
+
+\bibitem{ho2024reviewkg}
+Ho, I.-N. (2024). \textit{LLM-enhanced multimodal product recommendation with review aspect-specific knowledge graphs} (Master's thesis). Institute of Information Management, National Yang Ming Chiao Tung University, Hsinchu, Taiwan.
+
+\bibitem{ma2018mmoe}
+Ma, J., Zhao, Z., Yi, X., Chen, J., Hong, L., \& Chi, E. H. (2018). Modeling task relationships in multi-task learning with multi-gate mixture-of-experts. \textit{Proceedings of the 24th ACM SIGKDD International Conference on Knowledge Discovery \& Data Mining}, 1930--1939.
+
+\bibitem{ren2023dccf}
+Ren, X., Xia, L., Zhao, J., Yin, D., \& Huang, C. (2023). Disentangled contrastive collaborative filtering. \textit{Proceedings of the 46th International ACM SIGIR Conference on Research and Development in Information Retrieval}, 1137--1146.
+
+\bibitem{rendle2009bpr}
+Rendle, S., Freudenthaler, C., Gantner, Z., \& Schmidt-Thieme, L. (2009). BPR: Bayesian personalized ranking from implicit feedback. \textit{Proceedings of the 25th Conference on Uncertainty in Artificial Intelligence}, 452--461.
+
+\bibitem{srivastava2015highway}
+Srivastava, R. K., Greff, K., \& Schmidhuber, J. (2015). Highway networks. \textit{arXiv preprint arXiv:1505.00387}.
+
+\bibitem{tang2020ple}
+Tang, H., Liu, J., Zhao, M., \& Gong, X. (2020). Progressive layered extraction (PLE): A novel multi-task learning model for personalized recommendations. \textit{Proceedings of the 14th ACM Conference on Recommender Systems}, 269--278.
+
+\bibitem{oord2018infonce}
+van den Oord, A., Li, Y., \& Vinyals, O. (2018). Representation learning with contrastive predictive coding. \textit{arXiv preprint arXiv:1807.03748}.
+
+\bibitem{wang2019mkr}
+Wang, H., Zhang, F., Zhao, M., Li, W., Xie, X., \& Guo, M. (2019). Multi-task feature learning for knowledge graph enhanced recommendation. \textit{Proceedings of The World Wide Web Conference}, 2000--2010.
+
+\bibitem{wang2019kgat}
+Wang, X., He, X., Cao, Y., Liu, M., \& Chua, T.-S. (2019). KGAT: Knowledge graph attention network for recommendation. \textit{Proceedings of the 25th ACM SIGKDD International Conference on Knowledge Discovery \& Data Mining}, 950--958.
+
+\bibitem{wang2019ngcf}
+Wang, X., He, X., Wang, M., Feng, F., \& Chua, T.-S. (2019). Neural graph collaborative filtering. \textit{Proceedings of the 42nd International ACM SIGIR Conference on Research and Development in Information Retrieval}, 165--174.
+
+\bibitem{wang2021kgin}
+Wang, X., Huang, T., Wang, D., Yuan, Y., Liu, Z., He, X., \& Chua, T.-S. (2021). Learning intents behind interactions with knowledge graph for recommendation. \textit{Proceedings of The Web Conference 2021}, 878--887.
+
+\bibitem{wang2020ckan}
+Wang, Z., Lin, G., Tan, H., Chen, Q., \& Liu, X. (2020). CKAN: Collaborative knowledge-aware attentive network for recommender systems. \textit{Proceedings of the 43rd International ACM SIGIR Conference on Research and Development in Information Retrieval}, 219--228.
+
+\bibitem{wu2021sgl}
+Wu, J., Wang, X., Feng, F., He, X., Chen, L., Lian, J., \& Xie, X. (2021). Self-supervised graph learning for recommendation. \textit{Proceedings of the 44th International ACM SIGIR Conference on Research and Development in Information Retrieval}, 726--735.
+
+\bibitem{xiao2017afm}
+Xiao, J., Ye, H., He, X., Zhang, H., Wu, F., \& Chua, T.-S. (2017). Attentional factorization machines: Learning the weight of feature interactions via attention networks. \textit{Proceedings of the 26th International Joint Conference on Artificial Intelligence}, 3119--3125.
+
+\bibitem{yang2022kgcl}
+Yang, Y., Huang, C., Xia, L., \& Li, C. (2022). Knowledge graph contrastive learning for recommendation. \textit{Proceedings of the 45th International ACM SIGIR Conference on Research and Development in Information Retrieval}, 1434--1443.
+
+\bibitem{yang2023kgrec}
+Yang, Y., Huang, C., Xia, L., \& Huang, C. (2023). Knowledge graph self-supervised rationalization for recommendation. \textit{Proceedings of the 29th ACM SIGKDD Conference on Knowledge Discovery and Data Mining}, 3046--3056.
+
+\bibitem{zhou2018din}
+Zhou, G., Zhu, X., Song, C., Fan, Y., Zhu, H., Ma, X., Yan, Y., Jin, J., Li, H., \& Gai, K. (2018). Deep interest network for click-through rate prediction. \textit{Proceedings of the 24th ACM SIGKDD International Conference on Knowledge Discovery \& Data Mining}, 1059--1068.
+
+\bibitem{zou2022mcclk}
+Zou, D., Wei, W., Mao, X.-L., Wang, Z., Qiu, M., Zhu, F., \& Cao, X. (2022). Multi-level cross-view contrastive learning for knowledge-aware recommender system. \textit{Proceedings of the 45th International ACM SIGIR Conference on Research and Development in Information Retrieval}, 1358--1368.
+
+\end{thebibliography}
+
+\end{document}
