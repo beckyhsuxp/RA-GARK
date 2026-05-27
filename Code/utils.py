@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+import os
 import random
 from typing import Tuple
 
@@ -12,12 +13,29 @@ log = logging.getLogger(__name__)
 
 
 def set_seed(seed: int) -> None:
-    """Seed Python, NumPy, PyTorch (CPU + CUDA)."""
+    """Seed Python, NumPy, PyTorch (CPU + CUDA) and enable deterministic kernels.
+
+    Seeding alone is not enough on GPU: cuDNN autotuning and nondeterministic
+    scatter/gather kernels make the same seed drift run-to-run (this was the
+    source of the 0.1238 vs 0.1213 ±0.003 gap). The flags below pin those down
+    so seed=42 reproduces exactly. Some graph ops have no deterministic CUDA
+    kernel, so ``warn_only=True`` keeps training from crashing on them — those
+    ops stay nondeterministic, so reproducibility is strong but not absolute.
+    """
     random.seed(seed)
     np.random.seed(seed)
     torch.manual_seed(seed)
     if torch.cuda.is_available():
         torch.cuda.manual_seed_all(seed)
+
+    # Required for deterministic CUBLAS (matmul) under use_deterministic_algorithms.
+    os.environ.setdefault("CUBLAS_WORKSPACE_CONFIG", ":4096:8")
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
+    try:
+        torch.use_deterministic_algorithms(True, warn_only=True)
+    except Exception as e:  # older torch without the API / unsupported op
+        log.warning("use_deterministic_algorithms unavailable: %s", e)
 
 
 def user_stratified_split(
