@@ -64,12 +64,12 @@ KGRec~\cite{yang2023kgrec}     & 0.1095 \\
 
   \item \textbf{RA-GARK，一個雙視角架構}：以旁路通道而非深度融合的方式整合協同訊號與 KG 衍生訊號。RA-GARK 由三項核心要素組成，且彼此皆獨立必要：
     \begin{itemize}
-      \item \textbf{Softmax aspect-saliency 注意力}（第~\ref{sec:softmax-zh}~節）。每件物品的 KG 語意儲存於 $A=4$ 個\emph{潛在}面向槽中（此槽位數為模型設計參數，與每件物品所擁有的原始面向標籤數無關）槽位內容由 IDF 加權商品—面向共現矩陣之截斷 SVD 投影而得；softmax 正規化的注意力為給定的使用者—物品配對選取最足以代表該物品的潛在槽位。將 softmax 改為 sigmoid 會使 NDCG@20 下降 $7.0\%$，是我們所觀察到單一元件影響最大者。
-      \item \textbf{具局部偏置的融合閘}（第~\ref{sec:gate-zh}~節）。融合閘以 $+5$ 的正偏置初始化，使 $\alpha^{(0)} \approx 0.993$。因此模型在訓練之初幾乎等同於純 LightGCN，僅當梯度顯示 KG 通道有幫助時，閘門才會被打開。此設計提供了四種基線所缺乏的、結構性的\emph{優雅退化}保證。若移除此偏置初始化，NDCG@20 會損失 $5.3\%$。
-      \item \textbf{KG-SVD 初始化}（第~\ref{sec:kgsvd-zh}~節）。aspect 槽位的嵌入由 IDF 加權的物品—aspect 矩陣之截斷 SVD 初始化而來，將 KG 的語意幾何保留為最佳化的起點。將其換為隨機初始化會損失 $5.3\%$ NDCG@20。
+      \item \textbf{Softmax aspect-saliency 注意力}（第~\ref{sec:softmax-zh}~節）。每件物品的 KG 語意儲存於 $A=4$ 個\emph{潛在}面向槽中（此槽位數為模型設計參數，與每件物品所擁有的原始面向標籤數無關）槽位內容由 IDF 加權商品—面向共現矩陣之截斷 SVD 投影而得；softmax 正規化的注意力為給定的使用者—物品配對選取最足以代表該物品的潛在槽位。將 softmax 改為 sigmoid 會使 NDCG@20 下降 $17.6\%$，是我們所觀察到單一元件影響最大者。
+      \item \textbf{具局部偏置的融合閘}（第~\ref{sec:gate-zh}~節）。融合閘以 $+5$ 的正偏置初始化，使 $\alpha^{(0)} \approx 0.993$。因此模型在訓練之初幾乎等同於純 LightGCN，僅當梯度顯示 KG 通道有幫助時，閘門才會被打開。此設計提供了四種基線所缺乏的、結構性的\emph{優雅退化}保證。若移除此偏置初始化，NDCG@20 會損失 $1.8\%$。
+      \item \textbf{KG-SVD 初始化}（第~\ref{sec:kgsvd-zh}~節）。aspect 槽位的嵌入由 IDF 加權的物品—aspect 矩陣之截斷 SVD 初始化而來，將 KG 的語意幾何保留為最佳化的起點。將其換為隨機初始化會損失 $3.5\%$ NDCG@20。
     \end{itemize}
 
-  \item \textbf{經驗驗證}：在稀疏評論型 KG 基準上，RA-GARK 達到 NDCG@20 $= 0.1238$，較最強的 KG-aware 基線（KGRec）高出 $+13.1\%$，更重要的是，較純 LightGCN 也高出 $+5.0\%$。後者的差距顯示，所提出的設計原則能在 KG 本身不變的情況下，把 KG 訊號的貢獻由\emph{淨負}（四種基線之情況）翻轉為\emph{淨正}。
+  \item \textbf{經驗驗證}：在稀疏評論型 KG 基準上，RA-GARK 達到 NDCG@20 $= 0.1213$，較最強的 KG-aware 基線（KGRec）高出 $+10.8\%$，更重要的是，較純 LightGCN 也高出 $+2.9\%$。後者的差距顯示，所提出的設計原則能在 KG 本身不變的情況下，把 KG 訊號的貢獻由\emph{淨負}（四種基線之情況）翻轉為\emph{淨正}。
 
   \item \textbf{關於合理化感知設計中注意力正規化的方法論觀察}。在我們的情境中，softmax 與 sigmoid 之間異常顯著的差距，暗示正規化的選擇應與合理化的語意假設相一致。我們將此視為單一資料集上的假設而非通用主張，留待後續多資料集複製驗證（第~\ref{ch:conclusion-zh}~章）。
 \end{enumerate}

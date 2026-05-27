@@ -44,7 +44,7 @@ slide 來源：`Document/notes/SLIDES.md`（24 張）
 | 1.2 Empirical Anomaly under Sparse KG | 稀疏 KG 下 KG-aware 全敗給 LightGCN（含表） | Slide 2 |
 | 1.3 Sparse KG as a Real-World Default | review-derived / cold-start / privacy / KG completion | Slide 3 |
 | 1.4 Research Questions | RQ1 診斷 + RQ2 處方 | Slide 4 |
-| 1.5 Contributions | 三項設計 + 各搭消融：Softmax (−7.0%) / Bias init (−5.3%) / KG-SVD (−5.3%) | Slide 4 |
+| 1.5 Contributions | 三項設計 + 各搭消融：Softmax (−17.6%) / Bias init (−1.8%) / KG-SVD (−3.5%) | Slide 4 |
 | 1.6 Thesis Organization | 章節導讀 | — |
 
 **敘事弧**：主流在我們設定下失敗 → 失敗共同原因是 KG 內嵌計分管線、無結構性開關可關閉 → 提出可被閘控的側通道架構。
@@ -81,9 +81,9 @@ slide 來源：`Document/notes/SLIDES.md`（24 張）
 | 3.3 Notation | — | 完整符號表 |
 | 3.4 Problem Formulation | — | 評分函數 + 融合公式 + BPR + 對比總損失 |
 | 3.5 Local View: LightGCN | 動機 / 圖建構 / 傳播 / 層平均輸出 | K=2、純 CF anchor |
-| 3.6 Global View: KG-SVD Initialization | 槽位定義 / 共現 / IDF / SVD / reshape / 演算法 / 效益 | 含**圖 (b) placeholder** + 消融 −5.3% |
-| 3.7 Global View: Softmax Rationale Masking | 動機 / 注意力 / softmax / 加權 / vs sigmoid | 含**圖 (c) placeholder** + 消融 −7.0% |
-| 3.8 Local-Biased Fusion Gate | 雙側 / 結構 / 偏置 +5 / 優雅退化 / 為何 +5 不 +∞ | 含**圖 (d) placeholder** + 消融 −5.3% |
+| 3.6 Global View: KG-SVD Initialization | 槽位定義 / 共現 / IDF / SVD / reshape / 演算法 / 效益 | 含**圖 (b) placeholder** + 消融 −3.5% |
+| 3.7 Global View: Softmax Rationale Masking | 動機 / 注意力 / softmax / 加權 / vs sigmoid | 含**圖 (c) placeholder** + 消融 −17.6% |
+| 3.8 Local-Biased Fusion Gate | 雙側 / 結構 / 偏置 +5 / 優雅退化 / 為何 +5 不 +∞ | 含**圖 (d) placeholder** + 消融 −1.8% |
 | 3.9 Cross-View Contrastive Regularization | 角色 / aCL / uCL / stop-grad / 權重 | λ_CL = 0.005 |
 | 3.10 Training and Complexity | 總目標 / 最佳化 / 推論 / 複雜度表 | Adam, BS=128, ES patience=10 |
 
@@ -104,7 +104,7 @@ slide 來源：`Document/notes/SLIDES.md`（24 張）
 |---|---|---|---|
 | 4.1 Dataset & KG Construction | Amazon Books 子集統計 + KG 建構 pipeline（沿用 [何宜霓 2024]）| Slide 20 | **§4.1 已有 placeholder + 圖 (e)** |
 | 4.2 Experimental Setup | baselines 重現 config、評估協議（full-ranking）、metric 定義 | — | **新寫** |
-| 4.3 Main Results | 主表（NDCG@20 + 多 metric）+ +13.1% / +5.0% 解讀 | Slide 21 | ✓ 數字齊 |
+| 4.3 Main Results | 主表（NDCG@20 + 多 metric）+ +10.8% / +2.9% 解讀 | Slide 21 | ✓ 數字齊 |
 | 4.4 Ablation Study | softmax/sigmoid、bias=0、random init、純 LightGCN 對比 | Slide 22 | ✓ 數字齊 |
 | 4.5 Sensitivity Analysis | τ 掃描、A 槽數、λ_CL、bias 值 | — | **新寫**（從 `tune_weights.py` 結果） |
 | 4.6 Seed Stability ⚠ | 多 seed mean ± std；老實討論 variance 來源 | — | **新寫**（含老師關心的 seed 變差問題） |
@@ -175,7 +175,7 @@ slide 來源：`Document/notes/SLIDES.md`（24 張）
 | 在某章引用… | 來源章節 | LaTeX label |
 |---|---|---|
 | §1 contributions 三項設計 | §3.6 / 3.7 / 3.8 | `\ref{sec:kgsvd} \ref{sec:softmax} \ref{sec:gate}` |
-| §1 主要結果 +13.1% | §4.3 主表 | `\ref{tab:main}`（待 §4 補） |
+| §1 主要結果 +10.8% | §4.3 主表 | `\ref{tab:main}`（待 §4 補） |
 | §2 KGRec 對比 | §3.7（softmax 機制）| `\ref{sec:softmax}` |
 | §2.5 Highway 移植 | §3.8（bias=+5）| `\ref{sec:gate}` |
 | §3 各模組消融 | §4.4 ablation | `\ref{sec:ablation-svd|softmax|gate}` |
