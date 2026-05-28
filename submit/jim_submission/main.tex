@@ -29,7 +29,7 @@
 \usepackage{multirow}
 \usepackage{array}
 \usepackage{caption}
-\captionsetup{font=small,labelsep=colon,justification=centering}
+\captionsetup{font=small,labelsep=colon}
 \usepackage{titlesec}
 \usepackage{setspace}
 \setstretch{1.38}   % ≈ 20pt leading at 12pt, matching the JIM sample (line=400, exact)
@@ -121,7 +121,7 @@ Two gating analogues inform our design. Highway Networks~\cite{srivastava2015hig
 \caption{Integration mechanisms used by representative KG-aware recommenders; none provides architectural graceful degradation under unreliable KG.}
 \label{tab:gap}
 \small
-\begin{tabular}{ccc}
+\begin{tabular}{lcc}
 \toprule
 Method & KG integration mechanism & Disengageable? \\
 \midrule
@@ -247,7 +247,7 @@ Experiments use a subset of the Amazon Books review corpus processed into a user
 \caption{Dataset statistics after preprocessing.}
 \label{tab:data}
 \small
-\begin{tabular}{cc@{\hskip 2.5em}cc}
+\begin{tabular}{lr@{\hskip 2.5em}lr}
 \toprule
 Statistic & Value & Statistic & Value \\
 \midrule
@@ -272,7 +272,7 @@ Table~\ref{tab:main} reports the test results. RA-GARK attains NDCG@20 $=0.1242$
 \caption{Main test results (full-ranking, $K=20$). Best in bold.}
 \label{tab:main}
 \small
-\begin{tabular}{ccccc}
+\begin{tabular}{lcccc}
 \toprule
 Model & NDCG@20 & HR@20 & Recall@20 & MAP@20 \\
 \midrule
@@ -299,7 +299,7 @@ We revert each headline design choice individually and retrain (Table~\ref{tab:a
 \caption{Ablation: each row flips one component and retrains. $\Delta$ is relative NDCG@20 vs.\ the full model.}
 \label{tab:abl}
 \small
-\begin{tabular}{cccc}
+\begin{tabular}{lccl}
 \toprule
 Configuration & NDCG@20 & $\Delta$ & What is removed \\
 \midrule
@@ -327,7 +327,7 @@ Sweeping the four hyperparameter axes (softmax temperature $\tau$, slot count $A
 \caption{Sensitivity to fusion-gate bias $b$ (other settings fixed).}
 \label{tab:bias}
 \small
-\begin{tabular}{ccccc}
+\begin{tabular}{lcccc}
 \toprule
 $b$ & $0$ & $+2$ & $\mathbf{+5}$ (default) & $+10$ \\
 \midrule
@@ -345,7 +345,7 @@ To inspect what the rationale module learns, we printed the softmax aspect weigh
 \caption{Softmax aspect weights from the trained rationale module (one representative user per item; bold marks the argmax slot).}
 \label{tab:case}
 \small
-\begin{tabular}{cccccc}
+\begin{tabular}{llcccc}
 \toprule
 Item (asin) & Top KG aspects & $w_0$ & $w_1$ & $w_2$ & $w_3$ \\
 \midrule
