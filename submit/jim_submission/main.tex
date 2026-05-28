@@ -24,6 +24,7 @@
 \usepackage{amsmath,amssymb,amsfonts}
 \usepackage{bm}
 \usepackage{graphicx}
+\usepackage{float}
 \usepackage{booktabs}
 \usepackage{multirow}
 \usepackage{array}
@@ -115,7 +116,7 @@ KGRec~\cite{yang2023kgrec} is the most directly related work: it makes rationale
 
 Two gating analogues inform our design. Highway Networks~\cite{srivastava2015highway} interpolate between a transformed signal and an identity skip via a learnable gate whose \emph{negative bias initialization} makes the network behave as the identity at training start, opening only where the transformation helps. Mixture-of-experts gating (MMoE~\cite{ma2018mmoe}, PLE~\cite{tang2020ple}) weights multiple \emph{homogeneous} expert towers with symmetric initialization, appropriate when no expert is intrinsically less reliable, unlike our asymmetric setting where LightGCN is a strong default and the KG is sometimes uninformative. Despite the maturity of gating, none of the KG-aware methods we surveyed, including CKAN~\cite{wang2020ckan}, MKR~\cite{wang2019mkr}, and KGIN~\cite{wang2021kgin}, employs a fusion gate that can \emph{architecturally disengage} the KG channel (Table~\ref{tab:gap}). We make a deliberately narrow claim: within the methods we examined, none uses a bias-initialized fusion gate to provide graceful degradation under unreliable KG.
 
-\begin{table}[!ht]
+\begin{table}[H]
 \centering
 \caption{Integration mechanisms used by representative KG-aware recommenders; none provides architectural graceful degradation under unreliable KG.}
 \label{tab:gap}
