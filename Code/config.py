@@ -49,12 +49,9 @@ class Config:
     # --- Training ---
     batch_size: int = 128
     learning_rate: float = 1e-3
-    kg_aspect_learning_rate: float = 5e-4
     epochs: int = 30
     seed: int = 42
     early_stop_patience: int = 10   # 0 disables early stopping
-    mask_val_in_test: bool = True   # final test masks train + val positives
-    use_user_aware_negatives: bool = True  # False restores global random negatives
 
     # --- Loss weights ---
     cl_weight: float = 0.01   # InfoNCE contrastive loss

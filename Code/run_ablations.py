@@ -111,9 +111,6 @@ def make_cfg(**overrides) -> Config:
     tag_bits.append(f"t{cfg.rationale_temperature:.2f}")
     tag_bits.append(f"fb{cfg.fusion_init_bias:.0f}")
     tag_bits.append(f"gate-{cfg.fusion_gate_style}")
-    tag_bits.append(f"kglr{cfg.kg_aspect_learning_rate:g}")
-    tag_bits.append(f"maskv{int(cfg.mask_val_in_test)}")
-    tag_bits.append(f"uneg{int(cfg.use_user_aware_negatives)}")
     cfg.model_save_path = f"best_ragark_{'_'.join(tag_bits)}.pth"
     return cfg
 
@@ -155,26 +152,6 @@ ALL_PRESETS = {
     # ── Sensitivity: fusion-gate bias b (default +5 = winner; b=0 is winner_fb0) ──
     "winner_fb2":         {"fusion_init_bias": 2.0},
     "winner_fb10":        {"fusion_init_bias": 10.0},
-
-    # ── Protocol/rollback checks for the score-improvement patch ──────
-    "winner_mask_train_only": {"mask_val_in_test": False},
-    "winner_kg_lr_1e-3":      {"kg_aspect_learning_rate": 1e-3},
-    "winner_global_negs":     {"use_user_aware_negatives": False},
-    "winner_pre_patch_protocol": {
-        "mask_val_in_test": False,
-        "kg_aspect_learning_rate": 1e-3,
-        "use_user_aware_negatives": False,
-    },
-    "winner_clean_negs_only": {
-        "mask_val_in_test": False,
-        "kg_aspect_learning_rate": 1e-3,
-        "use_user_aware_negatives": True,
-    },
-    "winner_kg_lr_only": {
-        "mask_val_in_test": False,
-        "kg_aspect_learning_rate": 5e-4,
-        "use_user_aware_negatives": False,
-    },
 }
 
 MODES = {
@@ -225,16 +202,6 @@ MODES = {
         "winner_A2", "winner_A8",
         "winner_cl0", "winner_cl0.001", "winner_cl0.01", "winner_cl0.05",
         "winner_fb2", "winner_fb0", "winner_fb10",
-    ],
-    "protocol": [
-        "winner",
-        "winner_mask_train_only",
-        "winner_kg_lr_1e-3",
-        "winner_global_negs",
-        "winner_pre_patch_protocol",
-        "winner_clean_negs_only",
-        "winner_kg_lr_only",
-        "lightgcn_only",
     ],
     "full": list(ALL_PRESETS.keys()),
 }
@@ -332,9 +299,6 @@ def main():
         row["num_aspects"] = cfg.num_aspects
         row["cl_weight"] = cfg.cl_weight
         row["fusion_init_bias"] = cfg.fusion_init_bias
-        row["kg_aspect_learning_rate"] = cfg.kg_aspect_learning_rate
-        row["mask_val_in_test"] = int(cfg.mask_val_in_test)
-        row["use_user_aware_negatives"] = int(cfg.use_user_aware_negatives)
         for m in ("HR", "Precision", "Recall", "F1", "MAP", "NDCG"):
             row[m] = f"{test_res.get(m, float('nan')):.4f}" if test_res else "NaN"
         results.append(row)

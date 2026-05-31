@@ -43,27 +43,6 @@ logging.basicConfig(
 log = logging.getLogger(__name__)
 
 
-def _merge_histories(*histories: dict[int, set | list]) -> dict[int, set[int]]:
-    merged: dict[int, set[int]] = {}
-    for hist in histories:
-        for uid, items in hist.items():
-            merged.setdefault(uid, set()).update(int(i) for i in items)
-    return merged
-
-
-def _make_optimizer(model: RA_GARK, cfg: Config) -> torch.optim.Optimizer:
-    kg_lr = getattr(cfg, "kg_aspect_learning_rate", cfg.learning_rate)
-    base_params = [
-        p for name, p in model.named_parameters()
-        if name != "item_kg_aspects"
-    ]
-    param_groups = [{"params": base_params, "lr": cfg.learning_rate}]
-    param_groups.append({"params": [model.item_kg_aspects], "lr": kg_lr})
-    log.info("Optimizer: Adam base_lr=%.1e kg_aspect_lr=%.1e",
-             cfg.learning_rate, kg_lr)
-    return torch.optim.Adam(param_groups)
-
-
 def train_ragark(cfg: Config, device: torch.device) -> dict:
     set_seed(cfg.seed)
 
@@ -88,10 +67,7 @@ def train_ragark(cfg: Config, device: torch.device) -> dict:
     val_gt = val_df.groupby("user_idx")["item_idx"].apply(list).to_dict()
     test_gt = test_df.groupby("user_idx")["item_idx"].apply(list).to_dict()
 
-    sampler_train_hist = (
-        train_hist if getattr(cfg, "use_user_aware_negatives", True) else None
-    )
-    sampler = KnowledgeAwareSampler(n_items, kg_adj, kg_rev_adj, sampler_train_hist)
+    sampler = KnowledgeAwareSampler(n_items, kg_adj, kg_rev_adj)
     dataset = RecDataset(train_df["user_idx"], train_df["item_idx"], sampler)
     loader = DataLoader(dataset, batch_size=cfg.batch_size, shuffle=True, num_workers=0)
 
@@ -111,12 +87,10 @@ def train_ragark(cfg: Config, device: torch.device) -> dict:
         fusion_gate_style=cfg.fusion_gate_style,
     ).to(device)
     log.info(
-        "flags: rat=%s(%s, τ=%.2f) svd=%s acl=%s ucl=%s global=%s fusion_bias=%.1f gate=%s mask_val_test=%s user_aware_neg=%s",
+        "flags: rat=%s(%s, τ=%.2f) svd=%s acl=%s ucl=%s global=%s fusion_bias=%.1f gate=%s",
         cfg.use_rationale, cfg.rationale_style, cfg.rationale_temperature,
         cfg.use_svd_init, cfg.use_acl, cfg.use_ucl,
         cfg.use_global_view, cfg.fusion_init_bias, cfg.fusion_gate_style,
-        getattr(cfg, "mask_val_in_test", True),
-        getattr(cfg, "use_user_aware_negatives", True),
     )
 
     if cfg.use_svd_init:
@@ -129,7 +103,8 @@ def train_ragark(cfg: Config, device: torch.device) -> dict:
     else:
         log.info("SVD init disabled — item_kg_aspects stays at xavier init")
 
-    optimizer = _make_optimizer(model, cfg)
+    optimizer = torch.optim.Adam(model.parameters(), lr=cfg.learning_rate)
+    log.info("Optimizer: Adam lr=%.1e", cfg.learning_rate)
 
     best_val_ndcg, best_epoch, no_improve = 0.0, 0, 0
     header = (
@@ -225,13 +200,8 @@ def train_ragark(cfg: Config, device: torch.device) -> dict:
     model.load_state_dict(
         torch.load(cfg.model_save_path, map_location=device, weights_only=True)
     )
-    test_mask_hist = (
-        _merge_histories(train_hist, val_gt)
-        if getattr(cfg, "mask_val_in_test", True)
-        else train_hist
-    )
     test_res = evaluate(
-        model, test_gt, test_mask_hist, device,
+        model, test_gt, train_hist, device,
         k=cfg.eval_k, batch_size=cfg.eval_batch_size,
     )
     log.info("─" * 55)
@@ -253,11 +223,10 @@ def evaluate_ragark(cfg: Config, device: torch.device, ckpt_path: str) -> dict:
     """
     set_seed(cfg.seed)
     df, _user_enc, _, asin_to_idx, n_users, n_items = load_interactions(cfg.interaction_path)
-    train_df, val_df, test_df = user_stratified_split(
+    train_df, _val_df, test_df = user_stratified_split(
         df, val_ratio=0.15, test_ratio=0.15, seed=cfg.seed
     )
     train_hist = train_df.groupby("user_idx")["item_idx"].apply(set).to_dict()
-    val_gt = val_df.groupby("user_idx")["item_idx"].apply(list).to_dict()
     test_gt = test_df.groupby("user_idx")["item_idx"].apply(list).to_dict()
 
     adj = build_lightgcn_adj(train_df, n_users, n_items, device)
@@ -279,13 +248,8 @@ def evaluate_ragark(cfg: Config, device: torch.device, ckpt_path: str) -> dict:
         torch.load(ckpt_path, map_location=device, weights_only=True)
     )
     log.info("Reusing cached checkpoint %s → TEST evaluation (no training)", ckpt_path)
-    test_mask_hist = (
-        _merge_histories(train_hist, val_gt)
-        if getattr(cfg, "mask_val_in_test", True)
-        else train_hist
-    )
     return evaluate(
-        model, test_gt, test_mask_hist, device,
+        model, test_gt, train_hist, device,
         k=cfg.eval_k, batch_size=cfg.eval_batch_size,
     )
 
