@@ -218,12 +218,10 @@ class KnowledgeAwareSampler:
         num_items: int,
         kg_adj: Dict[int, List],
         kg_rev_adj: Dict[str, List],
-        user_pos_items: Dict[int, Set[int]] | None = None,
     ) -> None:
         self.num_items = num_items
         self.kg_adj = kg_adj
         self.kg_rev_adj = kg_rev_adj
-        self.user_pos_items = user_pos_items or {}
 
     def get_kg_neighbor(self, item_idx: int) -> Tuple[int, bool]:
         aspects = self.kg_adj.get(item_idx, [])
@@ -238,23 +236,8 @@ class KnowledgeAwareSampler:
                 return neighbor, True
         return item_idx, False
 
-    def random_negative(self, user_idx: int) -> int:
-        positives = self.user_pos_items.get(int(user_idx), set())
-        if len(positives) >= self.num_items:
-            raise ValueError(f"user {user_idx} has no available negative items")
-
-        for _ in range(100):
-            item = int(np.random.randint(0, self.num_items))
-            if item not in positives:
-                return item
-
-        # Dense-user fallback: deterministic scan avoids an infinite loop.
-        start = int(np.random.randint(0, self.num_items))
-        for offset in range(self.num_items):
-            item = (start + offset) % self.num_items
-            if item not in positives:
-                return item
-        raise ValueError(f"user {user_idx} has no available negative items")
+    def random_negative(self) -> int:
+        return int(np.random.randint(0, self.num_items))
 
 
 class RecDataset(Dataset):
@@ -278,7 +261,7 @@ class RecDataset(Dataset):
     def __getitem__(self, idx: int):
         user = self.users[idx]
         pos_item = self.items[idx]
-        neg_item = self.sampler.random_negative(user.item())
+        neg_item = self.sampler.random_negative()
         neighbor, _ = self.sampler.get_kg_neighbor(pos_item.item())
         return user, pos_item, torch.tensor(neg_item), torch.tensor(neighbor)
 
