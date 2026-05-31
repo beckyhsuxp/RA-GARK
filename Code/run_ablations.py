@@ -165,6 +165,16 @@ ALL_PRESETS = {
         "kg_aspect_learning_rate": 1e-3,
         "use_user_aware_negatives": False,
     },
+    "winner_clean_negs_only": {
+        "mask_val_in_test": False,
+        "kg_aspect_learning_rate": 1e-3,
+        "use_user_aware_negatives": True,
+    },
+    "winner_kg_lr_only": {
+        "mask_val_in_test": False,
+        "kg_aspect_learning_rate": 5e-4,
+        "use_user_aware_negatives": False,
+    },
 }
 
 MODES = {
@@ -222,6 +232,8 @@ MODES = {
         "winner_kg_lr_1e-3",
         "winner_global_negs",
         "winner_pre_patch_protocol",
+        "winner_clean_negs_only",
+        "winner_kg_lr_only",
         "lightgcn_only",
     ],
     "full": list(ALL_PRESETS.keys()),
