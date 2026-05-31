@@ -111,6 +111,8 @@ def make_cfg(**overrides) -> Config:
     tag_bits.append(f"t{cfg.rationale_temperature:.2f}")
     tag_bits.append(f"fb{cfg.fusion_init_bias:.0f}")
     tag_bits.append(f"gate-{cfg.fusion_gate_style}")
+    tag_bits.append(f"kglr{cfg.kg_aspect_learning_rate:g}")
+    tag_bits.append(f"maskv{int(cfg.mask_val_in_test)}")
     cfg.model_save_path = f"best_ragark_{'_'.join(tag_bits)}.pth"
     return cfg
 
@@ -299,6 +301,8 @@ def main():
         row["num_aspects"] = cfg.num_aspects
         row["cl_weight"] = cfg.cl_weight
         row["fusion_init_bias"] = cfg.fusion_init_bias
+        row["kg_aspect_learning_rate"] = cfg.kg_aspect_learning_rate
+        row["mask_val_in_test"] = int(cfg.mask_val_in_test)
         for m in ("HR", "Precision", "Recall", "F1", "MAP", "NDCG"):
             row[m] = f"{test_res.get(m, float('nan')):.4f}" if test_res else "NaN"
         results.append(row)
