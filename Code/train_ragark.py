@@ -88,7 +88,10 @@ def train_ragark(cfg: Config, device: torch.device) -> dict:
     val_gt = val_df.groupby("user_idx")["item_idx"].apply(list).to_dict()
     test_gt = test_df.groupby("user_idx")["item_idx"].apply(list).to_dict()
 
-    sampler = KnowledgeAwareSampler(n_items, kg_adj, kg_rev_adj, train_hist)
+    sampler_train_hist = (
+        train_hist if getattr(cfg, "use_user_aware_negatives", True) else None
+    )
+    sampler = KnowledgeAwareSampler(n_items, kg_adj, kg_rev_adj, sampler_train_hist)
     dataset = RecDataset(train_df["user_idx"], train_df["item_idx"], sampler)
     loader = DataLoader(dataset, batch_size=cfg.batch_size, shuffle=True, num_workers=0)
 
@@ -108,11 +111,12 @@ def train_ragark(cfg: Config, device: torch.device) -> dict:
         fusion_gate_style=cfg.fusion_gate_style,
     ).to(device)
     log.info(
-        "flags: rat=%s(%s, τ=%.2f) svd=%s acl=%s ucl=%s global=%s fusion_bias=%.1f gate=%s mask_val_test=%s",
+        "flags: rat=%s(%s, τ=%.2f) svd=%s acl=%s ucl=%s global=%s fusion_bias=%.1f gate=%s mask_val_test=%s user_aware_neg=%s",
         cfg.use_rationale, cfg.rationale_style, cfg.rationale_temperature,
         cfg.use_svd_init, cfg.use_acl, cfg.use_ucl,
         cfg.use_global_view, cfg.fusion_init_bias, cfg.fusion_gate_style,
         getattr(cfg, "mask_val_in_test", True),
+        getattr(cfg, "use_user_aware_negatives", True),
     )
 
     if cfg.use_svd_init:
