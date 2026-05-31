@@ -1,0 +1,7 @@
+preset,elapsed_s,reused,use_rationale,use_svd_init,use_acl,use_ucl,use_global_view,rationale_style,rationale_temperature,fusion_gate_style,num_aspects,cl_weight,fusion_init_bias,kg_aspect_learning_rate,mask_val_in_test,use_user_aware_negatives,HR,Precision,Recall,F1,MAP,NDCG
+winner,108,0,1,1,1,1,1,mlp_softmax,0.5,mlp,4,0.005,5.0,0.0005,1,1,0.5127,0.0367,0.2048,0.0602,0.0605,0.1264
+winner_mask_train_only,98,0,1,1,1,1,1,mlp_softmax,0.5,mlp,4,0.005,5.0,0.0005,0,1,0.5028,0.0350,0.1981,0.0576,0.0568,0.1203
+winner_kg_lr_1e-3,101,0,1,1,1,1,1,mlp_softmax,0.5,mlp,4,0.005,5.0,0.001,1,1,0.5094,0.0360,0.2011,0.0592,0.0593,0.1246
+winner_global_negs,103,0,1,1,1,1,1,mlp_softmax,0.5,mlp,4,0.005,5.0,0.0005,1,0,0.5050,0.0365,0.2041,0.0599,0.0595,0.1252
+winner_pre_patch_protocol,111,0,1,1,1,1,1,mlp_softmax,0.5,mlp,4,0.005,5.0,0.001,0,0,0.4983,0.0355,0.2009,0.0585,0.0576,0.1223
+lightgcn_only,54,0,0,1,0,0,0,mlp_softmax,0.5,mlp,4,0.005,5.0,0.0005,1,1,0.5017,0.0361,0.2009,0.0593,0.0614,0.1267
