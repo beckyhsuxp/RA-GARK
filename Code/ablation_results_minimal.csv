@@ -1,5 +1,0 @@
-preset,elapsed_s,reused,use_rationale,use_svd_init,use_acl,use_ucl,use_global_view,rationale_style,rationale_temperature,fusion_gate_style,num_aspects,cl_weight,fusion_init_bias,kg_aspect_learning_rate,mask_val_in_test,HR,Precision,Recall,F1,MAP,NDCG
-winner,110,0,1,1,1,1,1,mlp_softmax,0.5,mlp,4,0.005,5.0,0.0005,1,0.5105,0.0371,0.2063,0.0608,0.0613,0.1276
-winner_sigmoid_rat,107,0,1,1,1,1,1,mlp_sigmoid,0.5,mlp,4,0.005,5.0,0.0005,1,0.5149,0.0362,0.2018,0.0595,0.0599,0.1248
-winner_no_svd,77,0,1,0,1,1,1,mlp_softmax,0.5,mlp,4,0.005,5.0,0.0005,1,0.4983,0.0365,0.2017,0.0598,0.0613,0.1264
-winner_fb0,116,0,1,1,1,1,1,mlp_softmax,0.5,mlp,4,0.005,0.0,0.0005,1,0.5171,0.0371,0.2078,0.0610,0.0598,0.1268
