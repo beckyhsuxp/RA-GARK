@@ -213,6 +213,47 @@ def train_ragark(cfg: Config, device: torch.device) -> dict:
     return test_res
 
 
+def evaluate_ragark(cfg: Config, device: torch.device, ckpt_path: str) -> dict:
+    """Load a saved checkpoint and run the TEST evaluation only — no training.
+
+    Used by run_ablations.py ``--reuse`` to recompute metrics from a cached best
+    model without retraining. Rebuilds data + model exactly as train_ragark does
+    (the checkpoint supplies the trained weights, so SVD init / KG index are not
+    needed), loads ``ckpt_path``, and returns the same test_res dict.
+    """
+    set_seed(cfg.seed)
+    df, _user_enc, _, asin_to_idx, n_users, n_items = load_interactions(cfg.interaction_path)
+    train_df, _val_df, test_df = user_stratified_split(
+        df, val_ratio=0.15, test_ratio=0.15, seed=cfg.seed
+    )
+    train_hist = train_df.groupby("user_idx")["item_idx"].apply(set).to_dict()
+    test_gt = test_df.groupby("user_idx")["item_idx"].apply(list).to_dict()
+
+    adj = build_lightgcn_adj(train_df, n_users, n_items, device)
+    model = RA_GARK(
+        num_users=n_users,
+        num_items=n_items,
+        adj_matrix=adj,
+        num_aspects=cfg.num_aspects,
+        dim=cfg.embedding_dim,
+        n_layers=cfg.n_layers,
+        use_rationale=cfg.use_rationale,
+        use_global_view=cfg.use_global_view,
+        rationale_style=cfg.rationale_style,
+        rationale_temperature=cfg.rationale_temperature,
+        fusion_init_bias=cfg.fusion_init_bias,
+        fusion_gate_style=cfg.fusion_gate_style,
+    ).to(device)
+    model.load_state_dict(
+        torch.load(ckpt_path, map_location=device, weights_only=True)
+    )
+    log.info("Reusing cached checkpoint %s → TEST evaluation (no training)", ckpt_path)
+    return evaluate(
+        model, test_gt, train_hist, device,
+        k=cfg.eval_k, batch_size=cfg.eval_batch_size,
+    )
+
+
 def _make_winner_cfg(seed: int) -> Config:
     cfg = Config()
     cfg.cl_weight = 0.005

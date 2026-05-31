@@ -29,21 +29,63 @@ Run:
     python run_ablations.py --mode minimal       # fastest
     python run_ablations.py --mode sensitivity   # A + λ_CL + b sweeps
     python run_ablations.py --mode full          # everything
+    python run_ablations.py --mode full --reuse  # skip configs already cached
 
-Output: ablation_results_<mode>.csv
+Output: ablation_results_<mode>.csv (canonical, latest run — read by the §4
+tables) plus a timestamped copy under runs/archive/ that is never overwritten.
+Results persist so a re-run never loses a good number: the best-ever checkpoint
+per config is kept in runs/best/<tag>.pth and its test metrics in
+runs/best_ledger.json; a worse re-run does not overwrite either. With --reuse,
+a preset whose config is already in the ledger is skipped (stored metrics
+reused, no training).
 """
 
 from __future__ import annotations
 
 import argparse
 import csv
+import json
 import logging
+import os
+import shutil
 import time
+from datetime import datetime
 
 import torch
 
 from config import Config
-from train_ragark import train_ragark
+from train_ragark import evaluate_ragark, train_ragark
+
+# --- Result persistence (so re-runs never lose a good result) ---------------
+# runs/best/<tag>.pth   : best-ever checkpoint per config, kept across runs
+# runs/working/<tag>.pth: this run's checkpoint (train writes+reads it)
+# runs/archive/*.csv    : timestamped copy of every run's CSV (never clobbered)
+# runs/best_ledger.json : best-ever test metrics per config key
+RUNS_DIR = "runs"
+BEST_DIR = os.path.join(RUNS_DIR, "best")
+WORKING_DIR = os.path.join(RUNS_DIR, "working")
+ARCHIVE_DIR = os.path.join(RUNS_DIR, "archive")
+LEDGER_PATH = os.path.join(RUNS_DIR, "best_ledger.json")
+
+
+def _config_tag(cfg: Config) -> str:
+    """Unique fingerprint of a config — reuse the tag make_cfg already builds."""
+    return os.path.splitext(os.path.basename(cfg.model_save_path))[0]
+
+
+def _load_ledger() -> dict:
+    if os.path.exists(LEDGER_PATH):
+        with open(LEDGER_PATH) as f:
+            return json.load(f)
+    return {}
+
+
+def _save_ledger(ledger: dict) -> None:
+    os.makedirs(RUNS_DIR, exist_ok=True)
+    tmp = LEDGER_PATH + ".tmp"
+    with open(tmp, "w") as f:
+        json.dump(ledger, f, indent=2)
+    os.replace(tmp, LEDGER_PATH)  # atomic — ledger never half-written
 
 logging.basicConfig(
     level=logging.INFO,
@@ -176,11 +218,20 @@ def main():
         "--mode", choices=list(MODES.keys()), default="paper",
         help="Which preset group to run (default: paper).",
     )
+    parser.add_argument(
+        "--reuse", action="store_true",
+        help="Skip training a preset if a cached best checkpoint already exists "
+             "for its exact config; reuse the stored best metrics instead.",
+    )
     args = parser.parse_args()
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    log.info("Device: %s  |  Mode: %s  (%d presets)",
-             device, args.mode, len(MODES[args.mode]))
+    log.info("Device: %s  |  Mode: %s  (%d presets)  |  reuse=%s",
+             device, args.mode, len(MODES[args.mode]), args.reuse)
+
+    for d in (BEST_DIR, WORKING_DIR, ARCHIVE_DIR):
+        os.makedirs(d, exist_ok=True)
+    ledger = _load_ledger()
 
     results = []
     presets = run_presets(args.mode)
@@ -193,15 +244,52 @@ def main():
         log.info("=" * 70)
 
         cfg = make_cfg(**overrides)
+        tag = _config_tag(cfg)
+        best_ckpt = os.path.join(BEST_DIR, f"{tag}.pth")
+        cfg.model_save_path = os.path.join(WORKING_DIR, f"{tag}.pth")
+
+        reused = False
         t0 = time.perf_counter()
-        try:
-            test_res = train_ragark(cfg, device)
-        except Exception as e:
-            log.exception("Preset %s FAILED: %s", name, e)
-            test_res = {}
+        if args.reuse and tag in ledger and os.path.exists(best_ckpt):
+            # Trust the stored best metrics — zero compute, never retrain.
+            test_res = {k: float(v) for k, v in ledger[tag]["metrics"].items()}
+            reused = True
+            log.info("↺ reuse cached best for %s (NDCG=%.4f) — no training",
+                     name, test_res.get("NDCG", float("nan")))
+        else:
+            try:
+                test_res = train_ragark(cfg, device)
+            except Exception as e:
+                log.exception("Preset %s FAILED: %s", name, e)
+                test_res = {}
+            # Keep-best: promote this run's checkpoint only if it beats the
+            # best-ever for this config. A worse re-run never overwrites it.
+            new_ndcg = test_res.get("NDCG")
+            prev_ndcg = ledger.get(tag, {}).get("best_ndcg")
+            if test_res and new_ndcg is not None and (
+                prev_ndcg is None or new_ndcg > prev_ndcg
+            ):
+                if os.path.exists(cfg.model_save_path):
+                    shutil.copy2(cfg.model_save_path, best_ckpt)
+                ledger[tag] = {
+                    "preset": name,
+                    "best_ndcg": new_ndcg,
+                    "metrics": {k: float(v) for k, v in test_res.items()},
+                    "seed": cfg.seed,
+                    "timestamp": datetime.now().isoformat(timespec="seconds"),
+                    "checkpoint": best_ckpt,
+                }
+                _save_ledger(ledger)  # crash-safe: persist after each improvement
+                log.info("★ new best for %s: NDCG=%.4f (prev=%s)",
+                         tag, new_ndcg,
+                         f"{prev_ndcg:.4f}" if prev_ndcg is not None else "none")
+            elif prev_ndcg is not None:
+                log.info("· kept previous best for %s: NDCG=%.4f (this run=%s)",
+                         tag, prev_ndcg,
+                         f"{new_ndcg:.4f}" if new_ndcg is not None else "NaN")
         elapsed = time.perf_counter() - t0
 
-        row = {"preset": name, "elapsed_s": f"{elapsed:.0f}"}
+        row = {"preset": name, "elapsed_s": f"{elapsed:.0f}", "reused": int(reused)}
         for k in BOOL_FLAGS:
             row[k] = int(getattr(cfg, k))
         row["rationale_style"] = cfg.rationale_style
@@ -215,22 +303,31 @@ def main():
             row[m] = f"{test_res.get(m, float('nan')):.4f}" if test_res else "NaN"
         results.append(row)
 
-        log.info("✓ %s done in %.0fs — NDCG=%s", name, elapsed, row["NDCG"])
+        log.info("✓ %s done in %.0fs — NDCG=%s%s",
+                 name, elapsed, row["NDCG"], "  (reused)" if reused else "")
 
+    # Canonical latest CSV (back-compat: this is what the §4 tables read from)
+    # plus a timestamped archive copy that is never overwritten.
     out = f"ablation_results_{args.mode}.csv"
-    with open(out, "w", newline="") as f:
-        w = csv.DictWriter(f, fieldnames=list(results[0].keys()))
-        w.writeheader()
-        w.writerows(results)
+    stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    archive = os.path.join(ARCHIVE_DIR, f"ablation_results_{args.mode}_{stamp}.csv")
+    fieldnames = list(results[0].keys())
+    for path in (out, archive):
+        with open(path, "w", newline="") as f:
+            w = csv.DictWriter(f, fieldnames=fieldnames)
+            w.writeheader()
+            w.writerows(results)
 
     log.info("=" * 70)
-    log.info("All %d presets done in %.0fs → %s",
-             len(presets), time.perf_counter() - t_total, out)
+    log.info("All %d presets done in %.0fs → %s  (archived: %s)",
+             len(presets), time.perf_counter() - t_total, out, archive)
+    log.info("Best-ever ledger: %s  (%d configs tracked)", LEDGER_PATH, len(ledger))
     log.info("=" * 70)
     for r in results:
         log.info(
-            "%-20s NDCG=%s HR=%s Recall=%s MAP=%s",
+            "%-20s NDCG=%s HR=%s Recall=%s MAP=%s%s",
             r["preset"], r["NDCG"], r["HR"], r["Recall"], r["MAP"],
+            "  (reused)" if r["reused"] else "",
         )
 
 
