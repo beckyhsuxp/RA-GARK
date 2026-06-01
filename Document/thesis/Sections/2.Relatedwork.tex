@@ -48,7 +48,7 @@ RA-GARK's premise is weaker. We do not assume that the KG, taken as a whole, is 
 
 Table~\ref{tab:rw-kgrec-vs-ragark} consolidates these four axes side by side.
 
-\begin{table}[ht]
+\begin{table}[!tbp]
 \centering
 \caption{Rationale-paradigm comparison: KGRec vs.\ RA-GARK along the four design axes.}
 \label{tab:rw-kgrec-vs-ragark}
@@ -82,7 +82,7 @@ A further line of work, contrastive dual-view recommenders such as SGL~\cite{wu2
 
 Despite the maturity of gating in deep learning, no method in the KG-aware recommendation literature we surveyed employs a fusion gate as the integration mechanism between collaborative and KG signals. Table~\ref{tab:rw-gating-gap} summarizes the integration mechanisms used by the four benchmarked baselines and three additional well-known KG-aware methods (CKAN~\cite{wang2020ckan}, MKR~\cite{wang2019mkr}, KGIN~\cite{wang2021kgin}). Across this set, KG signals are integrated via direct entity propagation, contrastive alignment, edge-level dropout, attention, cross-feature units, or intent-disentanglement modules. None of these mechanisms allows the KG channel to be \emph{architecturally disengaged} when its signal is unreliable.
 
-\begin{table}[ht]
+\begin{table}[!tbp]
 \centering
 \caption[Integration mechanisms used by representative KG-aware recommenders.]{Integration mechanisms used by representative KG-aware recommenders. None provide architectural graceful degradation under unreliable KG.}
 \label{tab:rw-gating-gap}
@@ -117,7 +117,7 @@ In Chapter~\ref{ch:evaluation} we report a single-dataset observation that, for 
 
 Table~\ref{tab:rw-summary} consolidates the comparison along four design axes. Among the methods evaluated on our sparse benchmark, RA-GARK is the only one that combines a pure-LightGCN local aggregator with a gated late-fusion of the KG signal, and the only one whose rationale operates at the item-aspect granularity rather than the KG-edge granularity.
 
-\begin{table}[ht]
+\begin{table}[!tbp]
 \centering
 \caption[Design comparison along four axes.]{Design comparison along four axes. NDCG@20 is reported on our sparse review-derived KG benchmark.}
 \label{tab:rw-summary}
