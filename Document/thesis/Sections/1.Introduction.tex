@@ -57,6 +57,8 @@ RQ1 is addressed in Chapters~\ref{ch:relatedwork} and~\ref{ch:experiments}, wher
 
 The thesis statement of this work is that the KG should not be a mandatory component of the scoring pipeline, as it effectively is in KGAT-style deep fusion, but should instead be a side channel that can be \emph{explicitly gated} based on whether its signal is helpful. Concretely, this idea is realized by three design choices: a softmax aspect-saliency attention that selects KG rationales per user--item pair; a KG-driven SVD initialization that preserves semantic geometry; and a local-biased fusion gate whose initialization implements graceful degradation to pure LightGCN when the KG turns out to be uninformative.
 
+The remainder of this thesis is organized as follows. Chapter~\ref{ch:relatedwork} reviews related work along four axes: graph collaborative filtering, KG-aware recommendation, gating mechanisms in deep learning, and attention normalization. Chapter~\ref{ch:methodology} presents the RA-GARK architecture in full: it states the design principle, fixes notation and the problem formulation, and develops each module, the LightGCN local view, the global KG view with its two innovations (KG-SVD initialization and softmax aspect-saliency attention), the local-biased fusion gate, and the cross-view contrastive regularization, together with the training procedure and computational complexity. Chapter~\ref{ch:experiments} reports experimental results, ablations, sensitivity analyses, stability of results, and a case study. Chapter~\ref{ch:conclusion} discusses the methodological insight on attention normalization, acknowledges the limitations of single-dataset validation, and outlines future work.
+
 \section{Contributions}
 \label{sec:intro-contributions}
 
@@ -76,8 +78,3 @@ This thesis makes the following contributions:
 
   \item \textbf{A methodological observation} regarding attention normalization in rationale-aware design. The unusually large effect of softmax versus sigmoid in our setting suggests that the choice of normalization should be aligned with the semantic assumption of the rationale. We discuss this as a single-dataset hypothesis rather than a general claim, pending replication on additional benchmarks (Chapter~\ref{ch:conclusion}).
 \end{enumerate}
-
-\section{Thesis Organization}
-\label{sec:intro-organization}
-
-The remainder of this thesis is organized as follows. Chapter~\ref{ch:relatedwork} reviews related work along four axes: graph collaborative filtering, KG-aware recommendation, gating mechanisms in deep learning, and attention normalization. Chapter~\ref{ch:methodology} presents the RA-GARK architecture in full: it states the design principle, fixes notation and the problem formulation, and develops each module, the LightGCN local view, the global KG view with its two innovations (KG-SVD initialization and softmax aspect-saliency attention), the local-biased fusion gate, and the cross-view contrastive regularization, together with the training procedure and computational complexity. Chapter~\ref{ch:experiments} reports experimental results, ablations, sensitivity analyses, stability of results, and a case study. Chapter~\ref{ch:conclusion} discusses the methodological insight on attention normalization, acknowledges the limitations of single-dataset validation, and outlines future work.
