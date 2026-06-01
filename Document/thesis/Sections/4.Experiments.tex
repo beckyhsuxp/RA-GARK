@@ -14,7 +14,7 @@ Our experiments use a subset of the Amazon Books review corpus, processed into a
 
 \begin{table}[!htbp]
 \centering
-\caption{Dataset statistics after preprocessing.}
+\caption{Dataset statistics.}
 \label{tab:dataset-stats}
 \begin{tabular}{lr}
 \toprule
@@ -67,7 +67,7 @@ RA-GARK's hyperparameters are summarized in Table~\ref{tab:hparams}. The values 
 
 \begin{table}[!htbp]
 \centering
-\caption{RA-GARK hyperparameter settings used in all reported experiments.}
+\caption{RA-GARK hyperparameters.}
 \label{tab:hparams}
 \begin{tabular}{ll}
 \toprule
@@ -103,7 +103,7 @@ Table~\ref{tab:main} reports the main test-set results. RA-GARK attains NDCG@$20
 
 \begin{table}[!htbp]
 \centering
-\caption{Main test results (full-ranking, $K = 20$, seed = 42).}
+\caption{Main results.}
 \label{tab:main}
 \begin{tabular}{lcccc}
 \toprule
@@ -132,11 +132,11 @@ Two readings of this table are worth separating. The first, $+13.4\%$ over KGRec
 \label{sec:ablation-softmax}
 \label{sec:ablation-gate}
 
-We measure each of the three headline design choices, KG-SVD initialization (Section~\ref{sec:kgsvd}), softmax rationale masking (Section~\ref{sec:softmax}), and local-biased fusion gate (Section~\ref{sec:gate}), by individually reverting it and retraining from scratch with all other settings held fixed. We additionally include three diagnostic rows: removing the global view entirely (CL-only dual view), replacing the per-(user, item) gate with a single learnable scalar $\alpha$, and dropping each contrastive channel individually. Pure LightGCN is reproduced as the no-KG floor. All rows use seed $= 42$.
+We measure each of the three headline design choices, KG-SVD initialization (Section~\ref{sec:kgsvd}), softmax rationale masking (Section~\ref{sec:softmax}), and local-biased fusion gate (Section~\ref{sec:gate}), by individually reverting it and retraining from scratch with all other settings held fixed. We additionally include three diagnostic rows: removing the global view entirely (CL-only dual view), replacing the per-(user, item) gate with a single learnable scalar $\alpha$, and dropping each contrastive channel individually. Pure LightGCN is reproduced as the no-KG floor. All rows use seed $= 42$, and $\Delta$ denotes the relative NDCG@20 change against the full model.
 
 \begin{table}[!htbp]
 \centering
-\caption[Ablation: each row flips one component of RA-GARK and retrains.]{Ablation: each row flips one component of RA-GARK and retrains. $\Delta$ is relative NDCG@20 change vs full model.}
+\caption{Ablation results.}
 \label{tab:ablation}
 \begin{tabular}{lcc l}
 \toprule
@@ -182,7 +182,7 @@ Table~\ref{tab:sens-tau} reports NDCG@$20$ across $\tau \in \{0.05, 0.1, 0.5\}$.
 
 \begin{table}[!htbp]
 \centering
-\caption{Sensitivity to softmax temperature $\tau$.}
+\caption{Softmax temperature.}
 \label{tab:sens-tau}
 \begin{tabular}{lc}
 \toprule
@@ -203,7 +203,7 @@ We sweep $A \in \{2, 4, 8\}$, keeping the SVD-rank $k = A \cdot d$ scaled accord
 
 \begin{table}[!htbp]
 \centering
-\caption{Sensitivity to the number of aspect slots $A$.}
+\caption{Number of aspect slots.}
 \label{tab:sens-A}
 \begin{tabular}{lc}
 \toprule
@@ -224,7 +224,7 @@ The bias sweep is the most informative of the four. Table~\ref{tab:sens-bias} sh
 
 \begin{table}[!htbp]
 \centering
-\caption{Sensitivity to fusion-gate bias $b$.}
+\caption{Fusion-gate bias.}
 \label{tab:sens-bias}
 \begin{tabular}{lc}
 \toprule
@@ -246,7 +246,7 @@ We sweep $\lambda_{\mathrm{CL}} \in \{0, 0.001, 0.005, 0.01, 0.05\}$. Table~\ref
 
 \begin{table}[!htbp]
 \centering
-\caption{Sensitivity to the contrastive weight $\lambda_{\mathrm{CL}}$.}
+\caption{Contrastive weight.}
 \label{tab:sens-lambda}
 \begin{tabular}{lc}
 \toprule
@@ -272,11 +272,11 @@ The dataset is small ($905$ users, $1{,}399$ items), so the dominant source of t
 \section{Case Study}
 \label{sec:eval-case}
 
-To inspect what the rationale module actually learns, we sampled five popular items (each with $\geq 3$ KG aspect edges) from the training set and printed the softmax aspect weights $w_{u,i,k}$ produced by the trained model for three users who interacted with each item. Table~\ref{tab:case} summarizes the result.
+To inspect what the rationale module actually learns, we sampled five popular items (each with $\geq 3$ KG aspect edges) from the training set and printed the softmax aspect weights $w_{u,i,k}$ produced by the trained model for three users who interacted with each item. Table~\ref{tab:case} summarizes the result; bold entries mark the argmax slot.
 
 \begin{table}[!htbp]
 \centering
-\caption[Softmax aspect weights $w_{u,i,k}$ on five sampled items.]{Softmax aspect weights $w_{u,i,k}$ from the trained rationale module on five sampled items. Bold marks the argmax slot. Across users of the same item the weights are essentially identical; across items the argmax slot varies.}
+\caption{Softmax aspect weights.}
 \label{tab:case}
 \small
 \begin{tabular}{l l c c c c c}
