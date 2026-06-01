@@ -53,6 +53,8 @@ The empirical anomaly and the practical importance of the sparse-KG setting moti
   \item \textbf{(RQ2, prescription)} What design principle allows a model to exploit the KG when its signal is informative, while preventing KG noise from contaminating collaborative filtering when it is not?
 \end{itemize}
 
+RQ1 is addressed in Chapters~\ref{ch:relatedwork} and~\ref{ch:experiments}, where we identify the shared failure mode as mandatory KG fusion under sparse and unreliable KG. RQ2 is developed in Chapter~\ref{ch:methodology} and validated empirically in Chapter~\ref{ch:experiments}, where we show that a gateable side-channel design can use KG signal when helpful and fall back to pure LightGCN when it is not.
+
 The thesis statement of this work is that the KG should not be a mandatory component of the scoring pipeline, as it effectively is in KGAT-style deep fusion, but should instead be a side channel that can be \emph{explicitly gated} based on whether its signal is helpful. Concretely, this idea is realized by three design choices: a softmax aspect-saliency attention that selects KG rationales per user--item pair; a KG-driven SVD initialization that preserves semantic geometry; and a local-biased fusion gate whose initialization implements graceful degradation to pure LightGCN when the KG turns out to be uninformative.
 
 \section{Contributions}
