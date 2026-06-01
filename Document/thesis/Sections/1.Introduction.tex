@@ -13,7 +13,7 @@ A complementary line of research, knowledge-graph-aware recommendation, augments
 
 Our investigation begins with an empirical observation that motivates the rest of this thesis. On the review-derived KG dataset used throughout this work, an Amazon Books subset with on average $2.4$ aspect edges per item after filtering, all four representative KG-aware methods listed above are outperformed by pure LightGCN that does not consult the KG at all. Table~\ref{tab:intro-baseline} summarizes the gap.
 
-\begin{table}[!tbp]
+\begin{table}[!htbp]
 \centering
 \caption[NDCG@20 of representative KG-aware methods vs.\ pure LightGCN.]{NDCG@20 of representative KG-aware methods on our sparse review-derived KG, contrasted with pure LightGCN. All four KG-aware methods underperform the no-KG baseline.}
 \label{tab:intro-baseline}
@@ -30,6 +30,7 @@ Pure LightGCN~\cite{he2020lightgcn} (no KG) & \textbf{0.1179} \\
 \bottomrule
 \end{tabular}
 \end{table}
+\FloatBarrier
 
 This is not a claim that the four baselines are flawed, each performs strongly on the dense KG datasets reported in their original papers. Rather, the observation suggests a failure mode shared by deep KG--CF coupling: when the KG is too sparse or noisy to provide reliable item semantics, fusing it directly into the scoring path drags KG noise into the gradient flow that would otherwise produce a clean collaborative signal.
 

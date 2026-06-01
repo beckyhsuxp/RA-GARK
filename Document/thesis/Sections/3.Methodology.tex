@@ -53,7 +53,7 @@ Two design properties are worth highlighting before the formal presentation. Fir
 
 Throughout the remainder of the thesis we use the symbols listed in Table~\ref{tab:notation}.
 
-\begin{table}[!tbp]
+\begin{table}[!htbp]
 \centering
 \caption{Notation used in this and subsequent chapters.}
 \label{tab:notation}
@@ -77,6 +77,7 @@ $\hat{y}(u, i) \in \mathbb{R}$         & predicted preference score for pair $(u
 \bottomrule
 \end{tabular}
 \end{table}
+\FloatBarrier
 
 \section{Problem Formulation}
 \label{sec:approach-problem}
@@ -457,7 +458,7 @@ At inference time, we compute the LightGCN propagation once at the start of eval
 
 Let $B$ denote the batch size, $|\mathcal{E}_{\mathcal{U}\mathcal{I}}|$ the number of observed user--item interactions, $|\mathcal{I}|$ the number of items, $A$ the number of slots, $d$ the embedding dimension, and $K$ the number of LightGCN layers. The per-batch training cost decomposes as:
 
-\begin{table}[!tbp]
+\begin{table}[!htbp]
 \centering
 \caption{Per-batch training cost of each module.}
 \label{tab:complexity}
@@ -474,6 +475,7 @@ BPR + contrastive losses   & $O(B\, d)$ \\
 \bottomrule
 \end{tabular}
 \end{table}
+\FloatBarrier
 
 The LightGCN propagation term dominates training cost, exactly as in the pure-LightGCN baseline. The KG-side additions (aspect read, rationale masking, fusion gate) contribute terms linear in $A$ and $d$, all small relative to the propagation. RA-GARK's per-epoch wall-clock time is therefore within a small constant factor of pure LightGCN and approximately equal to KGRec at the same embedding dimension on the same hardware (we report exact wall-clock numbers in Section~\ref{sec:eval-cost}).
 

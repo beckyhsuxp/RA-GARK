@@ -13,7 +13,7 @@
 
 本研究的起點是一個促使整篇論文展開的經驗觀察。在本研究所使用的、由評論衍生而來的 KG 資料集（Amazon Books 子集，經篩選後每件物品平均僅有 $2.4$ 條 aspect 邊）上，前述四種具代表性的 KG-aware 方法全部都被完全不參考 KG 的純 LightGCN 所超越。表~\ref{tab:intro-baseline-zh} 摘要呈現此一差距。
 
-\begin{table}[!tbp]
+\begin{table}[!htbp]
 \centering
 \caption[代表性 KG-aware 方法與純 LightGCN 之 NDCG@20 對照。]{在我們的稀疏評論型 KG 上，代表性 KG-aware 方法之 NDCG@20 表現，並與純 LightGCN 對照。四種 KG-aware 方法皆不及不使用 KG 的基線。}
 \label{tab:intro-baseline-zh}
@@ -30,6 +30,7 @@ KGRec~\cite{yang2023kgrec}     & 0.1095 \\
 \bottomrule
 \end{tabular}
 \end{table}
+\FloatBarrier
 
 我們並非主張上述四種基線本身有缺陷，它們在其原始論文所報告的稠密 KG 資料集上表現皆十分強勁。此觀察反映的，是深度 KG--CF 耦合所共同具有的一種失效模式：當 KG 過於稀疏或雜訊過多以致無法提供可靠的物品語意時，將其直接融入評分路徑會使 KG 雜訊污染本可產生純淨協同訊號的梯度流。
 
