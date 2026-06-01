@@ -12,7 +12,7 @@ This chapter evaluates RA-GARK on the sparse review-derived KG that motivated it
 
 Our experiments use a subset of the Amazon Books review corpus, processed into a user--item interaction graph and an item--aspect knowledge graph. Table~\ref{tab:dataset-stats} summarizes the post-filtering statistics. After removing low-engagement users and items and pruning rare aspect tags (see below), the working dataset contains $905$ users, $1{,}399$ items, $22{,}265$ positive interactions, and $3{,}370$ KG edges spread over $2{,}098$ unique aspect tags. The average item carries $2.4$ aspect edges, a level of sparsity at which all four KG-aware baselines we tested are outperformed by pure LightGCN (Chapter~\ref{ch:intro}).
 
-\begin{table}[ht]
+\begin{table}[!tbp]
 \centering
 \caption{Dataset statistics after preprocessing.}
 \label{tab:dataset-stats}
@@ -64,7 +64,7 @@ We report NDCG@$20$ as the primary metric and Recall@$20$, HR@$20$, and MAP@$20$
 
 RA-GARK's hyperparameters are summarized in Table~\ref{tab:hparams}. The values were not jointly tuned: the optimizer settings and embedding dimension follow the LightGCN default; the rationale temperature $\tau = 0.5$ and fusion-gate bias $b = +5$ are the design choices justified in Sections~\ref{sec:softmax-softmax} and~\ref{sec:gate-bias}; the number of aspect slots $A = 4$ is fixed by the design rationale of Section~\ref{sec:kgsvd-slots}; and the contrastive weight $\lambda_{\mathrm{CL}} = 0.005$ is the small auxiliary value justified in Section~\ref{sec:cl-lambda}.
 
-\begin{table}[ht]
+\begin{table}[!tbp]
 \centering
 \caption{RA-GARK hyperparameter settings used in all reported experiments.}
 \label{tab:hparams}
@@ -99,7 +99,7 @@ All experiments are run on a single NVIDIA RTX-class GPU with $24$\,GB of memory
 
 Table~\ref{tab:main} reports the main test-set results. RA-GARK attains NDCG@$20 = 0.1242$, improving on the strongest KG-aware baseline (KGRec) by $+13.4\%$ and on pure LightGCN by $+5.3\%$. The improvement is consistent across the secondary ranking metrics (HR@$20$, Recall@$20$, MAP@$20$); the largest relative gain over KGRec is $+18.6\%$ on MAP@$20$, indicating that the rank quality of correctly retrieved items is also better than the baselines'.
 
-\begin{table}[ht]
+\begin{table}[!tbp]
 \centering
 \caption{Main test results (full-ranking, $K = 20$, seed = 42).}
 \label{tab:main}
@@ -131,7 +131,7 @@ Two readings of this table are worth separating. The first, $+13.4\%$ over KGRec
 
 We measure each of the three headline design choices, KG-SVD initialization (Section~\ref{sec:kgsvd}), softmax rationale masking (Section~\ref{sec:softmax}), and local-biased fusion gate (Section~\ref{sec:gate}), by individually reverting it and retraining from scratch with all other settings held fixed. We additionally include three diagnostic rows: removing the global view entirely (CL-only dual view), replacing the per-(user, item) gate with a single learnable scalar $\alpha$, and dropping each contrastive channel individually. Pure LightGCN is reproduced as the no-KG floor. All rows use seed $= 42$.
 
-\begin{table}[ht]
+\begin{table}[!tbp]
 \centering
 \caption[Ablation: each row flips one component of RA-GARK and retrains.]{Ablation: each row flips one component of RA-GARK and retrains. $\Delta$ is relative NDCG@20 change vs full model.}
 \label{tab:ablation}
@@ -176,7 +176,7 @@ We probe RA-GARK's sensitivity along the four hyperparameter axes that a reader 
 
 Table~\ref{tab:sens-tau} reports NDCG@$20$ across $\tau \in \{0.05, 0.1, 0.5\}$. The default $\tau = 0.5$ remains the best setting, with a sweep-specific duplicate run at $0.1240$ and the main winner row at $0.1242$. Sharpening to $\tau = 0.1$ costs about $-1.0\%$ ($0.1229$) and to $\tau = 0.05$ costs about $-1.9\%$ ($0.1219$). The picture is consistent with the analysis in Section~\ref{sec:softmax-softmax}: at $\tau = 0.5$ the slot logits are amplified enough to produce discriminative weights without collapsing onto a single slot; pushing $\tau$ down toward $0.05$ drives the rationale toward an approximately one-hot selection, which on our softly-peaked weights (Section~\ref{sec:eval-case}) discards useful mass on the secondary slots and costs a small amount of NDCG@$20$. In the opposite direction, raising $\tau$ toward $1$ flattens the softmax toward a uniform item-wise mean over slots; we keep $\tau = 0.5$ as the value that balances these two regimes.
 
-\begin{table}[ht]
+\begin{table}[!tbp]
 \centering
 \caption{Sensitivity to softmax temperature $\tau$.}
 \label{tab:sens-tau}
@@ -196,7 +196,7 @@ $0.05$             & $0.1219$ \\
 
 We sweep $A \in \{2, 4, 8\}$, keeping the SVD-rank $k = A \cdot d$ scaled accordingly. Table~\ref{tab:sens-A} shows a clear interior optimum at the default $A = 4$ ($0.1242$): halving to $A = 2$ costs $-4.3\%$ ($0.1189$) and doubling to $A = 8$ costs $-5.1\%$ ($0.1179$, exactly the pure-LightGCN floor). The shape is intuitive on this dataset. With only $2.4$ aspect edges per item, $A = 2$ gives the rationale too few latent directions to separate the competing facets, while $A = 8$ spreads the same thin KG signal over twice as many slots, so each slot is estimated from too little co-occurrence evidence and the SVD-initialized geometry is correspondingly noisier; at $A = 8$ the KG channel adds no net value over CF. We adopt $A = 4$ as the measured optimum, which also keeps the rationale-masking cost $O(B \cdot A \cdot d)$ negligible relative to LightGCN propagation.
 
-\begin{table}[ht]
+\begin{table}[!tbp]
 \centering
 \caption{Sensitivity to the number of aspect slots $A$.}
 \label{tab:sens-A}
@@ -216,7 +216,7 @@ $8$                & $0.1179$ \\
 
 The bias sweep is the most informative of the four. Table~\ref{tab:sens-bias} shows NDCG@$20$ as $b$ is varied over $\{0, +2, +5, +10\}$. The default $b = +5$ is best. At $b = 0$ (no local bias) the model loses $4.5\%$ NDCG@$20$ ($0.1186$, matching the ablation table), and $b = +2$ recovers most of the gap ($0.1214$, $-2.3\%$). At $b = +10$ the gradient $\sigma'(b)$ becomes numerically small enough that the gate cannot adapt during training, and NDCG@$20$ falls to $0.1174$, slightly below even the $b = 0$ setting. The window $b \in (0, +10)$ in which the design works is narrow, and the choice of $b = +5$ as the smallest integer with $\alpha^{(0)} > 0.99$ and $\sigma'(b) > 10^{-3}$ (Section~\ref{sec:gate-bias-magnitude}) is empirically validated here.
 
-\begin{table}[ht]
+\begin{table}[!tbp]
 \centering
 \caption{Sensitivity to fusion-gate bias $b$.}
 \label{tab:sens-bias}
@@ -237,7 +237,7 @@ $+10$              & $0.1174$ \\
 
 We sweep $\lambda_{\mathrm{CL}} \in \{0, 0.001, 0.005, 0.01, 0.05\}$. Table~\ref{tab:sens-lambda} shows a sharp interior optimum at the default $\lambda_{\mathrm{CL}} = 0.005$ ($0.1242$). Turning the contrastive losses off entirely ($\lambda_{\mathrm{CL}} = 0$) costs $-4.9\%$ ($0.1181$), consistent with the combined effect of removing both contrastive channels in the ablation table ($-4.3\%$ user-side, $-3.1\%$ aspect-level). On the other side, over-weighting them degrades NDCG@$20$ almost as much, $-4.2\%$ at $\lambda_{\mathrm{CL}} = 0.01$ and $-4.7\%$ at $\lambda_{\mathrm{CL}} = 0.05$, as the contrastive gradient begins to compete with BPR for the embedding geometry. The optimum is narrow: only $\lambda_{\mathrm{CL}} = 0.001$ ($-1.4\%$) is close. We do not tune $\lambda_{\mathrm{CL}}$ per dataset; the value is fixed at $0.005$ across all experiments to keep contrastive regularization in the auxiliary role assigned to it by the design (Section~\ref{sec:cl-role}).
 
-\begin{table}[ht]
+\begin{table}[!tbp]
 \centering
 \caption{Sensitivity to the contrastive weight $\lambda_{\mathrm{CL}}$.}
 \label{tab:sens-lambda}
@@ -266,7 +266,7 @@ The dataset is small ($905$ users, $1{,}399$ items), so the dominant source of t
 
 To inspect what the rationale module actually learns, we sampled five popular items (each with $\geq 3$ KG aspect edges) from the training set and printed the softmax aspect weights $w_{u,i,k}$ produced by the trained model for three users who interacted with each item. Table~\ref{tab:case} summarizes the result.
 
-\begin{table}[ht]
+\begin{table}[!tbp]
 \centering
 \caption[Softmax aspect weights $w_{u,i,k}$ on five sampled items.]{Softmax aspect weights $w_{u,i,k}$ from the trained rationale module on five sampled items. Bold marks the argmax slot. Across users of the same item the weights are essentially identical; across items the argmax slot varies.}
 \label{tab:case}
