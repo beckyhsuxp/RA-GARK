@@ -48,7 +48,7 @@ RA-GARK's premise is weaker. We do not assume that the KG, taken as a whole, is 
 
 Table~\ref{tab:rw-kgrec-vs-ragark} consolidates these four axes side by side.
 
-\begin{table}[!tbp]
+\begin{table}[!htbp]
 \centering
 \caption{Rationale-paradigm comparison: KGRec vs.\ RA-GARK along the four design axes.}
 \label{tab:rw-kgrec-vs-ragark}
@@ -63,6 +63,7 @@ Treatment of KG trust & No disengage mechanism   & Bias-initialized gate \\
 \bottomrule
 \end{tabular}
 \end{table}
+\FloatBarrier
 
 We therefore position RA-GARK not as an engineering improvement of KGRec, but as a separate design that begins from a different premise about KG reliability. Whether this distinction matters empirically is settled in Chapter~\ref{ch:evaluation}.
 
@@ -82,7 +83,7 @@ A further line of work, contrastive dual-view recommenders such as SGL~\cite{wu2
 
 Despite the maturity of gating in deep learning, no method in the KG-aware recommendation literature we surveyed employs a fusion gate as the integration mechanism between collaborative and KG signals. Table~\ref{tab:rw-gating-gap} summarizes the integration mechanisms used by the four benchmarked baselines and three additional well-known KG-aware methods (CKAN~\cite{wang2020ckan}, MKR~\cite{wang2019mkr}, KGIN~\cite{wang2021kgin}). Across this set, KG signals are integrated via direct entity propagation, contrastive alignment, edge-level dropout, attention, cross-feature units, or intent-disentanglement modules. None of these mechanisms allows the KG channel to be \emph{architecturally disengaged} when its signal is unreliable.
 
-\begin{table}[!tbp]
+\begin{table}[!htbp]
 \centering
 \caption[Integration mechanisms used by representative KG-aware recommenders.]{Integration mechanisms used by representative KG-aware recommenders. None provide architectural graceful degradation under unreliable KG.}
 \label{tab:rw-gating-gap}
@@ -102,6 +103,7 @@ KGIN~\cite{wang2021kgin}      & Intent disentanglement over KG           & No \\
 \bottomrule
 \end{tabular}
 \end{table}
+\FloatBarrier
 
 We make a deliberately narrow claim. We do not claim that RA-GARK is the first to use a gate of any kind in KG-aware recommendation, since the KG-aware literature is large and exhaustive enumeration is infeasible. The defensible claim is the following: \emph{within the methods we examined, none uses a bias-initialized fusion gate to provide architectural graceful degradation under sparse or unreliable KG.} Our ablation in Chapter~\ref{ch:evaluation} attributes a $4.5\%$ NDCG@20 contribution specifically to this gate's bias initialization, supporting the claim that the design choice is non-trivial in this setting.
 
@@ -117,7 +119,7 @@ In Chapter~\ref{ch:evaluation} we report a single-dataset observation that, for 
 
 Table~\ref{tab:rw-summary} consolidates the comparison along four design axes. Among the methods evaluated on our sparse benchmark, RA-GARK is the only one that combines a pure-LightGCN local aggregator with a gated late-fusion of the KG signal, and the only one whose rationale operates at the item-aspect granularity rather than the KG-edge granularity.
 
-\begin{table}[!tbp]
+\begin{table}[!htbp]
 \centering
 \caption[Design comparison along four axes.]{Design comparison along four axes. NDCG@20 is reported on our sparse review-derived KG benchmark.}
 \label{tab:rw-summary}
@@ -134,5 +136,6 @@ KGRec      & KGAT-style      & Propagation + edge dropout & Edge Bernoulli  & 0.
 \bottomrule
 \end{tabular}
 \end{table}
+\FloatBarrier
 
 We do not position RA-GARK as a strict improvement over the four baselines. Rather, RA-GARK occupies a distinct point in design space, one defined by treating the KG as an explicitly gateable side channel rather than a mandatory pipeline component. This choice yields strong results in our sparse-KG setting, and the gating-based graceful-degradation property may also be useful when the KG is of uneven quality or when the model is deployed across domains of differing KG density. When the KG is dense and uniformly reliable, on the other hand, deep fusion approaches such as KGAT or KGRec may still be preferable, since the late-fusion design forgoes some of the representational expressiveness available to deep-fusion architectures.
