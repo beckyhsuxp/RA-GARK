@@ -11,11 +11,11 @@ A complementary line of research, knowledge-graph-aware recommendation, augments
 \section{An Empirical Anomaly under Sparse KG}
 \label{sec:intro-observation}
 
-Our investigation begins with an empirical observation that motivates the rest of this thesis. On the review-derived KG dataset used throughout this work, an Amazon Books subset with on average $2.4$ aspect edges per item after filtering, all four representative KG-aware methods listed above are outperformed by pure LightGCN that does not consult the KG at all. Table~\ref{tab:intro-baseline} summarizes the gap.
+Our investigation begins with an empirical observation that motivates the rest of this thesis. On the review-derived KG dataset used throughout this work, an Amazon Books subset with on average $2.4$ aspect edges per item after filtering, all four representative KG-aware methods listed above are outperformed by pure LightGCN that does not consult the KG at all. Table~\ref{tab:intro-baseline} summarizes the NDCG@20 gap between these KG-aware methods and the no-KG baseline.
 
 \begin{table}[H]
 \centering
-\caption[NDCG@20 of representative KG-aware methods vs.\ pure LightGCN.]{NDCG@20 of representative KG-aware methods on our sparse review-derived KG, contrasted with pure LightGCN. All four KG-aware methods underperform the no-KG baseline.}
+\caption{KG-aware methods vs.\ pure LightGCN.}
 \label{tab:intro-baseline}
 \begin{tabular}{lc}
 \toprule
