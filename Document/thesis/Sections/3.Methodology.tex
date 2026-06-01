@@ -55,7 +55,7 @@ Throughout the remainder of the thesis we use the symbols listed in Table~\ref{t
 
 \begin{table}[!htbp]
 \centering
-\caption{Notation.}
+\caption{Notation used in the RA-GARK formulation.}
 \label{tab:notation}
 \begin{tabular}{ll}
 \toprule
@@ -164,7 +164,7 @@ The global view introduces a separate user-side embedding $u_{\mathrm{glo}}$ (a 
 \begin{figure}[t]
 \centering
 \includegraphics[width=\textwidth]{img/kg_svd.png}
-\caption{KG-SVD initialization.}
+\caption{KG-SVD initialization of item aspect slots.}
 \label{fig:kgsvd-init}
 \end{figure}
 
@@ -320,7 +320,7 @@ The fusion gate is the architectural mechanism that turns RA-GARK's design princ
 \begin{figure}[ht]
 \centering
 \includegraphics[width=\textwidth]{img/gate.png}
-\caption{Local-biased fusion gate.}
+\caption{Local-biased fusion gate for combining local and global views.}
 \label{fig:gate}
 \end{figure}
 
@@ -460,7 +460,7 @@ Let $B$ denote the batch size, $|\mathcal{E}_{\mathcal{U}\mathcal{I}}|$ the numb
 
 \begin{table}[!htbp]
 \centering
-\caption{Training cost.}
+\caption{Per-batch training cost of RA-GARK modules.}
 \label{tab:complexity}
 \begin{tabular}{ll}
 \toprule

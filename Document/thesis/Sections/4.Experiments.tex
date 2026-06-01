@@ -14,7 +14,7 @@ Our experiments use a subset of the Amazon Books review corpus, processed into a
 
 \begin{table}[!htbp]
 \centering
-\caption{Dataset statistics.}
+\caption{Dataset statistics after preprocessing.}
 \label{tab:dataset-stats}
 \begin{tabular}{lr}
 \toprule
@@ -67,7 +67,7 @@ RA-GARK's hyperparameters are summarized in Table~\ref{tab:hparams}. The values 
 
 \begin{table}[!htbp]
 \centering
-\caption{RA-GARK hyperparameters.}
+\caption{RA-GARK hyperparameter settings used in experiments.}
 \label{tab:hparams}
 \begin{tabular}{ll}
 \toprule
@@ -103,7 +103,7 @@ Table~\ref{tab:main} reports the main test-set results. RA-GARK attains NDCG@$20
 
 \begin{table}[!htbp]
 \centering
-\caption{Main results.}
+\caption{Main test results under full-ranking evaluation.}
 \label{tab:main}
 \begin{tabular}{lcccc}
 \toprule
@@ -136,7 +136,7 @@ We measure each of the three headline design choices, KG-SVD initialization (Sec
 
 \begin{table}[!htbp]
 \centering
-\caption{Ablation results.}
+\caption{Ablation results for RA-GARK design components.}
 \label{tab:ablation}
 \begin{tabular}{lcc l}
 \toprule
@@ -182,7 +182,7 @@ Table~\ref{tab:sens-tau} reports NDCG@$20$ across $\tau \in \{0.05, 0.1, 0.5\}$.
 
 \begin{table}[!htbp]
 \centering
-\caption{Softmax temperature.}
+\caption{Sensitivity to softmax temperature $\tau$.}
 \label{tab:sens-tau}
 \begin{tabular}{lc}
 \toprule
@@ -203,7 +203,7 @@ We sweep $A \in \{2, 4, 8\}$, keeping the SVD-rank $k = A \cdot d$ scaled accord
 
 \begin{table}[!htbp]
 \centering
-\caption{Number of aspect slots.}
+\caption{Sensitivity to the number of aspect slots $A$.}
 \label{tab:sens-A}
 \begin{tabular}{lc}
 \toprule
@@ -224,7 +224,7 @@ The bias sweep is the most informative of the four. Table~\ref{tab:sens-bias} sh
 
 \begin{table}[!htbp]
 \centering
-\caption{Fusion-gate bias.}
+\caption{Sensitivity to fusion-gate bias $b$.}
 \label{tab:sens-bias}
 \begin{tabular}{lc}
 \toprule
@@ -246,7 +246,7 @@ We sweep $\lambda_{\mathrm{CL}} \in \{0, 0.001, 0.005, 0.01, 0.05\}$. Table~\ref
 
 \begin{table}[!htbp]
 \centering
-\caption{Contrastive weight.}
+\caption{Sensitivity to contrastive weight $\lambda_{\mathrm{CL}}$.}
 \label{tab:sens-lambda}
 \begin{tabular}{lc}
 \toprule
@@ -276,7 +276,7 @@ To inspect what the rationale module actually learns, we sampled five popular it
 
 \begin{table}[!htbp]
 \centering
-\caption{Softmax aspect weights.}
+\caption{Softmax aspect weights on sampled user--item pairs.}
 \label{tab:case}
 \small
 \begin{tabular}{l l c c c c c}
