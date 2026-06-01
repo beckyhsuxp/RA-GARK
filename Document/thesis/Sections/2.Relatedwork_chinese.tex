@@ -8,25 +8,25 @@
 
 \textbf{LightGCN}~\cite{he2020lightgcn} 是本研究區域視角的直接前身。建立於「NGCF~\cite{wang2019ngcf} 中的非線性特徵變換對推薦準確率貢獻甚微」這項觀察上，LightGCN 將圖卷積網路精簡至最小骨幹：反覆在使用者—物品二部圖上進行正規化鄰居聚合，再將傳播後的嵌入做簡單的層平均。此一簡化在標準推薦基準上一致地優於 NGCF，且訓練更快、更穩定。其後諸多自監督方法，如 SGL~\cite{wu2021sgl} 與 DCCF~\cite{ren2023dccf}，皆在 LightGCN 式骨幹之上疊加額外的對比目標。
 
-在 RA-GARK 中，我們\emph{原封不動}採用 LightGCN（$K=2$）作為區域視角：此分支內不施加任何 KG 相關運算。動機有二。其一，在我們的稀疏評論型 KG 上，純 LightGCN 已達 NDCG@20 = $0.1179$，超越所有我們所評估的 KG-aware 基線。任何偏離此強預設的設計，皆須可被證實能改善而非劣化結果，這是本論文反覆訴諸的硬性設計約束。其二，將 KG 訊號隔離至獨立的全域視角（第~\ref{ch:methodology-zh}~章），可避免 KG 雜訊污染協同表示的梯度流。
+在 RA-GARK 中，我們\emph{原封不動}採用 LightGCN（$K=2$）作為區域視角：此分支內不施加任何 KG 相關運算。動機有二。其一，在我們的稀疏評論型 KG 上，純 LightGCN 已超越所有我們所評估的 KG-aware 基線。任何偏離此強預設的設計，皆須可被證實能改善而非劣化結果，這是本論文反覆訴諸的硬性設計約束。其二，將 KG 訊號隔離至獨立的全域視角（第~\ref{ch:methodology-zh}~章），可避免 KG 雜訊污染協同表示的梯度流。
 
 \textbf{KGAT}~\cite{wang2019kgat} 代表 KG-aware 推薦中的典範\emph{深度融合}做法。KGAT 將使用者—物品互動圖與知識圖譜合併為一個協同知識圖（Collaborative Knowledge Graph, CKG），並以雙交互聚合器於此統一結構上傳播訊息。KG 實體嵌入因而直接參與使用者與物品表示的形成。當 KG 稠密且品質良好時，此設計相對於 CF 基線可取得顯著提升。
 
-此處的隱含假設是 KG 可被信任，能在傳播路徑所及之處皆注入有用訊號。在我們的稀疏情境下此假設崩解：KGAT 僅達 NDCG@20 = $0.1079$，低於純 LightGCN。其後續工作~\cite{yang2022kgcl, zou2022mcclk, yang2023kgrec} 沿用 KGAT 式聚合器，因此也繼承相同的脆弱性。RA-GARK 反轉此一設計選擇：我們完全不將 KG 與使用者—物品圖合併，而是將 KG 訊號導入一條專用旁路通道，當 KG 被證實不可靠時模型可衰減甚至全然脫接之。
+此處的隱含假設是 KG 可被信任，能在傳播路徑所及之處皆注入有用訊號。在我們的稀疏情境下此假設崩解：KGAT 低於純 LightGCN。其後續工作~\cite{yang2022kgcl, zou2022mcclk, yang2023kgrec} 沿用 KGAT 式聚合器，因此也繼承相同的脆弱性。RA-GARK 反轉此一設計選擇：我們完全不將 KG 與使用者—物品圖合併，而是將 KG 訊號導入一條專用旁路通道，當 KG 被證實不可靠時模型可衰減甚至全然脫接之。
 
 \section{對比式知識圖譜方法}
 \label{sec:rw-contrastive-zh}
 
-\textbf{KGCL}~\cite{yang2022kgcl} 對 KG 引入關係層級的結構擾動，並以 InfoNCE~\cite{oord2018infonce} 對比目標對齊擾動版本與原始版本。直覺是：具資訊量的 KG 結構應對隨機擾動具有不變性，而雜訊邊則不應。KGCL 在稠密 KG 情境下顯著優於 KGAT。然而在我們的稀疏情境中，擾動後的 KG 保留的邊過少，對比目標無法提供可靠監督：NDCG@20 降至 $0.1073$。
+\textbf{KGCL}~\cite{yang2022kgcl} 對 KG 引入關係層級的結構擾動，並以 InfoNCE~\cite{oord2018infonce} 對比目標對齊擾動版本與原始版本。直覺是：具資訊量的 KG 結構應對隨機擾動具有不變性，而雜訊邊則不應。KGCL 在稠密 KG 情境下顯著優於 KGAT。然而在我們的稀疏情境中，擾動後的 KG 保留的邊過少，對比目標無法提供可靠監督。
 
-\textbf{MCCLK}~\cite{zou2022mcclk} 將對比對齊擴展至三個視角（協同、語意與結構）並對三者兩兩施加對比損失。雖然此多視角設計在稠密 KG 基準上取得 SOTA，但同樣繼承稠密 KG 的假設：在稀疏 KG 下，三個視角中有兩個（語意與結構）訊號不足，對比對齊淪為由雜訊主導而非由結構主導的正則化（$0.1067$ NDCG@20）。
+\textbf{MCCLK}~\cite{zou2022mcclk} 將對比對齊擴展至三個視角（協同、語意與結構）並對三者兩兩施加對比損失。雖然此多視角設計在稠密 KG 基準上取得 SOTA，但同樣繼承稠密 KG 的假設：在稀疏 KG 下，三個視角中有兩個（語意與結構）訊號不足，對比對齊淪為由雜訊主導而非由結構主導的正則化。
 
 RA-GARK 同樣納入跨視角對比學習，但其角色刻意受限。我們的對比損失（$\mathcal{L}_{\mathrm{aCL}}$ 與 $\mathcal{L}_{\mathrm{uCL}}$，第~\ref{sec:cl-zh}~節）僅作為小權重（$\lambda = 0.005$）的輔助幾何正則化項，並關鍵地在 KG 側施加 stop-gradient，使對比梯度從不反向傳遞至 SVD 初始化的 aspect 嵌入。相較於 KGCL/MCCLK，此處的對比學習是表層的對齊層，而非主要的融合機制；協同與 KG 訊號的實際整合，是由一個明確的閘所執掌（第~\ref{sec:rw-gating-zh}~節）。
 
 \section{合理化感知推薦：KGRec}
 \label{sec:rw-kgrec-zh}
 
-\textbf{KGRec}~\cite{yang2023kgrec} 是與本工作最直接相關的研究。它是第一個將合理化選擇明確化的 KG-aware 推薦器：KGRec 不將每條 KG 三元組視為同等具資訊量，而是對每條 KG 邊計算一個基於注意力的重要性分數，並以 Bernoulli dropout 隨機移除高注意力邊，迫使模型不依賴少數主導邊；其穩健性接著由原始圖與被丟邊版本之間的對比目標來強化。整套合理化機制建立於 KGAT 式聚合器之上，因此合理化作用於使用者—物品—實體統一圖的訊息傳遞路徑之內。在我們的稀疏基準上，KGRec 取得 NDCG@20 = $0.1095$，為四個 KG-aware 基線中最強者，但仍低於純 LightGCN。
+\textbf{KGRec}~\cite{yang2023kgrec} 是與本工作最直接相關的研究。它是第一個將合理化選擇明確化的 KG-aware 推薦器：KGRec 不將每條 KG 三元組視為同等具資訊量，而是對每條 KG 邊計算一個基於注意力的重要性分數，並以 Bernoulli dropout 隨機移除高注意力邊，迫使模型不依賴少數主導邊；其穩健性接著由原始圖與被丟邊版本之間的對比目標來強化。整套合理化機制建立於 KGAT 式聚合器之上，因此合理化作用於使用者—物品—實體統一圖的訊息傳遞路徑之內。在我們的稀疏基準上，KGRec 是四個 KG-aware 基線中最強者，但仍低於純 LightGCN。
 
 RA-GARK 在精神上採納合理化感知典範，但在結構上多處與 KGRec 有別，下節詳述之。
 
@@ -105,14 +105,14 @@ KGIN~\cite{wang2021kgin}      & KG 上的意圖解耦        & 否 \\
 \end{table}
 \FloatBarrier
 
-我們刻意作出一個範圍狹義的主張。我們不主張 RA-GARK 是 KG-aware 推薦中首個使用「任何閘」的方法，因 KG-aware 文獻浩繁，無法窮舉列舉。可辯護的主張為：\emph{在我們所檢視的方法中，沒有任何一個以偏置初始化的融合閘於稀疏或不可靠 KG 下提供架構優雅退化}。我們在第~\ref{ch:experiments-zh}~章的消融將 $4.5\%$ NDCG@20 的貢獻明確歸因於此閘的偏置初始化，支持上述主張在此情境中並非微不足道。
+我們刻意作出一個範圍狹義的主張。我們不主張 RA-GARK 是 KG-aware 推薦中首個使用「任何閘」的方法，因 KG-aware 文獻浩繁，無法窮舉列舉。可辯護的主張為：\emph{在我們所檢視的方法中，沒有任何一個以偏置初始化的融合閘於稀疏或不可靠 KG 下提供架構優雅退化}。我們在第~\ref{ch:experiments-zh}~章的消融顯示，此一初始化在本設定中確實是不可忽略的設計選擇。
 
 \section{注意力正規化}
 \label{sec:rw-attention-norm-zh}
 
 一個橫跨多領域的相關問題是：在選擇合理化依據時，應對注意力權重套用 sigmoid 或 softmax？文獻並未匯聚於單一答案。DIN~\cite{zhou2018din} 對使用者行為歷史套用 sigmoid 注意力，所基於的假設是每筆歷史行為與候選物品的相關性彼此獨立。NAIS~\cite{he2018nais} 對歷史互動套用 softmax 注意力以衡量物品相似度，AFM~\cite{xiao2017afm} 則對特徵交互套用 softmax。各工作中的選擇皆以其注意力所依附的語意假設為依據。
 
-我們在第~\ref{ch:experiments-zh}~章報告一項單一資料集的觀察：對於我們的 aspect-saliency 合理化，將 softmax 替換為 sigmoid 會損失 $15.5\%$ NDCG@20，這是我們所量測到單一元件影響最大者。我們將其解讀為支持「正規化應與合理化的語意假設相符」此一設計啟發，但明確將此觀察定位為待多資料集複製驗證的假設（第~\ref{ch:conclusion-zh}~章）。
+我們在第~\ref{ch:experiments-zh}~章報告一項單一資料集的觀察：對於我們的 aspect-saliency 合理化，將 softmax 替換為 sigmoid 會產生我們所量測到最大的單一元件變化。我們將其解讀為支持「正規化應與合理化的語意假設相符」此一設計啟發，但明確將此觀察定位為待多資料集複製驗證的假設（第~\ref{ch:conclusion-zh}~章）。
 
 \section{總結與 RA-GARK 的定位}
 \label{sec:rw-summary-zh}
@@ -132,7 +132,7 @@ KGCL       & KGAT 式          & 傳播 + CL            & 無             & 0.10
 MCCLK      & 多視角           & 多視角 CL            & 無             & 0.1067 \\
 KGRec      & KGAT 式          & 傳播 + 邊 dropout    & 邊 Bernoulli    & 0.1095 \\
 \midrule
-\textbf{RA-GARK} & \textbf{純 LightGCN} & \textbf{閘控後期融合} & \textbf{Aspect softmax} & \textbf{0.1242} \\
+\textbf{RA-GARK} & \textbf{純 LightGCN} & \textbf{閘控後期融合} & \textbf{Aspect softmax} & \textbf{最佳} \\
 \bottomrule
 \end{tabular}
 \end{table}
