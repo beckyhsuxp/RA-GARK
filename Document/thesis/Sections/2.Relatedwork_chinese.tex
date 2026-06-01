@@ -117,22 +117,22 @@ KGIN~\cite{wang2021kgin}      & KG 上的意圖解耦        & 否 \\
 \section{總結與 RA-GARK 的定位}
 \label{sec:rw-summary-zh}
 
-表~\ref{tab:rw-summary-zh} 從四個設計面向匯整比較，並報告在我們的稀疏評論型 KG 基準上的 NDCG@20。在此基準上所評估的方法中，RA-GARK 是唯一同時將純 LightGCN 區域聚合器與閘控後期融合的 KG 訊號相結合者，也是唯一將合理化作用於物品—aspect 粒度而非 KG 邊粒度者。
+表~\ref{tab:rw-summary-zh} 從四個設計面向匯整比較。在本章所討論的方法中，RA-GARK 是唯一同時將純 LightGCN 區域聚合器與閘控後期融合的 KG 訊號相結合者，也是唯一將合理化作用於物品—aspect 粒度而非 KG 邊粒度者。
 
 \begin{table}[!htbp]
 \centering
 \caption{KG-aware 推薦方法之設計比較。}
 \label{tab:rw-summary-zh}
-\begin{tabular}{l l l l c}
+\begin{tabular}{l l l l}
 \toprule
-方法 & 區域聚合器 & KG 整合 & 合理化 & NDCG@20 \\
+方法 & 區域聚合器 & KG 整合 & 合理化 \\
 \midrule
-KGAT       & 雙交互           & 直接傳播             & 無             & 0.1079 \\
-KGCL       & KGAT 式          & 傳播 + CL            & 無             & 0.1073 \\
-MCCLK      & 多視角           & 多視角 CL            & 無             & 0.1067 \\
-KGRec      & KGAT 式          & 傳播 + 邊 dropout    & 邊 Bernoulli    & 0.1095 \\
+KGAT       & 雙交互           & 直接傳播             & 無 \\
+KGCL       & KGAT 式          & 傳播 + CL            & 無 \\
+MCCLK      & 多視角           & 多視角 CL            & 無 \\
+KGRec      & KGAT 式          & 傳播 + 邊 dropout    & 邊 Bernoulli \\
 \midrule
-\textbf{RA-GARK} & \textbf{純 LightGCN} & \textbf{閘控後期融合} & \textbf{Aspect softmax} & \textbf{最佳} \\
+\textbf{RA-GARK} & \textbf{純 LightGCN} & \textbf{閘控後期融合} & \textbf{Aspect softmax} \\
 \bottomrule
 \end{tabular}
 \end{table}

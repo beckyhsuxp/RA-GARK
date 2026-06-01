@@ -117,22 +117,22 @@ In Chapter~\ref{ch:evaluation} we report a single-dataset observation that, for 
 \section{Summary and Positioning of RA-GARK}
 \label{sec:rw-summary}
 
-Table~\ref{tab:rw-summary} consolidates the comparison along four design axes and reports NDCG@20 on our sparse review-derived KG benchmark. Among the methods evaluated on this benchmark, RA-GARK is the only one that combines a pure-LightGCN local aggregator with a gated late-fusion of the KG signal, and the only one whose rationale operates at the item-aspect granularity rather than the KG-edge granularity.
+Table~\ref{tab:rw-summary} consolidates the comparison along four design axes. Among the methods discussed in this chapter, RA-GARK is the only one that combines a pure-LightGCN local aggregator with a gated late-fusion of the KG signal, and the only one whose rationale operates at the item-aspect granularity rather than the KG-edge granularity.
 
 \begin{table}[!htbp]
 \centering
 \caption{Design comparison of KG-aware recommendation methods.}
 \label{tab:rw-summary}
-\begin{tabular}{l l l l c}
+\begin{tabular}{l l l l}
 \toprule
-Method & Local aggregator & KG integration & Rationale & NDCG@20 \\
+Method & Local aggregator & KG integration & Rationale \\
 \midrule
-KGAT       & Bi-interaction  & Direct propagation         & None             & 0.1079 \\
-KGCL       & KGAT-style      & Propagation + CL           & None             & 0.1073 \\
-MCCLK      & Multi-view      & Multi-view CL              & None             & 0.1067 \\
-KGRec      & KGAT-style      & Propagation + edge dropout & Edge Bernoulli  & 0.1095 \\
+KGAT       & Bi-interaction  & Direct propagation         & None \\
+KGCL       & KGAT-style      & Propagation + CL           & None \\
+MCCLK      & Multi-view      & Multi-view CL              & None \\
+KGRec      & KGAT-style      & Propagation + edge dropout & Edge Bernoulli \\
 \midrule
-\textbf{RA-GARK} & \textbf{Pure LightGCN} & \textbf{Gated late fusion} & \textbf{Aspect softmax} & \textbf{best} \\
+\textbf{RA-GARK} & \textbf{Pure LightGCN} & \textbf{Gated late fusion} & \textbf{Aspect softmax} \\
 \bottomrule
 \end{tabular}
 \end{table}
