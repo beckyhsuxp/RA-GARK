@@ -53,6 +53,8 @@ KGRec~\cite{yang2023kgrec}     & 0.1095 \\
   \item \textbf{(RQ2，處方)} 何種設計原則能讓模型在 KG 訊號有效時加以利用，而在訊號無效時避免 KG 雜訊污染協同過濾？
 \end{itemize}
 
+RQ1 於第~\ref{ch:relatedwork-zh}~與第~\ref{ch:experiments-zh}~章中加以回答：我們將其共同失效模式界定為在稀疏且不可靠 KG 下的必要式融合。RQ2 則於第~\ref{ch:methodology-zh}~章提出，並於第~\ref{ch:experiments-zh}~章實證驗證：可閘控的旁路通道設計能在 KG 訊號有用時加以利用，無用時退回純 LightGCN。
+
 本論文的主張是：KG 不應如 KGAT 式深度融合那般，成為評分管線中的\emph{必要組件}，而應作為一條可依其訊號是否有用而被\emph{明確閘控}的旁路通道。具體而言，此原則由三項設計選擇實現：以 softmax 為基礎的 aspect-saliency 注意力，用於對每組使用者—物品配對選取 KG 合理化依據；以 KG 驅動的 SVD 初始化，用以保留語意幾何；以及具有局部偏置的融合閘（local-biased fusion gate），其初始化內建了當 KG 訊號終究不具資訊量時優雅退化回純 LightGCN 的能力。
 
 \section{研究貢獻}

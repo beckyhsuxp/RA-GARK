@@ -4,9 +4,9 @@
 \section{結論}
 \label{sec:conclude-main-zh}
 
-本論文始於一個具體的經驗異常：在本文使用的稀疏評論衍生知識圖譜上，四個代表性 KG-aware 推薦器（KGAT、KGCL、MCCLK、KGRec）皆一致地敗給純 LightGCN（第~\ref{ch:intro-zh}~章，並於第~\ref{sec:eval-main-zh}~節重現）。此結果直接回答 RQ1。我們主張，其共同的架構成因在於：這些 baseline 將 KG 視為計分管線中的強制元件，使 KG 嵌入直接參與訊息傳遞，卻缺乏在 KG 不可靠時將其脫接的結構性機制。原本期望作為語意訊號的雜訊，因此進入產生協同表示的同一條梯度流；當 KG 品質低於某個門檻時，這項交換便轉為淨負。
+本論文始於一個具體的經驗異常：在本文使用的稀疏評論衍生知識圖譜上，四個代表性 KG-aware 推薦器（KGAT、KGCL、MCCLK、KGRec）皆一致地敗給純 LightGCN（第~\ref{ch:intro-zh}~章，並於第~\ref{sec:eval-main-zh}~節重現）。我們主張，其共同的架構成因在於：這些 baseline 將 KG 視為計分管線中的強制元件，使 KG 嵌入直接參與訊息傳遞，卻缺乏在 KG 不可靠時將其脫接的結構性機制。原本期望作為語意訊號的雜訊，因此進入產生協同表示的同一條梯度流；當 KG 品質低於某個門檻時，這項交換便轉為淨負。
 
-RQ2 則由 RA-GARK（第~\ref{ch:methodology-zh}~章）回答：其圍繞單一設計原則展開（第~\ref{sec:approach-principle-zh}~節），亦即 KG 應作為一條\emph{旁路通道}，其對最終分數的貢獻由可學習的閘決定；此閘在初始化時偏向安全預設（純協同過濾），只有當訓練訊號顯示 KG 通道能降低損失時才逐步打開。三項具體設計選擇落實此原則，並於第~\ref{sec:eval-ablation-zh}~節逐一衡量：
+RA-GARK（第~\ref{ch:methodology-zh}~章）則圍繞單一設計原則展開（第~\ref{sec:approach-principle-zh}~節），亦即 KG 應作為一條\emph{旁路通道}，其對最終分數的貢獻由可學習的閘決定；此閘在初始化時偏向安全預設（純協同過濾），只有當訓練訊號顯示 KG 通道能降低損失時才逐步打開。三項具體設計選擇落實此原則，並於第~\ref{sec:eval-ablation-zh}~節逐一衡量：
 
 \begin{itemize}
   \item \textbf{KG-SVD 初始化}為每件物品建立面向槽，使模型在訓練起點即保留面向誘導語意子空間的角度幾何。移除其代價為 $5.9\%$ NDCG@$20$。
