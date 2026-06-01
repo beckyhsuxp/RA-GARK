@@ -36,7 +36,7 @@ Python code uses 4-space indentation, type hints where helpful, and module-level
 
 LaTeX sections live in `Document/thesis/Sections/`. Keep English and Chinese counterparts synchronized, using `_chinese.tex` suffixes for Chinese files.
 
-For thesis-writing changes, use this workflow: revise the English source first, align the Chinese version next, compile the relevant PDF, then commit and push the source and generated PDF together. If LaTeX reports errors but still produces a PDF, commit and push that PDF only when the failure is caused by the known `BiauKaiTC` font problem; for other LaTeX errors, preserve the last good PDF unless the user explicitly asks otherwise.
+For thesis-writing changes, use this workflow: revise the English source first, align the Chinese version next, then stop before compiling. The user will compile PDFs locally. After each thesis edit, check `git status`; if the user-generated PDFs or other intended files are modified, commit and push them without prompting. Do not run LaTeX compilation unless the user explicitly asks for it in that turn.
 
 ## Testing Guidelines
 
