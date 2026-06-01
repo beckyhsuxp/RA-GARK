@@ -11,7 +11,7 @@
 %\titlecontents{section}[1.5em]{\addvspace{-0.5em}}{\thecontentslabel \hspace{1em}}{}{\titlerule*{.}\contentspage}[\addvspace{0.5em}]
 %\titlecontents{subsection}[3em]{}{\thecontentslabel \hspace{1em}}{}{\titlerule*{.}\contentspage}[\addvspace{0.5em}]
 
-\titlecontents{chapter}[0em]{}{第\CJKnumber{\thecontentslabel}章 \hspace{0.5em}}{}{\titlerule*{.}\contentspage}[\addvspace{1em}]
+\titlecontents{chapter}[0em]{}{\thecontentslabel \hspace{1em}}{}{\titlerule*{.}\contentspage}[\addvspace{1em}]
 \titlecontents{section}[1.5em]{\addvspace{-0.5em}}{\thecontentslabel \hspace{1em}}{}{\titlerule*{.}\contentspage}[\addvspace{0.5em}]
 \titlecontents{subsection}[3em]{}{\thecontentslabel \hspace{1em}}{}{\titlerule*{.}\contentspage}[\addvspace{0.5em}]
 \titlecontents{subsubsection}[4.5em]{}{\thecontentslabel \hspace{1em}}{}{\titlerule*{.}\contentspage}[\addvspace{0.5em}]
@@ -39,9 +39,9 @@
 \renewcommand{\numberline}[1]{表~#1\hspace*{1em}}
 \addcontentsline{toc}{chapter}{表目錄\vspace{0em}} \listoftables \newpage
 
-% 把Chapter改成 第X章
+% 章節標題使用「章號 標題」格式，例如：2 Related Work
 % 如果想要章節標題置中, 可在\normalfont前面加上\centering
-\titleformat{\chapter}{\normalfont\huge\bfseries}{第 \CJKnumber{\thechapter} 章、}{0em}{}
+\titleformat{\chapter}{\normalfont\huge\bfseries}{\thechapter}{1em}{}
 \titleformat{\section}{\normalfont\Large\bfseries}{\thesection}{1em}{}
 \titleformat{\subsection}{\normalfont\large\bfseries}{\thesubsection}{1em}{}
 \titleformat{\subsubsection}{\normalfont\large\bfseries}{\thesubsubsection}{1em}{}
@@ -78,7 +78,7 @@
 
 % 調整內文的chapter, section, subection的顯示方式, 改成靠左對齊+沒有換行
 % 如果想要章節標題置中, 可在\normalfont前面加上\centering
-\titleformat{\chapter}{\normalfont\huge\bfseries}{Chapter {\thechapter}.}{1em}{}
+\titleformat{\chapter}{\normalfont\huge\bfseries}{\thechapter}{1em}{}
 \titleformat{\section}{\normalfont\Large\bfseries}{\thesection}{1em}{}
 \titleformat{\subsection}{\normalfont\large\bfseries}{\thesubsection}{1em}{}
 \titleformat{\subsubsection}{\normalfont\large\bfseries}{\thesubsubsection}{1em}{}
