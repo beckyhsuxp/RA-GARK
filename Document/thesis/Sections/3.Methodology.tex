@@ -445,7 +445,7 @@ The BPR loss provides the primary ranking signal; the contrastive terms supply t
 \subsection{Optimization}
 \label{sec:train-opt}
 
-We optimize Equation~\eqref{eq:total-loss-repeat} with Adam (default $\beta_1 = 0.9, \beta_2 = 0.999, \epsilon = 10^{-8}$), learning rate $10^{-3}$, batch size $128$, for up to $30$ epochs. Early stopping with patience $10$ is applied on validation NDCG@20. Each training batch consists of $128$ triplets $(u, i^+, i^-)$ where $i^-$ is sampled uniformly from items not in $\mathcal{R}_u$. The LightGCN propagation in Equation~\eqref{eq:lightgcn-prop}--\eqref{eq:lightgcn-avg} is recomputed once per batch and reused for both positive and negative scoring within the batch.
+We optimize Equation~\eqref{eq:total-loss-repeat} with Adam (default $\beta_1 = 0.9, \beta_2 = 0.999, \epsilon = 10^{-8}$), learning rate $10^{-3}$, batch size $128$, for up to $80$ epochs. Early stopping with patience $10$ is applied on validation NDCG@20. Each training batch consists of $128$ triplets $(u, i^+, i^-)$ where $i^-$ is sampled uniformly from items not in $\mathcal{R}_u$. The LightGCN propagation in Equation~\eqref{eq:lightgcn-prop}--\eqref{eq:lightgcn-avg} is recomputed once per batch and reused for both positive and negative scoring within the batch.
 
 \subsection{Inference}
 \label{sec:train-inference}

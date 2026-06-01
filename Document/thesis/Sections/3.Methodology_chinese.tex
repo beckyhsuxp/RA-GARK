@@ -444,7 +444,7 @@ BPR 損失提供主要排序訊號；對比項提供跨視角幾何對齊。
 \subsection{最佳化}
 \label{sec:train-opt-zh}
 
-以 Adam（預設 $\beta_1 = 0.9, \beta_2 = 0.999, \epsilon = 10^{-8}$）最佳化式~\eqref{eq:total-loss-repeat-zh}，學習率 $10^{-3}$、批次大小 $128$，最多訓練 $30$ epochs。以驗證集 NDCG@20 之耐心 $10$ 早停。每批次包含 $128$ 組三元組 $(u, i^+, i^-)$，其中 $i^-$ 自 $\mathcal{R}_u$ 之外的物品均勻取樣。式~\eqref{eq:lightgcn-prop-zh}--\eqref{eq:lightgcn-avg-zh} 之 LightGCN 傳播於每批次重新計算一次，並於該批次內正負例評分時共用。
+以 Adam（預設 $\beta_1 = 0.9, \beta_2 = 0.999, \epsilon = 10^{-8}$）最佳化式~\eqref{eq:total-loss-repeat-zh}，學習率 $10^{-3}$、批次大小 $128$，最多訓練 $80$ epochs。以驗證集 NDCG@20 之耐心 $10$ 早停。每批次包含 $128$ 組三元組 $(u, i^+, i^-)$，其中 $i^-$ 自 $\mathcal{R}_u$ 之外的物品均勻取樣。式~\eqref{eq:lightgcn-prop-zh}--\eqref{eq:lightgcn-avg-zh} 之 LightGCN 傳播於每批次重新計算一次，並於該批次內正負例評分時共用。
 
 \subsection{推論}
 \label{sec:train-inference-zh}

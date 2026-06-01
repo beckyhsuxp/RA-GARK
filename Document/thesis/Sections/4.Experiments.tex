@@ -82,7 +82,7 @@ InfoNCE temperature $\tau_{\mathrm{CL}}$   & $0.2$ \\
 Optimizer                          & Adam ($\beta_1{=}0.9$, $\beta_2{=}0.999$) \\
 Learning rate                      & $10^{-3}$ \\
 Batch size                         & $128$ \\
-Max epochs                         & $30$ \\
+Max epochs                         & $80$ \\
 Early-stopping patience            & $10$ \\
 Random seed                        & $42$ \\
 \bottomrule
@@ -169,12 +169,12 @@ The contrastive losses contribute smaller but non-trivial amounts: $-4.3\%$ for 
 \section{Sensitivity Analysis}
 \label{sec:eval-sensitivity}
 
-We probe RA-GARK's sensitivity along the four hyperparameter axes that a reader is most likely to question: the softmax temperature $\tau$, the number of latent aspect slots $A$, the fusion-gate bias $b$, and the contrastive weight $\lambda_{\mathrm{CL}}$. Each axis is swept with all other settings held at the values of Table~\ref{tab:hparams} and seed $= 42$; all sweeps and the main and ablation tables come from a single deterministic run, so the default (winner) row of every table equals the main-result NDCG@$20 = 0.1242$.
+We probe RA-GARK's sensitivity along the four hyperparameter axes that a reader is most likely to question: the softmax temperature $\tau$, the number of latent aspect slots $A$, the fusion-gate bias $b$, and the contrastive weight $\lambda_{\mathrm{CL}}$. Each axis is swept with all other settings held at the values of Table~\ref{tab:hparams} and seed $= 42$. The winner configuration, NDCG@$20 = 0.1242$, anchors the section; duplicate default settings cached under sweep-specific tags can differ slightly at the fourth decimal place, so we interpret such duplicates as equivalent.
 
 \subsection{Softmax Temperature $\tau$}
 \label{sec:sens-tau}
 
-Table~\ref{tab:sens-tau} reports NDCG@$20$ across $\tau \in \{0.05, 0.1, 0.5\}$. The default $\tau = 0.5$ achieves the best NDCG@$20$ ($0.1242$); sharpening to $\tau = 0.1$ costs $-1.0\%$ ($0.1229$) and to $\tau = 0.05$ costs $-1.9\%$ ($0.1219$). The picture is consistent with the analysis in Section~\ref{sec:softmax-softmax}: at $\tau = 0.5$ the slot logits are amplified enough to produce discriminative weights without collapsing onto a single slot; pushing $\tau$ down toward $0.05$ drives the rationale toward an approximately one-hot selection, which on our softly-peaked weights (Section~\ref{sec:eval-case}) discards useful mass on the secondary slots and costs a small amount of NDCG@$20$. In the opposite direction, raising $\tau$ toward $1$ flattens the softmax toward a uniform item-wise mean over slots; we keep $\tau = 0.5$ as the value that balances these two regimes.
+Table~\ref{tab:sens-tau} reports NDCG@$20$ across $\tau \in \{0.05, 0.1, 0.5\}$. The default $\tau = 0.5$ remains the best setting, with a sweep-specific duplicate run at $0.1240$ and the main winner row at $0.1242$. Sharpening to $\tau = 0.1$ costs about $-1.0\%$ ($0.1229$) and to $\tau = 0.05$ costs about $-1.9\%$ ($0.1219$). The picture is consistent with the analysis in Section~\ref{sec:softmax-softmax}: at $\tau = 0.5$ the slot logits are amplified enough to produce discriminative weights without collapsing onto a single slot; pushing $\tau$ down toward $0.05$ drives the rationale toward an approximately one-hot selection, which on our softly-peaked weights (Section~\ref{sec:eval-case}) discards useful mass on the secondary slots and costs a small amount of NDCG@$20$. In the opposite direction, raising $\tau$ toward $1$ flattens the softmax toward a uniform item-wise mean over slots; we keep $\tau = 0.5$ as the value that balances these two regimes.
 
 \begin{table}[ht]
 \centering
@@ -184,7 +184,7 @@ Table~\ref{tab:sens-tau} reports NDCG@$20$ across $\tau \in \{0.05, 0.1, 0.5\}$.
 \toprule
 $\tau$ & NDCG@20 \\
 \midrule
-$\mathbf{0.5}$ (default) & $\mathbf{0.1242}$ \\
+$\mathbf{0.5}$ (default) & $\mathbf{0.1240}$ \\
 $0.1$              & $0.1229$ \\
 $0.05$             & $0.1219$ \\
 \bottomrule

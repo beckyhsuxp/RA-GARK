@@ -49,12 +49,12 @@ class Config:
     # --- Training ---
     batch_size: int = 128
     learning_rate: float = 1e-3
-    epochs: int = 30
+    epochs: int = 80
     seed: int = 42
     early_stop_patience: int = 10   # 0 disables early stopping
 
     # --- Loss weights ---
-    cl_weight: float = 0.01   # InfoNCE contrastive loss
+    cl_weight: float = 0.005  # InfoNCE contrastive loss
     temp: float = 0.2         # InfoNCE temperature
 
     # --- Canonical KG (kg_loader.py) ---
