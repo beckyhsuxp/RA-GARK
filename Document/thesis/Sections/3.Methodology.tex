@@ -2,14 +2,7 @@
 \label{ch:methodology}
 \label{ch:architecture}
 
-This chapter presents RA-GARK in full. The chapter is organized as follows:
-\begin{itemize}
-  \item Section~\ref{sec:approach-principle} states the central design principle that distinguishes RA-GARK from the deep-fusion baselines of Chapter~\ref{ch:relatedwork}.
-  \item Section~\ref{sec:approach-overview} gives a swim-lane overview of the architecture and inference-time data flow.
-  \item Sections~\ref{sec:approach-notation}--\ref{sec:approach-problem} fix notation and formalize the recommendation task and training objective.
-  \item Sections~\ref{sec:local}--\ref{sec:cl} detail each module in the order it participates in the forward pass.
-  \item Section~\ref{sec:method-train} describes training and computational complexity.
-\end{itemize}
+This chapter presents RA-GARK in full. Section~\ref{sec:approach-principle} states the central design principle that distinguishes RA-GARK from the deep-fusion baselines of Chapter~\ref{ch:relatedwork}. Section~\ref{sec:approach-overview} gives a swim-lane overview of the architecture and inference-time data flow. Sections~\ref{sec:approach-notation}--\ref{sec:approach-problem} fix notation and formalize the recommendation task and training objective. Sections~\ref{sec:local}--\ref{sec:cl} detail each module in the order it participates in the forward pass. Section~\ref{sec:method-train} describes training and computational complexity.
 
 \section{Design Principle: KG as a Gateable Side Channel}
 \label{sec:approach-principle}
