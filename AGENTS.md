@@ -36,6 +36,8 @@ Python code uses 4-space indentation, type hints where helpful, and module-level
 
 LaTeX sections live in `Document/thesis/Sections/`. Keep English and Chinese counterparts synchronized, using `_chinese.tex` suffixes for Chinese files.
 
+For thesis-writing changes, use this workflow: revise the English source first, align the Chinese version next, compile the relevant PDF, then commit and push the source and generated PDF together.
+
 ## Testing Guidelines
 
 There is no formal unit-test framework configured. Validate code changes with the smallest relevant run first, usually:
