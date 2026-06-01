@@ -6,7 +6,7 @@
 \section{基礎：LightGCN 與 KGAT}
 \label{sec:rw-foundations-zh}
 
-\textbf{LightGCN}~\cite{he2020lightgcn} 是本研究區域視角的直接前身。建立於「NGCF~\cite{wang2019ngcf} 中的非線性特徵變換對推薦準確率貢獻甚微」這項觀察上，LightGCN 將圖卷積網路精簡至最小骨幹：在使用者—物品二部圖上進行正規化的鄰居聚合 $\mathbf{E}^{(\ell+1)} = \tilde{\mathbf{A}} \mathbf{E}^{(\ell)}$，最終嵌入則取各層平均 $\bar{\mathbf{E}} = \tfrac{1}{K+1}\sum_{\ell=0}^{K} \mathbf{E}^{(\ell)}$。此一簡化在標準推薦基準上一致地優於 NGCF，且訓練更快、更穩定。其後諸多自監督方法，如 SGL~\cite{wu2021sgl} 與 DCCF~\cite{ren2023dccf}，皆在 LightGCN 式骨幹之上疊加額外的對比目標。
+\textbf{LightGCN}~\cite{he2020lightgcn} 是本研究區域視角的直接前身。建立於「NGCF~\cite{wang2019ngcf} 中的非線性特徵變換對推薦準確率貢獻甚微」這項觀察上，LightGCN 將圖卷積網路精簡至最小骨幹：反覆在使用者—物品二部圖上進行正規化鄰居聚合，再將傳播後的嵌入做簡單的層平均。此一簡化在標準推薦基準上一致地優於 NGCF，且訓練更快、更穩定。其後諸多自監督方法，如 SGL~\cite{wu2021sgl} 與 DCCF~\cite{ren2023dccf}，皆在 LightGCN 式骨幹之上疊加額外的對比目標。
 
 在 RA-GARK 中，我們\emph{原封不動}採用 LightGCN（$K=2$）作為區域視角：此分支內不施加任何 KG 相關運算。動機有二。其一，在我們的稀疏評論型 KG 上，純 LightGCN 已達 NDCG@20 = $0.1179$，超越所有我們所評估的 KG-aware 基線。任何偏離此強預設的設計，皆須可被證實能改善而非劣化結果，這是本論文反覆訴諸的硬性設計約束。其二，將 KG 訊號隔離至獨立的全域視角（第~\ref{ch:methodology-zh}~章），可避免 KG 雜訊污染協同表示的梯度流。
 
