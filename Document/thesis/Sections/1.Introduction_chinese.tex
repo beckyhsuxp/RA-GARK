@@ -64,8 +64,8 @@ KGRec~\cite{yang2023kgrec}     & 0.1095 \\
 
   \item \textbf{RA-GARK，一個雙視角架構}：以旁路通道而非深度融合的方式整合協同訊號與 KG 衍生訊號。RA-GARK 由三項核心要素組成，且彼此皆獨立必要：
     \begin{itemize}
-      \item \textbf{Softmax aspect-saliency 注意力}（第~\ref{sec:softmax-zh}~節）。每件物品的 KG 語意儲存於 $A=4$ 個\emph{潛在}面向槽中（此槽位數為模型設計參數，與每件物品所擁有的原始面向標籤數無關）槽位內容由 IDF 加權商品—面向共現矩陣之截斷 SVD 投影而得；softmax 正規化的注意力為給定的使用者—物品配對選取最足以代表該物品的潛在槽位。將 softmax 改為 sigmoid 會使 NDCG@20 下降 $15.5\%$，是我們所觀察到單一元件影響最大者。
-      \item \textbf{具局部偏置的融合閘}（第~\ref{sec:gate-zh}~節）。融合閘以 $+5$ 的正偏置初始化，使 $\alpha^{(0)} \approx 0.993$。因此模型在訓練之初幾乎等同於純 LightGCN，僅當梯度顯示 KG 通道有幫助時，閘門才會被打開。此設計提供了四種基線所缺乏的、結構性的\emph{優雅退化}保證。若移除此偏置初始化，NDCG@20 會損失 $4.5\%$。
+      \item \textbf{Softmax aspect-saliency 注意力}（第~\ref{sec:softmax-zh}~節）。每件物品的 KG 語意儲存於 $A=4$ 個\emph{潛在}面向槽中；此槽位數為模型設計參數，與每件物品實際擁有的原始面向標籤數無關。槽位內容由 IDF 加權商品—面向共現矩陣之截斷 SVD 投影而得；softmax 正規化的注意力則針對每組使用者—物品配對，選出最能代表該物品的潛在槽位。將 softmax 改為 sigmoid 會使 NDCG@20 下降 $15.5\%$，是我們所觀察到單一元件影響最大者。
+      \item \textbf{具局部偏置的融合閘}（第~\ref{sec:gate-zh}~節）。融合閘以 $+5$ 的正偏置初始化，使 $\alpha^{(0)} \approx 0.993$。因此模型在訓練之初幾乎等同於純 LightGCN，只有當梯度顯示 KG 通道確實有幫助時，閘門才會被打開。此設計提供四種基線所缺乏的結構性\emph{優雅退化}保證。若移除此偏置初始化，NDCG@20 會損失 $4.5\%$。
       \item \textbf{KG-SVD 初始化}（第~\ref{sec:kgsvd-zh}~節）。aspect 槽位的嵌入由 IDF 加權的物品—aspect 矩陣之截斷 SVD 初始化而來，將 KG 的語意幾何保留為最佳化的起點。將其換為隨機初始化會損失 $5.9\%$ NDCG@20。
     \end{itemize}
 
