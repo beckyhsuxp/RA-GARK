@@ -15,7 +15,7 @@ Our investigation begins with an empirical observation that motivates the rest o
 
 \begin{table}[H]
 \centering
-\caption{NDCG@20 comparison between KG-aware methods and pure LightGCN.}
+\caption{Comparison of KG-aware methods and pure LightGCN on NDCG@20.}
 \label{tab:intro-baseline}
 \begin{tabular}{lc}
 \toprule
@@ -55,7 +55,7 @@ The empirical anomaly and the practical importance of the sparse-KG setting moti
 
 RQ1 is addressed in Chapters~\ref{ch:relatedwork} and~\ref{ch:experiments}, where we identify the shared failure mode as mandatory KG fusion under sparse and unreliable KG. RQ2 is developed in Chapter~\ref{ch:methodology} and validated empirically in Chapter~\ref{ch:experiments}, where we show that a gateable side-channel design can use KG signal when helpful and fall back to pure LightGCN when it is not.
 
-The thesis statement of this work is that the KG should not be a mandatory component of the scoring pipeline, as it effectively is in KGAT-style deep fusion, but should instead be a side channel that can be \emph{explicitly gated} based on whether its signal is helpful. Concretely, this idea is realized by three design choices: a softmax aspect-saliency attention that selects KG rationales per user--item pair; a KG-driven SVD initialization that preserves semantic geometry; and a local-biased fusion gate whose initialization implements graceful degradation to pure LightGCN when the KG turns out to be uninformative.
+The thesis statement of this work is that the KG should be treated as a gateable side channel rather than a mandatory component of the scoring pipeline. Chapter~\ref{ch:methodology} gives the concrete architectural and optimization choices that realize this principle.
 
 \section{Thesis Organization}
 \label{sec:intro-organization}
@@ -70,12 +70,7 @@ This thesis makes the following contributions:
 \begin{enumerate}
   \item \textbf{An empirical study} demonstrating that, under sparse review-derived KG, four representative KG-aware methods (KGAT, KGCL, MCCLK, KGRec) are uniformly outperformed by pure LightGCN. We attribute this to the absence of an architectural mechanism that can disengage the KG when it is unreliable.
 
-  \item \textbf{RA-GARK, a dual-view architecture} that integrates collaborative and KG-derived signals through a side-channel design rather than deep fusion. RA-GARK consists of three core ingredients, each of which is independently necessary:
-    \begin{itemize}
-      \item \textbf{Softmax aspect-saliency attention} (Section~\ref{sec:softmax}). Per-item KG semantics are stored across $A=4$ \emph{latent} aspect slots produced by a truncated SVD of an IDF-weighted item--aspect co-occurrence matrix; the slot count is a model hyperparameter and does not correspond to a fixed number of raw aspect tags per item. A softmax-normalized attention selects, per user--item pair, which latent slot best represents the item.
-      \item \textbf{Local-biased fusion gate} (Section~\ref{sec:gate}). The fusion gate is initialized with a positive bias, so the model begins training as essentially pure LightGCN and only opens the KG channel when gradients indicate it helps. This provides a structural \emph{graceful degradation} guarantee absent from the four baselines.
-      \item \textbf{KG-SVD initialization} (Section~\ref{sec:kgsvd}). The aspect-slot embeddings are initialized from a truncated SVD of an IDF-weighted item--aspect matrix, preserving the KG's semantic geometry as the optimization starting point.
-    \end{itemize}
+  \item \textbf{RA-GARK, a dual-view architecture} that integrates collaborative and KG-derived signals through a gateable side channel rather than deep fusion. Chapter~\ref{ch:methodology} gives the full architectural construction and training procedure.
 
   \item \textbf{Empirical validation} on the sparse review-derived KG benchmark, where RA-GARK surpasses both the strongest KG-aware baseline and pure LightGCN. The result shows that the proposed design principle flips the contribution of KG signal from \emph{net-negative} (as in the four baselines) to \emph{net-positive}, even when the KG itself is unchanged.
 

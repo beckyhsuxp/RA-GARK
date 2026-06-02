@@ -94,7 +94,7 @@ Random seed                        & $42$ \\
 \subsection{Hardware and Software}
 \label{sec:eval-env}
 
-All experiments are run on a single NVIDIA RTX-class GPU with $24$\,GB of memory. The model is implemented in PyTorch~$2.x$ and trained in single-precision. Per-epoch wall-clock time is reported in Section~\ref{sec:eval-cost}.
+All experiments are run on a single NVIDIA GeForce RTX 3090 GPU with $24$\,GB of memory. The model is implemented in PyTorch~2.6.0+cu126 and trained in single-precision. Per-epoch wall-clock time is reported in Section~\ref{sec:eval-cost}.
 
 \section{Main Results}
 \label{sec:eval-main}
@@ -103,7 +103,7 @@ Table~\ref{tab:main} reports the main test-set results. RA-GARK attains NDCG@$20
 
 \begin{table}[!htbp]
 \centering
-\caption{Main test results under full-ranking evaluation.}
+\caption{Comparison of recommendation performance under Top-20 evaluation.}
 \label{tab:main}
 \begin{tabular}{lcccc}
 \toprule

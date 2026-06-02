@@ -94,7 +94,7 @@ Early-stopping patience            & $10$ \\
 \subsection{硬體與軟體}
 \label{sec:eval-env-zh}
 
-所有實驗於單張 NVIDIA RTX 級 GPU（$24$\,GB 記憶體）上執行。模型以 PyTorch~$2.x$ 實作，以單精度訓練。每 epoch 牆鐘時間於第~\ref{sec:eval-cost-zh}~節報告。
+所有實驗於單張 NVIDIA GeForce RTX 3090 GPU（$24$\,GB 記憶體）上執行。模型以 PyTorch~2.6.0+cu126 實作，以單精度訓練。每 epoch 牆鐘時間於第~\ref{sec:eval-cost-zh}~節報告。
 
 \section{主要結果}
 \label{sec:eval-main-zh}
@@ -103,7 +103,7 @@ Early-stopping patience            & $10$ \\
 
 \begin{table}[!htbp]
 \centering
-\caption{全項目排序評估下之主要測試結果。}
+\caption{Top-20 評估下之推薦表現比較。}
 \label{tab:main-zh}
 \begin{tabular}{lcccc}
 \toprule

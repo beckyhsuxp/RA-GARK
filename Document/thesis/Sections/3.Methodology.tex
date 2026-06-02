@@ -75,9 +75,9 @@ $\hat{y}(u, i) \in \mathbb{R}$         & predicted preference score for pair $(u
 \section{Problem Formulation}
 \label{sec:approach-problem}
 
-\paragraph{Task.} We address top-$K$ recommendation in the implicit-feedback setting. Given $\mathcal{U}$, $\mathcal{I}$, observed interactions $\mathcal{R}$, and the item--aspect KG $\mathcal{G}_{\mathrm{KG}}$, the goal is to produce for each user $u \in \mathcal{U}$ a ranked list of items from $\mathcal{I} \setminus \{i : (u, i) \in \mathcal{R}\}$, evaluated by ranking metrics (NDCG@$K$, Recall@$K$, Hit@$K$) against a held-out test interaction set.
+\paragraph{Task} We address top-$K$ recommendation in the implicit-feedback setting. Given $\mathcal{U}$, $\mathcal{I}$, observed interactions $\mathcal{R}$, and the item--aspect KG $\mathcal{G}_{\mathrm{KG}}$, the goal is to produce for each user $u \in \mathcal{U}$ a ranked list of items they have not previously interacted with, evaluated by ranking metrics (NDCG@$K$, Recall@$K$, Hit@$K$) against a held-out test interaction set.
 
-\paragraph{Scoring function.} RA-GARK assigns to each $(u, i)$ pair the inner-product score
+\paragraph{Scoring function} RA-GARK assigns to each $(u, i)$ pair the inner-product score
 \begin{equation}
 \label{eq:score}
 \hat{y}(u, i) = \langle u_{\mathrm{final}},\ i_{\mathrm{final}} \rangle,
@@ -90,7 +90,7 @@ i_{\mathrm{final}} = \alpha_i\, i_{\mathrm{loc}} + (1 - \alpha_i)\, i_{\mathrm{g
 \end{equation}
 The gate outputs $\alpha_u, \alpha_i$ are computed by independent MLPs (Section~\ref{sec:gate}). With the bias initialization used throughout this thesis, $\alpha_u^{(0)}, \alpha_i^{(0)} \approx 0.993$, so $\hat{y}^{(0)}(u, i) \approx \langle u_{\mathrm{loc}}, i_{\mathrm{loc}} \rangle$ at the start of training, i.e.\ the score is essentially that of pure LightGCN until the gate learns otherwise.
 
-\paragraph{Training objective.} We optimize a Bayesian Personalized Ranking (BPR)~\cite{rendle2009bpr} loss with two auxiliary cross-view contrastive regularizers:
+\paragraph{Training objective} We optimize a Bayesian Personalized Ranking (BPR)~\cite{rendle2009bpr} loss with two auxiliary cross-view contrastive regularizers:
 \begin{equation}
 \label{eq:total-loss}
 \mathcal{L} = \mathcal{L}_{\mathrm{BPR}} + \lambda_{\mathrm{CL}} \bigl( \mathcal{L}_{\mathrm{aCL}} + \mathcal{L}_{\mathrm{uCL}} \bigr),
