@@ -98,6 +98,9 @@ BOOL_FLAGS = (
     "use_rationale", "use_svd_init",
     "use_acl", "use_ucl", "use_global_view",
 )
+BASE_METRICS = ("HR", "Precision", "Recall", "F1", "MAP", "NDCG")
+EXTRA_K = 10
+METRIC_COLUMNS = BASE_METRICS + tuple(f"{m}@{EXTRA_K}" for m in BASE_METRICS)
 
 
 def make_cfg(**overrides) -> Config:
@@ -132,8 +135,9 @@ ALL_PRESETS = {
                            "use_acl": False, "use_ucl": False},
 
     # ── Temperature sweep: rescue user-conditioned attention ───────────
-    # Case study showed τ=1 gives near-uniform attention. Sharpen the
-    # softmax to amplify small user-specific logit differences.
+    # Case study showed τ=1 gives near-uniform attention. Sharpen / relax
+    # the softmax to see whether the optimum sits between those regimes.
+    "winner_temp_1.0":    {"rationale_temperature": 1.0},
     "winner_temp_0.5":    {"rationale_temperature": 0.5},
     "winner_temp_0.1":    {"rationale_temperature": 0.1},
     "winner_temp_0.05":   {"rationale_temperature": 0.05},
@@ -141,6 +145,8 @@ ALL_PRESETS = {
     # ── Sensitivity: latent aspect slots A (default 4 = winner) ────────
     # SVD rank scales as k = A·d (handled by model from cfg.num_aspects).
     "winner_A2":          {"num_aspects": 2},
+    "winner_A3":          {"num_aspects": 3},
+    "winner_A6":          {"num_aspects": 6},
     "winner_A8":          {"num_aspects": 8},
 
     # ── Sensitivity: contrastive weight λ_CL (default 0.005 = winner) ──
@@ -173,7 +179,8 @@ MODES = {
         "lightgcn_only",
     ],
     "temp": [
-        "winner",           # τ=1.0 baseline
+        "winner",           # τ=0.5 baseline
+        "winner_temp_1.0",
         "winner_temp_0.5",
         "winner_temp_0.1",
         "winner_temp_0.05",
@@ -182,6 +189,8 @@ MODES = {
     "sens_A": [
         "winner",           # A=4
         "winner_A2",
+        "winner_A3",
+        "winner_A6",
         "winner_A8",
     ],
     "sens_lambda": [
@@ -199,7 +208,7 @@ MODES = {
     ],
     "sensitivity": [        # all three axes in one run (~15 min)
         "winner",
-        "winner_A2", "winner_A8",
+        "winner_A2", "winner_A3", "winner_A6", "winner_A8",
         "winner_cl0", "winner_cl0.001", "winner_cl0.01", "winner_cl0.05",
         "winner_fb2", "winner_fb0", "winner_fb10",
     ],
@@ -253,6 +262,10 @@ def main():
         if args.reuse and tag in ledger and os.path.exists(best_ckpt):
             # Trust the stored best metrics — zero compute, never retrain.
             test_res = {k: float(v) for k, v in ledger[tag]["metrics"].items()}
+            if any(col not in test_res for col in METRIC_COLUMNS if "@" in col):
+                test_res = evaluate_ragark(cfg, device, best_ckpt)
+                ledger[tag]["metrics"] = {k: float(v) for k, v in test_res.items()}
+                _save_ledger(ledger)
             reused = True
             log.info("↺ reuse cached best for %s (NDCG=%.4f) — no training",
                      name, test_res.get("NDCG", float("nan")))
@@ -299,12 +312,13 @@ def main():
         row["num_aspects"] = cfg.num_aspects
         row["cl_weight"] = cfg.cl_weight
         row["fusion_init_bias"] = cfg.fusion_init_bias
-        for m in ("HR", "Precision", "Recall", "F1", "MAP", "NDCG"):
+        for m in METRIC_COLUMNS:
             row[m] = f"{test_res.get(m, float('nan')):.4f}" if test_res else "NaN"
         results.append(row)
 
-        log.info("✓ %s done in %.0fs — NDCG=%s%s",
-                 name, elapsed, row["NDCG"], "  (reused)" if reused else "")
+        log.info("✓ %s done in %.0fs — NDCG@20=%s NDCG@10=%s%s",
+                 name, elapsed, row["NDCG"], row.get("NDCG@10", "NaN"),
+                 "  (reused)" if reused else "")
 
     # Canonical latest CSV (back-compat: this is what the §4 tables read from)
     # plus a timestamped archive copy that is never overwritten.
@@ -325,8 +339,9 @@ def main():
     log.info("=" * 70)
     for r in results:
         log.info(
-            "%-20s NDCG=%s HR=%s Recall=%s MAP=%s%s",
-            r["preset"], r["NDCG"], r["HR"], r["Recall"], r["MAP"],
+            "%-20s NDCG@20=%s NDCG@10=%s HR@20=%s Recall@20=%s MAP@20=%s%s",
+            r["preset"], r["NDCG"], r.get("NDCG@10", "NaN"),
+            r["HR"], r["Recall"], r["MAP"],
             "  (reused)" if r["reused"] else "",
         )
 

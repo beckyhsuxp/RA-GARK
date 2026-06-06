@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections import defaultdict
-from typing import Dict, List, Set
+from typing import Dict, List, Sequence, Set
 
 import numpy as np
 import torch
@@ -42,6 +42,7 @@ def evaluate(
     device: torch.device,
     k: int = 20,
     batch_size: int = 128,
+    extra_ks: Sequence[int] = (),
 ) -> Dict[str, float]:
     """
     Vectorised full-ranking evaluation.
@@ -53,6 +54,11 @@ def evaluate(
     model.eval()
     agg: Dict[str, List[float]] = defaultdict(list)
     users = list(test_ground_truth.keys())
+    ks: list[int] = []
+    for cur_k in (k, *extra_ks):
+        if cur_k not in ks:
+            ks.append(cur_k)
+    ks_sorted = sorted(ks)
 
     with torch.no_grad():
         cached_embs = model._lightgcn_embeddings()
@@ -66,10 +72,15 @@ def evaluate(
                 seen = train_history.get(uid, set())
                 if seen:
                     scores[i, list(seen)] = -np.inf
-                k_eff = min(k, scores.shape[1])
-                top_k = np.argpartition(scores[i], -k_eff)[-k_eff:]
+                max_k = min(max(ks_sorted), scores.shape[1])
+                top_k = np.argpartition(scores[i], -max_k)[-max_k:]
                 top_k = top_k[np.argsort(scores[i, top_k])[::-1]]
-                for metric, val in _metrics_at_k(top_k, test_ground_truth[uid], k).items():
-                    agg[metric].append(val)
+                for cur_k in ks_sorted:
+                    k_eff = min(cur_k, top_k.shape[0])
+                    metrics = _metrics_at_k(top_k[:k_eff], test_ground_truth[uid], cur_k)
+                    suffix = "" if cur_k == k else f"@{cur_k}"
+                    for metric, val in metrics.items():
+                        key = metric if not suffix else f"{metric}{suffix}"
+                        agg[key].append(val)
 
     return {m: float(np.mean(v)) for m, v in agg.items()}
