@@ -151,7 +151,7 @@ def train_mcclk(cfg: Config, device: torch.device) -> None:
 
         val_res = evaluate(
             model, val_gt, train_hist, device,
-            k=cfg.eval_k, batch_size=cfg.eval_batch_size,
+            k=cfg.eval_k, batch_size=cfg.eval_batch_size, extra_ks=(10,),
         )
 
         note = ""
@@ -185,7 +185,7 @@ def train_mcclk(cfg: Config, device: torch.device) -> None:
     )
     test_res = evaluate(
         model, test_gt, train_hist, device,
-        k=cfg.eval_k, batch_size=cfg.eval_batch_size,
+        k=cfg.eval_k, batch_size=cfg.eval_batch_size, extra_ks=(10,),
     )
     log.info("─" * 55)
     log.info("TEST metrics @ K=%d  (best epoch: %d)", cfg.eval_k, best_epoch)

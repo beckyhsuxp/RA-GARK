@@ -167,7 +167,7 @@ def train_ragark(cfg: Config, device: torch.device) -> dict:
         t0 = time.perf_counter()
         val_res = evaluate(
             model, val_gt, train_hist, device,
-            k=cfg.eval_k, batch_size=cfg.eval_batch_size,
+            k=cfg.eval_k, batch_size=cfg.eval_batch_size, extra_ks=(10,),
         )
         eval_ms = (time.perf_counter() - t0) * 1000
 
@@ -202,7 +202,7 @@ def train_ragark(cfg: Config, device: torch.device) -> dict:
     )
     test_res = evaluate(
         model, test_gt, train_hist, device,
-        k=cfg.eval_k, batch_size=cfg.eval_batch_size,
+        k=cfg.eval_k, batch_size=cfg.eval_batch_size, extra_ks=(10,),
     )
     log.info("─" * 55)
     log.info("TEST metrics @ K=%d  (best epoch: %d)", cfg.eval_k, best_epoch)
@@ -250,7 +250,7 @@ def evaluate_ragark(cfg: Config, device: torch.device, ckpt_path: str) -> dict:
     log.info("Reusing cached checkpoint %s → TEST evaluation (no training)", ckpt_path)
     return evaluate(
         model, test_gt, train_hist, device,
-        k=cfg.eval_k, batch_size=cfg.eval_batch_size,
+        k=cfg.eval_k, batch_size=cfg.eval_batch_size, extra_ks=(10,),
     )
 
 
