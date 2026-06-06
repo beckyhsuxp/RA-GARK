@@ -234,10 +234,10 @@ Because the magnitudes of $\mathbf{E}_{\mathrm{KG}}$ depend on $|\mathcal{I}|$, 
 The complete initialization is summarized as a five-step procedure:
 
 \begin{enumerate}
-  \item Build the binary co-occurrence matrix $\mathbf{M}$ from $\mathcal{G}_{\mathrm{KG}}$ (Equation~\eqref{eq:cooc}).
-  \item Apply IDF column reweighting to obtain $\tilde{\mathbf{M}}$ (Equation~\eqref{eq:idf-rescale}).
-  \item Compute the rank-$k$ truncated SVD $\tilde{\mathbf{M}} \approx \mathbf{U}_k \boldsymbol{\Sigma}_k \mathbf{V}_k^{\top}$ with $k = A d$ (Equation~\eqref{eq:svd}).
-  \item Form $\mathbf{E}_{\mathrm{KG}} = \mathbf{U}_k \boldsymbol{\Sigma}_k^{1/2}$ and reshape into $\mathbf{A}_{\mathrm{KG}}^{(0)} \in \mathbb{R}^{|\mathcal{I}| \times A \times d}$ (Equation~\eqref{eq:reshape}).
+  \item Build the binary co-occurrence matrix $\mathbf{M}$ from $\mathcal{G}_{\mathrm{KG}}$ (\Eqref{eq:cooc}).
+  \item Apply IDF column reweighting to obtain $\tilde{\mathbf{M}}$ (\Eqref{eq:idf-rescale}).
+  \item Compute the rank-$k$ truncated SVD $\tilde{\mathbf{M}} \approx \mathbf{U}_k \boldsymbol{\Sigma}_k \mathbf{V}_k^{\top}$ with $k = A d$ (\Eqref{eq:svd}).
+  \item Form $\mathbf{E}_{\mathrm{KG}} = \mathbf{U}_k \boldsymbol{\Sigma}_k^{1/2}$ and reshape into $\mathbf{A}_{\mathrm{KG}}^{(0)} \in \mathbb{R}^{|\mathcal{I}| \times A \times d}$ (\Eqref{eq:reshape}).
   \item Rescale the entire tensor so its standard deviation matches the Xavier-normal target.
 \end{enumerate}
 
@@ -261,7 +261,7 @@ where $\mathbf{E}^{\mathrm{glo}}$ is a learnable parameter separate from the loc
 \subsection{Motivation}
 \label{sec:softmax-motivation}
 
-Each item's KG semantics are spread across the $A$ latent slots of $\mathbf{a}_i$; different slots encode different semantic facets that are visible to the SVD. The rationale module's job is to select, conditioned on the (user, item) pair, which of the $A$ slots best represents the item in the global view. Equation~\eqref{eq:logit} conditions the slot logit on both $u_{\mathrm{glo}}$ and the slot embedding, so the selection is structurally per-(user, item); whether the trained model actually exercises the user dimension or settles on an item-conditioned routing is an empirical question, examined in the case study of Section~\ref{sec:eval-case}.
+Each item's KG semantics are spread across the $A$ latent slots of $\mathbf{a}_i$; different slots encode different semantic facets that are visible to the SVD. The rationale module's job is to select, conditioned on the (user, item) pair, which of the $A$ slots best represents the item in the global view. \Eqref{eq:logit} conditions the slot logit on both $u_{\mathrm{glo}}$ and the slot embedding, so the selection is structurally per-(user, item); whether the trained model actually exercises the user dimension or settles on an item-conditioned routing is an empirical question, examined in the case study of Section~\ref{sec:eval-case}.
 
 \subsection{User-conditioned Attention Logits}
 \label{sec:softmax-logit}
@@ -296,7 +296,7 @@ The global-view item embedding is the slot-weighted average
 \label{eq:iglo}
 i_{\mathrm{glo}} = \sum_{k=1}^{A} w_{u, i, k} \cdot \mathbf{a}_{i, k} \;\in\; \mathbb{R}^{d}.
 \end{equation}
-Implementation-wise this is the ``rationale masking'' step: the softmax weights serve as a soft mask over the slot dimension, and the masked slots are summed back into a single $d$-dimensional vector. Although Equations~\eqref{eq:softmax-w} and~\eqref{eq:iglo} are conceptually two steps, in code they live inside a single module (\texttt{KGRationaleMasking}) and are computed in one forward call.
+Implementation-wise this is the ``rationale masking'' step: the softmax weights serve as a soft mask over the slot dimension, and the masked slots are summed back into a single $d$-dimensional vector. Although \Eqref{eq:softmax-w} and \Eqref{eq:iglo} are conceptually two steps, in code they live inside a single module (\texttt{KGRationaleMasking}) and are computed in one forward call.
 
 \subsection{Why Softmax and Not Sigmoid}
 \label{sec:softmax-vs-sigmoid}
@@ -337,7 +337,7 @@ The final per-side embeddings are convex combinations
 u_{\mathrm{final}} = \alpha_u\, u_{\mathrm{loc}} + (1 - \alpha_u)\, u_{\mathrm{glo}}, \qquad
 i_{\mathrm{final}} = \alpha_i\, i_{\mathrm{loc}} + (1 - \alpha_i)\, i_{\mathrm{glo}},
 \end{equation}
-and the final score is the inner product $\hat{y}(u,i) = \langle u_{\mathrm{final}}, i_{\mathrm{final}} \rangle$ as already stated in Equation~\eqref{eq:score}.
+and the final score is the inner product $\hat{y}(u,i) = \langle u_{\mathrm{final}}, i_{\mathrm{final}} \rangle$ as already stated in \Eqref{eq:score}.
 
 \subsection{Gate Structure}
 \label{sec:gate-structure}
@@ -352,7 +352,7 @@ with $\mathbf{W} \in \mathbb{R}^{d \times 2d}$, $\mathbf{w} \in \mathbb{R}^{d}$,
 \subsection{Local-Biased Initialization}
 \label{sec:gate-bias}
 
-The crucial design choice is the initialization of the scalar bias $b$ in Equation~\eqref{eq:gate-mlp}. With $b = 0$, the gate output at the start of training is approximately $\sigma(0) = 0.5$, i.e.\ a 50/50 mix of local and global. With the global view initialized partly from the noisy KG, a 50/50 starting mix exposes the local representation to KG noise throughout training, and we have already observed in Chapter~\ref{ch:intro} that this is the failure mode of deep-fusion baselines.
+The crucial design choice is the initialization of the scalar bias $b$ in \Eqref{eq:gate-mlp}. With $b = 0$, the gate output at the start of training is approximately $\sigma(0) = 0.5$, i.e.\ a 50/50 mix of local and global. With the global view initialized partly from the noisy KG, a 50/50 starting mix exposes the local representation to KG noise throughout training, and we have already observed in Chapter~\ref{ch:intro} that this is the failure mode of deep-fusion baselines.
 
 We instead initialize $b = +5$ on both gates. The gate output at the start of training is then
 \begin{equation}
@@ -416,12 +416,12 @@ The projection head $g$ is shared with $\mathcal{L}_{\mathrm{aCL}}$, since both 
 \subsection{Stop-Gradient on the Global Side}
 \label{sec:cl-stopgrad}
 
-The stop-gradient on the KG side in Equations~\eqref{eq:lacl} and~\eqref{eq:lucl} is structurally important. Without it, the contrastive gradient would propagate back into the SVD-initialized aspect slots and the global user table, slowly destroying the angular geometry that the KG-SVD initialization installed (Section~\ref{sec:kgsvd}). With stop-gradient, the contrastive losses act asymmetrically: they pull the local view toward the global view's pre-existing geometry, but they cannot push the global view in any direction. The KG-derived semantic subspace is preserved as an external reference, and the local view absorbs the alignment cost.
+The stop-gradient on the KG side in \Eqref{eq:lacl} and \Eqref{eq:lucl} is structurally important. Without it, the contrastive gradient would propagate back into the SVD-initialized aspect slots and the global user table, slowly destroying the angular geometry that the KG-SVD initialization installed (Section~\ref{sec:kgsvd}). With stop-gradient, the contrastive losses act asymmetrically: they pull the local view toward the global view's pre-existing geometry, but they cannot push the global view in any direction. The KG-derived semantic subspace is preserved as an external reference, and the local view absorbs the alignment cost.
 
 \subsection{Loss Weight}
 \label{sec:cl-lambda}
 
-The contrastive weight $\lambda_{\mathrm{CL}}$ in Equation~\eqref{eq:total-loss} is fixed at $0.005$. This is small enough that the contrastive losses contribute a non-dominant fraction of the total gradient (BPR remains the primary signal), and is consistent with the role we assigned to contrastive regularization in Section~\ref{sec:cl-role}: it is a geometric prior, not a primary learning objective. We do not tune $\lambda_{\mathrm{CL}}$ per dataset.
+The contrastive weight $\lambda_{\mathrm{CL}}$ in \Eqref{eq:total-loss} is fixed at $0.005$. This is small enough that the contrastive losses contribute a non-dominant fraction of the total gradient (BPR remains the primary signal), and is consistent with the role we assigned to contrastive regularization in Section~\ref{sec:cl-role}: it is a geometric prior, not a primary learning objective. We do not tune $\lambda_{\mathrm{CL}}$ per dataset.
 
 \section{Training and Computational Complexity}
 \label{sec:method-train}
@@ -429,7 +429,7 @@ The contrastive weight $\lambda_{\mathrm{CL}}$ in Equation~\eqref{eq:total-loss}
 \subsection{Total Objective}
 \label{sec:train-objective}
 
-The full training loss has already been stated in Equation~\eqref{eq:total-loss} and is reproduced here for completeness:
+The full training loss has already been stated in \Eqref{eq:total-loss} and is reproduced here for completeness:
 \begin{equation}
 \label{eq:total-loss-repeat}
 \mathcal{L} = \mathcal{L}_{\mathrm{BPR}} + \lambda_{\mathrm{CL}} \bigl( \mathcal{L}_{\mathrm{aCL}} + \mathcal{L}_{\mathrm{uCL}} \bigr).
@@ -439,7 +439,7 @@ The BPR loss provides the primary ranking signal; the contrastive terms supply t
 \subsection{Optimization}
 \label{sec:train-opt}
 
-We optimize Equation~\eqref{eq:total-loss-repeat} with Adam (default $\beta_1 = 0.9, \beta_2 = 0.999, \epsilon = 10^{-8}$), learning rate $10^{-3}$, batch size $128$, for up to $80$ epochs. Early stopping with patience $10$ is applied on validation NDCG@20. Each training batch consists of $128$ triplets $(u, i^+, i^-)$ where $i^-$ is sampled uniformly from items not in $\mathcal{R}_u$. The LightGCN propagation in Equation~\eqref{eq:lightgcn-prop}--\eqref{eq:lightgcn-avg} is recomputed once per batch and reused for both positive and negative scoring within the batch.
+We optimize \Eqref{eq:total-loss-repeat} with Adam (default $\beta_1 = 0.9, \beta_2 = 0.999, \epsilon = 10^{-8}$), learning rate $10^{-3}$, batch size $128$, for up to $80$ epochs. Early stopping with patience $10$ is applied on validation NDCG@20. Each training batch consists of $128$ triplets $(u, i^+, i^-)$ where $i^-$ is sampled uniformly from items not in $\mathcal{R}_u$. The LightGCN propagation in \Eqref{eq:lightgcn-prop}--\Eqref{eq:lightgcn-avg} is recomputed once per batch and reused for both positive and negative scoring within the batch.
 
 \subsection{Inference}
 \label{sec:train-inference}
