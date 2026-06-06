@@ -68,6 +68,51 @@ ARCHIVE_DIR = os.path.join(RUNS_DIR, "archive")
 LEDGER_PATH = os.path.join(RUNS_DIR, "best_ledger.json")
 
 
+def _tag_float(value: float) -> str:
+    return f"{value:g}".replace("-", "m").replace(".", "p")
+
+
+def _config_reuse_signature(cfg: Config) -> tuple:
+    """Fields that must match for a cached checkpoint to be reusable."""
+    return (
+        *(getattr(cfg, flag) for flag in BOOL_FLAGS),
+        cfg.rationale_style,
+        cfg.rationale_temperature,
+        cfg.fusion_init_bias,
+        cfg.fusion_gate_style,
+        cfg.num_aspects,
+        cfg.embedding_dim,
+        cfg.n_layers,
+        cfg.cl_weight,
+        cfg.temp,
+        cfg.seed,
+        cfg.use_canonical_kg,
+        cfg.canonical_kg_prune_degree,
+        cfg.kg_top_freq_pct,
+    )
+
+
+def _build_config_tag(cfg: Config) -> str:
+    tag_bits = [f"{k.replace('use_', '')}{int(getattr(cfg, k))}" for k in BOOL_FLAGS]
+    tag_bits.extend([
+        f"style-{cfg.rationale_style}",
+        f"t{_tag_float(cfg.rationale_temperature)}",
+        f"A{cfg.num_aspects}",
+        f"d{cfg.embedding_dim}",
+        f"L{cfg.n_layers}",
+        f"cl{_tag_float(cfg.cl_weight)}",
+        f"ct{_tag_float(cfg.temp)}",
+        f"fb{_tag_float(cfg.fusion_init_bias)}",
+        f"gate-{cfg.fusion_gate_style}",
+        f"seed{cfg.seed}",
+    ])
+    if cfg.use_canonical_kg:
+        tag_bits.append(f"ckg{cfg.canonical_kg_prune_degree}")
+    else:
+        tag_bits.append(f"kgp{_tag_float(cfg.kg_top_freq_pct)}")
+    return f"best_ragark_{'_'.join(tag_bits)}"
+
+
 def _config_tag(cfg: Config) -> str:
     """Unique fingerprint of a config — reuse the tag make_cfg already builds."""
     return os.path.splitext(os.path.basename(cfg.model_save_path))[0]
@@ -109,12 +154,7 @@ def make_cfg(**overrides) -> Config:
     cfg.epochs = 80
     for k, v in overrides.items():
         setattr(cfg, k, v)
-    tag_bits = [f"{k.replace('use_', '')}{int(getattr(cfg, k))}" for k in BOOL_FLAGS]
-    tag_bits.append(f"style-{cfg.rationale_style}")
-    tag_bits.append(f"t{cfg.rationale_temperature:.2f}")
-    tag_bits.append(f"fb{cfg.fusion_init_bias:.0f}")
-    tag_bits.append(f"gate-{cfg.fusion_gate_style}")
-    cfg.model_save_path = f"best_ragark_{'_'.join(tag_bits)}.pth"
+    cfg.model_save_path = f"{_build_config_tag(cfg)}.pth"
     return cfg
 
 
@@ -221,6 +261,21 @@ def run_presets(mode: str) -> list[tuple[str, dict]]:
     return [(n, ALL_PRESETS[n]) for n in names]
 
 
+def validate_preset_tags(presets: list[tuple[str, dict]]) -> None:
+    seen: dict[str, tuple[str, tuple]] = {}
+    for name, overrides in presets:
+        cfg = make_cfg(**overrides)
+        tag = _config_tag(cfg)
+        signature = _config_reuse_signature(cfg)
+        prev = seen.get(tag)
+        if prev is not None and prev[1] != signature:
+            raise ValueError(
+                "Config tag collision: "
+                f"{prev[0]} and {name} both map to {tag}"
+            )
+        seen[tag] = (name, signature)
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument(
@@ -244,6 +299,7 @@ def main():
 
     results = []
     presets = run_presets(args.mode)
+    validate_preset_tags(presets)
     t_total = time.perf_counter()
 
     for i, (name, overrides) in enumerate(presets, 1):
