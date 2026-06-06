@@ -99,7 +99,7 @@ To make the experimental setting reproducible, all experiments are conducted on 
 \section{Main Results}
 \label{sec:eval-main}
 
-Table~\ref{tab:main} reports the main test-set results. RA-GARK attains NDCG@$20 = 0.1242$, improving on the strongest KG-aware baseline (KGRec) by $+13.4\%$ and on pure LightGCN by $+5.3\%$. The improvement is consistent across the secondary ranking metrics (HR@$20$, Recall@$20$, and MAP@$20$); the largest relative gain over KGRec is $+18.4\%$ on MAP@$20$, indicating that the rank quality of correctly retrieved items is also better than the baselines'. As a stricter cutoff check, RA-GARK also improves over pure LightGCN at Top-10, with NDCG@$10 = 0.0958$ versus $0.0908$.
+Table~\ref{tab:main} reports the main test-set results. RA-GARK attains NDCG@$20 = 0.1242$, improving on the strongest KG-aware baseline (KGRec) by $+13.4\%$ and on pure LightGCN by $+5.3\%$. The improvement is consistent across the secondary ranking metrics (HR@$20$, Recall@$20$, and MAP@$20$); the largest relative gain over KGRec is $+18.4\%$ on MAP@$20$, indicating that the rank quality of correctly retrieved items is also better than the baselines'. As a stricter cutoff check, RA-GARK also improves over pure LightGCN at Top-10, with NDCG@$10 = 0.0960$ versus $0.0908$.
 
 \begin{table}[!htbp]
 \centering
@@ -132,7 +132,7 @@ Two readings of this table are worth separating. The first, $+13.4\%$ over KGRec
 \label{sec:ablation-softmax}
 \label{sec:ablation-gate}
 
-We measure each of the three headline design choices, KG-SVD initialization (Section~\ref{sec:kgsvd}), softmax rationale masking (Section~\ref{sec:softmax}), and the locally biased fusion gate (Section~\ref{sec:gate}), by individually reverting it and retraining from scratch with all other settings held fixed. We additionally include diagnostic rows that replace the per-(user, item) gate with a single learnable scalar $\alpha$, drop each contrastive channel individually, or restore the pre-fix sigmoid-plus-unbiased-gate configuration. Pure LightGCN is reproduced as the no-KG floor. All rows use seed $= 42$, and $\Delta$ denotes the relative NDCG@20 change against the full model.
+We measure each of the three headline design choices, KG-SVD initialization (Section~\ref{sec:kgsvd}), softmax rationale masking (Section~\ref{sec:softmax}), and the locally biased fusion gate (Section~\ref{sec:gate}), by individually reverting it and retraining from scratch with all other settings held fixed. We additionally include diagnostic rows that remove the global view, replace the per-(user, item) gate with a single learnable scalar $\alpha$, disable rationale selection, drop each contrastive channel individually, or restore the pre-fix sigmoid-plus-unbiased-gate configuration. Pure LightGCN is reproduced as the no-KG floor. All rows use seed $= 42$, and $\Delta$ denotes the relative NDCG@20 change against the full model.
 
 \begin{table}[!htbp]
 \centering
@@ -142,17 +142,19 @@ We measure each of the three headline design choices, KG-SVD initialization (Sec
 \toprule
 Configuration & NDCG@20 & NDCG@10 & $\Delta$ & What is removed \\
 \midrule
-\textbf{RA-GARK (full)}              & $\mathbf{0.1242}$ & $\mathbf{0.0958}$ & $0\%$       & none \\
+\textbf{RA-GARK (full)}              & $\mathbf{0.1242}$ & $\mathbf{0.0960}$ & $0\%$       & none \\
 \midrule
-$-$ Softmax $\to$ sigmoid head       & $0.1022$ & $0.0797$ & $-17.7\%$ & cross-aspect competition (\S\ref{sec:softmax-vs-sigmoid}) \\
-$-$ KG-SVD init $\to$ Xavier         & $0.1171$ & $0.0923$ & $-5.7\%$  & angular geometry at init (\S\ref{sec:kgsvd}) \\
-$-$ Fusion-gate bias $b{=}5 \to 0$   & $0.1175$ & $0.0915$ & $-5.4\%$  & local-biased safe default (\S\ref{sec:gate-bias}) \\
-$-$ MLP gate $\to$ scalar $\alpha$   & $0.1184$ & $0.0929$ & $-4.7\%$  & per-(u,i) gate conditioning (\S\ref{sec:gate-perside}) \\
-$-$ User CL ($\mathcal{L}_{\mathrm{uCL}}$)  & $0.1190$ & $0.0924$ & $-4.2\%$  & user-side cross-view alignment \\
-$-$ Aspect CL ($\mathcal{L}_{\mathrm{aCL}}$) & $0.1200$ & $0.0938$ & $-3.4\%$  & item-side aspect-level alignment \\
+$-$ Softmax $\to$ sigmoid head       & $0.1003$ & $0.0785$ & $-19.2\%$ & cross-aspect competition (\S\ref{sec:softmax-vs-sigmoid}) \\
+$-$ KG-SVD init $\to$ Xavier         & $0.1168$ & $0.0922$ & $-6.0\%$  & angular geometry at init (\S\ref{sec:kgsvd}) \\
+$-$ Fusion-gate bias $b{=}5 \to 0$   & $0.1196$ & $0.0948$ & $-3.7\%$  & local-biased safe default (\S\ref{sec:gate-bias}) \\
+$-$ MLP gate $\to$ scalar $\alpha$   & $0.1182$ & $0.0930$ & $-4.8\%$  & per-(u,i) gate conditioning (\S\ref{sec:gate-perside}) \\
+$-$ User CL ($\mathcal{L}_{\mathrm{uCL}}$)  & $0.1191$ & $0.0923$ & $-4.1\%$  & user-side cross-view alignment \\
+$-$ Aspect CL ($\mathcal{L}_{\mathrm{aCL}}$) & $0.1198$ & $0.0937$ & $-3.5\%$  & item-side aspect-level alignment \\
+$-$ Rationale enabled $\to$ uniform mean & $0.1238$ & $0.0957$ & $-0.3\%$  & user-conditioned aspect selection \\
+$-$ Global view (CL-only dual view)  & $0.1218$ & $0.0952$ & $-1.9\%$  & whole KG pipeline at score time \\
 \midrule
 LightGCN only (no-KG floor)          & $0.1179$ & $0.0908$ & ref.       & no global view; CF only \\
-Pre-fix configuration (sigmoid + $b{=}0$) & $0.1052$ & $0.0827$ & $-15.3\%$ & both broken defaults reverted \\
+Pre-fix configuration (sigmoid + $b{=}0$) & $0.1051$ & $0.0827$ & $-15.4\%$ & both broken defaults reverted \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -160,13 +162,13 @@ Pre-fix configuration (sigmoid + $b{=}0$) & $0.1052$ & $0.0827$ & $-15.3\%$ & bo
 
 Table~\ref{tab:ablation} supports three observations.
 
-\paragraph{All four targeted components contribute positively.} Reverting any one of the softmax rationale ($-17.7\%$), KG-SVD initialization ($-5.7\%$), local-biased fusion bias ($-5.4\%$), or the per-(u,i) MLP gate ($-4.7\%$) lowers NDCG@$20$ below the full model. The largest of these, softmax ($0.1022$), additionally falls below the pure-LightGCN floor of $0.1179$: without it, RA-GARK is no longer a positive-contribution KG-aware method on this dataset. The same ordering is visible at Top-10, where the full model reaches NDCG@$10 = 0.0958$ while the sigmoid variant drops to $0.0797$.
+\paragraph{All four targeted components contribute positively.} Reverting any one of the softmax rationale ($-19.2\%$), KG-SVD initialization ($-6.0\%$), local-biased fusion bias ($-3.7\%$), or the per-(u,i) MLP gate ($-4.8\%$) lowers NDCG@$20$ below the full model. The largest of these, softmax ($0.1003$), additionally falls below the pure-LightGCN floor of $0.1179$: without it, RA-GARK is no longer a positive-contribution KG-aware method on this dataset. The same ordering is visible at Top-10, where the full model reaches NDCG@$10 = 0.0960$ while the sigmoid variant drops to $0.0785$.
 
-\paragraph{The softmax-vs-sigmoid choice is by far the largest single-component effect.} The $-17.7\%$ NDCG@$20$ drop when the cross-aspect softmax is replaced with an element-wise sigmoid (to $0.1022$) is by a wide margin the largest individual ablation in the table, several times the typical $1$--$3\%$ swing produced by ordinary hyperparameter tuning. This is the empirical basis for the methodological observation we develop in Chapter~\ref{ch:conclusion}: in our rationale module, the choice of attention normalization is not a tuning detail but a design choice tied to the rationale's semantic assumption, namely that the $A$ slots compete with one another rather than contribute independently.
+\paragraph{The softmax-vs-sigmoid choice is by far the largest single-component effect.} The $-19.2\%$ NDCG@$20$ drop when the cross-aspect softmax is replaced with an element-wise sigmoid (to $0.1003$) is by a wide margin the largest individual ablation in the table, several times the typical $1$--$3\%$ swing produced by ordinary hyperparameter tuning. This is the empirical basis for the methodological observation we develop in Chapter~\ref{ch:conclusion}: in our rationale module, the choice of attention normalization is not a tuning detail but a design choice tied to the rationale's semantic assumption, namely that the $A$ slots compete with one another rather than contribute independently.
 
-\paragraph{The pre-fix configuration recovers the broken baseline behavior.} Reverting both fixes simultaneously, sigmoid rationale together with $b = 0$, gives NDCG@$20 = 0.1052$, which is below \emph{all} four KG-aware baselines. This shows that the architectural skeleton of RA-GARK (two parallel views plus late fusion) is not sufficient by itself: stripped of the headline design choices, the same skeleton reproduces the failure mode exhibited by the baselines, exactly as expected from the design principle in Section~\ref{sec:approach-principle}. The two reverts do not stack additively: the sigmoid revert alone ($0.1022$) is already as damaging as the two combined ($0.1052$), indicating that the fusion-gate bias matters only once a softmax head is present to produce a usable rationale; with a sigmoid head the channel is already degraded regardless of the gate-bias setting.
+\paragraph{The pre-fix configuration recovers the broken baseline behavior.} Reverting both fixes simultaneously, sigmoid rationale together with $b = 0$, gives NDCG@$20 = 0.1051$, which is below \emph{all} four KG-aware baselines. This shows that the architectural skeleton of RA-GARK (two parallel views plus late fusion) is not sufficient by itself: stripped of the headline design choices, the same skeleton reproduces the failure mode exhibited by the baselines, exactly as expected from the design principle in Section~\ref{sec:approach-principle}. The two reverts do not stack additively: the sigmoid revert alone ($0.1003$) is already as damaging as the two combined ($0.1051$), indicating that the fusion-gate bias matters only once a softmax head is present to produce a usable rationale; with a sigmoid head the channel is already degraded regardless of the gate-bias setting.
 
-The contrastive losses contribute smaller but non-trivial amounts: $-4.2\%$ for user-side CL and $-3.4\%$ for aspect-level CL. We interpret these magnitudes as consistent with the auxiliary role assigned to contrastive regularization in Section~\ref{sec:cl-role}: they nudge the geometry, but they do not carry the integration load.
+The contrastive losses contribute smaller but non-trivial amounts: $-4.1\%$ for user-side CL and $-3.5\%$ for aspect-level CL. We interpret these magnitudes as consistent with the auxiliary role assigned to contrastive regularization in Section~\ref{sec:cl-role}: they nudge the geometry, but they do not carry the integration load.
 
 \section{Sensitivity Analysis}
 \label{sec:eval-sensitivity}
