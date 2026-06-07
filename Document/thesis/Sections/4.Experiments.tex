@@ -173,12 +173,12 @@ The contrastive losses contribute smaller but non-trivial amounts: $-4.1\%$ for 
 \section{Sensitivity Analysis}
 \label{sec:eval-sensitivity}
 
-We probe RA-GARK's sensitivity along the four hyperparameter axes that a reader is most likely to question: the softmax temperature $\tau$, the number of latent aspect slots $A$, the fusion-gate bias $b$, and the contrastive weight $\lambda_{\mathrm{CL}}$. Each axis is swept with all other settings held at the values of Table~\ref{tab:hparams} and seed $= 42$. The best configuration, NDCG@$20 = 0.1242$, anchors the section; duplicate default settings cached under sweep-specific tags can differ slightly at the fourth decimal place, so we treat such duplicates as equivalent.
+We probe RA-GARK's sensitivity along the four hyperparameter axes that a reader is most likely to question: the softmax temperature $\tau$, the number of latent aspect slots $A$, the fusion-gate bias $b$, and the contrastive weight $\lambda_{\mathrm{CL}}$. Each axis is swept with all other settings held at the values of Table~\ref{tab:hparams} and seed $= 42$. The best configuration, NDCG@$20 = 0.1242$, anchors the section. At the time of writing, the temperature and fusion-bias sweeps have completed, while the aspect-slot and contrastive-weight sweep rows in the experiment ledger are marked as reused cached outputs rather than fresh runs; we therefore list the settings now and leave the unverified values blank.
 
 \subsection{Softmax Temperature $\tau$}
 \label{sec:sens-tau}
 
-Table~\ref{tab:sens-tau} reports NDCG@$20$ across $\tau \in \{0.05, 0.1, 0.5\}$. The default $\tau = 0.5$ remains the best setting, with a sweep-specific duplicate run at $0.1240$ and the main winner row at $0.1242$. Sharpening to $\tau = 0.1$ costs about $-1.0\%$ ($0.1229$) and to $\tau = 0.05$ costs about $-1.9\%$ ($0.1219$). The picture is consistent with the analysis in Section~\ref{sec:softmax-softmax}: at $\tau = 0.5$ the slot logits are amplified enough to produce discriminative weights without collapsing onto a single slot; pushing $\tau$ down toward $0.05$ drives the rationale toward an approximately one-hot selection, which on our softly-peaked weights (Section~\ref{sec:eval-case}) discards useful mass on the secondary slots and costs a small amount of NDCG@$20$. In the opposite direction, raising $\tau$ toward $1$ flattens the softmax toward a uniform item-wise mean over slots; we keep $\tau = 0.5$ as the value that balances these two regimes.
+Table~\ref{tab:sens-tau} reports NDCG@$20$ across $\tau \in \{0.05, 0.1, 0.5, 1.0\}$. The default $\tau = 0.5$ remains the best setting at $0.1242$. Sharpening to $\tau = 0.1$ or $\tau = 0.05$ lowers NDCG@$20$ to $0.1219$ and $0.1227$, respectively. The $\tau = 1.0$ row is listed for completeness, but its value is left blank until the fresh run is available. The picture is consistent with the analysis in Section~\ref{sec:softmax-softmax}: at $\tau = 0.5$ the slot logits are amplified enough to produce discriminative weights without collapsing onto a single slot. Pushing $\tau$ downward makes the rationale more selective and can discard useful mass on secondary slots, while pushing $\tau$ upward flattens the distribution toward a uniform item-wise mean over slots.
 
 \begin{table}[!htbp]
 \centering
@@ -188,9 +188,10 @@ Table~\ref{tab:sens-tau} reports NDCG@$20$ across $\tau \in \{0.05, 0.1, 0.5\}$.
 \toprule
 $\tau$ & NDCG@20 \\
 \midrule
-$\mathbf{0.5}$ (default) & $\mathbf{0.1240}$ \\
-$0.1$              & $0.1229$ \\
-$0.05$             & $0.1219$ \\
+$1.0$              & \\
+$\mathbf{0.5}$ (default) & $\mathbf{0.1242}$ \\
+$0.1$              & $0.1219$ \\
+$0.05$             & $0.1227$ \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -199,7 +200,7 @@ $0.05$             & $0.1219$ \\
 \subsection{Number of Aspect Slots $A$}
 \label{sec:sens-A}
 
-We sweep $A \in \{2, 4, 8\}$, keeping the SVD-rank $k = A \cdot d$ scaled accordingly. Table~\ref{tab:sens-A} shows a clear interior optimum at the default $A = 4$ ($0.1242$): halving to $A = 2$ costs $-4.3\%$ ($0.1189$) and doubling to $A = 8$ costs $-5.1\%$ ($0.1179$, exactly the pure-LightGCN floor). The shape is intuitive on this dataset. With only $2.4$ aspect edges per item, $A = 2$ gives the rationale too few latent directions to separate the competing facets, while $A = 8$ spreads the same thin KG signal over twice as many slots, so each slot is estimated from too little co-occurrence evidence and the SVD-initialized geometry is correspondingly noisier; at $A = 8$ the KG channel adds no net value over CF. We adopt $A = 4$ as the measured optimum, which also keeps the rationale-masking cost $O(B \cdot A \cdot d)$ negligible relative to LightGCN propagation.
+We planned to sweep $A \in \{2, 3, 4, 6, 8\}$, keeping the SVD-rank $k = A \cdot d$ scaled accordingly. The current experiment ledger, however, marks the non-default $A$ rows as reused cached outputs with identical metrics to the winner row, so these values are not valid sensitivity measurements. Table~\ref{tab:sens-A} therefore keeps the table structure and leaves the unverified entries blank. Until the fresh runs finish, we retain $A = 4$ as the default design value used in the main result, not as a measured optimum of this sweep.
 
 \begin{table}[!htbp]
 \centering
@@ -209,9 +210,11 @@ We sweep $A \in \{2, 4, 8\}$, keeping the SVD-rank $k = A \cdot d$ scaled accord
 \toprule
 $A$ & NDCG@20 \\
 \midrule
-$2$                & $0.1189$ \\
+$2$                & \\
+$3$                & \\
 $\mathbf{4}$ (default) & $\mathbf{0.1242}$ \\
-$8$                & $0.1179$ \\
+$6$                & \\
+$8$                & \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -220,7 +223,7 @@ $8$                & $0.1179$ \\
 \subsection{Fusion-Gate Bias $b$}
 \label{sec:sens-bias}
 
-The bias sweep is the most informative of the four. Table~\ref{tab:sens-bias} shows NDCG@$20$ as $b$ is varied over $\{0, +2, +5, +10\}$. The default $b = +5$ is best. At $b = 0$ (no local bias) the model loses $4.5\%$ NDCG@$20$ ($0.1186$), and $b = +2$ recovers most of the gap ($0.1214$, $-2.3\%$). At $b = +10$ the gradient $\sigma'(b)$ becomes numerically small enough that the gate cannot adapt during training, and NDCG@$20$ falls to $0.1174$, slightly below even the $b = 0$ setting. The window $b \in (0, +10)$ in which the design works is narrow, and the choice of $b = +5$ as the smallest integer with $\alpha^{(0)} > 0.99$ and $\sigma'(b) > 10^{-3}$ (Section~\ref{sec:gate-bias-magnitude}) is empirically validated here.
+The bias sweep is the most informative completed sensitivity run. Table~\ref{tab:sens-bias} shows NDCG@$20$ as $b$ is varied over $\{0, +2, +5, +10\}$. The default $b = +5$ is best. At $b = 0$ (no local bias) the model loses $3.7\%$ NDCG@$20$ ($0.1196$), and $b = +2$ recovers most of the gap ($0.1224$, $-1.4\%$). At $b = +10$ the gradient $\sigma'(b)$ becomes numerically small enough that the gate cannot adapt during training, and NDCG@$20$ falls to $0.1177$. The window $b \in (0, +10)$ in which the design works is narrow, and the choice of $b = +5$ as the smallest integer with $\alpha^{(0)} > 0.99$ and $\sigma'(b) > 10^{-3}$ (Section~\ref{sec:gate-bias-magnitude}) is empirically validated here.
 
 \begin{table}[!htbp]
 \centering
@@ -230,10 +233,10 @@ The bias sweep is the most informative of the four. Table~\ref{tab:sens-bias} sh
 \toprule
 $b$ & NDCG@20 \\
 \midrule
-$0$                & $0.1186$ \\
-$+2$               & $0.1214$ \\
+$0$                & $0.1196$ \\
+$+2$               & $0.1224$ \\
 $\mathbf{+5}$ (default) & $\mathbf{0.1242}$ \\
-$+10$              & $0.1174$ \\
+$+10$              & $0.1177$ \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -242,7 +245,7 @@ $+10$              & $0.1174$ \\
 \subsection{Contrastive Weight $\lambda_{\mathrm{CL}}$}
 \label{sec:sens-lambda}
 
-We sweep $\lambda_{\mathrm{CL}} \in \{0, 0.001, 0.005, 0.01, 0.05\}$. Table~\ref{tab:sens-lambda} shows a sharp interior optimum at the default $\lambda_{\mathrm{CL}} = 0.005$ ($0.1242$). Turning the contrastive losses off entirely ($\lambda_{\mathrm{CL}} = 0$) costs $-4.9\%$ ($0.1181$), consistent with the combined effect of removing both contrastive channels in the ablation table ($-4.3\%$ user-side, $-3.1\%$ aspect-level). On the other side, over-weighting them degrades NDCG@$20$ almost as much, $-4.2\%$ at $\lambda_{\mathrm{CL}} = 0.01$ and $-4.7\%$ at $\lambda_{\mathrm{CL}} = 0.05$, as the contrastive gradient begins to compete with BPR for the embedding geometry. The optimum is narrow: only $\lambda_{\mathrm{CL}} = 0.001$ ($-1.4\%$) is close. We do not tune $\lambda_{\mathrm{CL}}$ per dataset; the value is fixed at $0.005$ across all experiments to keep contrastive regularization in the auxiliary role assigned to it by the design (Section~\ref{sec:cl-role}).
+We planned to sweep $\lambda_{\mathrm{CL}} \in \{0, 0.001, 0.005, 0.01, 0.05\}$. As with the aspect-slot sweep, the current experiment ledger marks the non-default contrastive-weight rows as reused cached outputs with identical metrics to the winner row. These entries are therefore left blank in Table~\ref{tab:sens-lambda}. The component ablations in Table~\ref{tab:ablation} still show that the two contrastive channels contribute smaller but non-trivial gains, but the shape of the full $\lambda_{\mathrm{CL}}$ sensitivity curve should be filled in only after fresh runs are available.
 
 \begin{table}[!htbp]
 \centering
@@ -252,11 +255,11 @@ We sweep $\lambda_{\mathrm{CL}} \in \{0, 0.001, 0.005, 0.01, 0.05\}$. Table~\ref
 \toprule
 $\lambda_{\mathrm{CL}}$ & NDCG@20 \\
 \midrule
-$0$                    & $0.1181$ \\
-$0.001$                & $0.1224$ \\
+$0$                    & \\
+$0.001$                & \\
 $\mathbf{0.005}$ (default) & $\mathbf{0.1242}$ \\
-$0.01$                 & $0.1190$ \\
-$0.05$                 & $0.1184$ \\
+$0.01$                 & \\
+$0.05$                 & \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -318,7 +321,7 @@ Two empirical patterns are clear from Table~\ref{tab:case}, and neither matches 
 
 \paragraph{User-conditioned selectivity is essentially absent.} For any given item the three sampled users produce nearly identical weight vectors, within-item differences across users are at most $\pm 0.003$. The user conditioning in \Eqref{eq:logit} is structurally present, but in the trained model the user input does not move the slot distribution by more than measurement noise. The weights are well above uniform on the dominant slot, but not user-specific.
 
-\paragraph{Interpretation: a deliberately throttled channel does not develop fine-grained behavior.} This pattern is consistent with, rather than contradictory to, the design principle of Section~\ref{sec:approach-principle}. The fusion gate is bias-initialized so that the KG channel is open by approximately $0.7\%$ at training start, and it remains only a small fraction of the score throughout training; the ablation in Table~\ref{tab:ablation} shows that removing the entire global view costs only $1.9\%$ NDCG@$20$ and removing the rationale costs only $0.6\%$. The gradient flowing back into the rationale module is correspondingly small. It is sufficient to determine \emph{which slot} each item should use, an item-level selection problem of size $|\mathcal{I}| \times A$, but too small to additionally learn a user-specific reweighting on top, which would require differentiating $|\mathcal{U}| \times |\mathcal{I}| \times A$ slot weights against a tightly bounded KG contribution. The case study therefore reads not as a failure of the rationale module but as direct evidence of graceful degradation: the KG channel learns only as much structure as the gate allows it to influence the loss.
+\paragraph{Interpretation: a deliberately throttled channel does not develop fine-grained behavior.} This pattern is consistent with, rather than contradictory to, the design principle of Section~\ref{sec:approach-principle}. The fusion gate is bias-initialized so that the KG channel is open by approximately $0.7\%$ at training start, and it remains only a small fraction of the score throughout training; the ablation in Table~\ref{tab:ablation} shows that removing the entire global view costs only $1.9\%$ NDCG@$20$ and replacing the rationale with a uniform mean costs only $0.3\%$. The gradient flowing back into the rationale module is correspondingly small. It is sufficient to determine \emph{which slot} each item should use, an item-level selection problem of size $|\mathcal{I}| \times A$, but too small to additionally learn a user-specific reweighting on top, which would require differentiating $|\mathcal{U}| \times |\mathcal{I}| \times A$ slot weights against a tightly bounded KG contribution. The case study therefore reads not as a failure of the rationale module but as direct evidence of graceful degradation: the KG channel learns only as much structure as the gate allows it to influence the loss.
 
 The $5.3\%$ improvement over pure LightGCN (Table~\ref{tab:main}) is therefore attributable to item-level slot routing on top of the KG-SVD-initialized geometry, rather than to per-user rationale assignment. We state this distinction explicitly so that future work using the rationale module under denser KGs, where a wider gate could in principle allow user-level differentiation to emerge, knows what to look for.
 
