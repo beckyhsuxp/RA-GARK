@@ -45,7 +45,7 @@ CL_WEIGHT = 0.01      # InfoNCE weight
 DROP_PROB = 0.3       # max edge-drop probability for rationale dropout
 
 
-def train_kgrec(cfg: Config, device: torch.device) -> None:
+def train_kgrec(cfg: Config, device: torch.device) -> dict:
     set_seed(cfg.seed)
 
     df, _, _, asin_to_idx, n_users, n_items = load_interactions(cfg.interaction_path)
@@ -175,6 +175,7 @@ def train_kgrec(cfg: Config, device: torch.device) -> None:
     for metric, val in test_res.items():
         log.info("  %-12s %.4f", metric, val)
     log.info("─" * 55)
+    return test_res
 
 
 if __name__ == "__main__":
