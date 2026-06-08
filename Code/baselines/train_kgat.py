@@ -42,7 +42,7 @@ logging.basicConfig(
 log = logging.getLogger(__name__)
 
 
-def train_kgat(cfg: Config, device: torch.device) -> None:
+def train_kgat(cfg: Config, device: torch.device) -> dict:
     set_seed(cfg.seed)
 
     df, _, _, asin_to_idx, n_users, n_items = load_interactions(cfg.interaction_path)
@@ -147,6 +147,7 @@ def train_kgat(cfg: Config, device: torch.device) -> None:
     for metric, val in test_res.items():
         log.info("  %-12s %.4f", metric, val)
     log.info("─" * 55)
+    return test_res
 
 
 if __name__ == "__main__":
