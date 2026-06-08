@@ -2,6 +2,8 @@
 \label{ch:experiments}
 \label{ch:evaluation}
 
+\setlength{\tabcolsep}{8pt}
+
 This chapter evaluates RA-GARK on the sparse review-derived KG introduced in Chapter~\ref{ch:intro}. Section~\ref{sec:eval-dataset} summarizes the dataset and the KG construction pipeline, which we adopt from prior work rather than propose here. Section~\ref{sec:eval-setup} specifies the evaluation protocol and the baseline reproduction settings. Sections~\ref{sec:eval-main} and~\ref{sec:eval-ablation} report the main results and the per-component ablation study. Sections~\ref{sec:eval-sensitivity}--\ref{sec:eval-seed} examine the two axes most likely to concern a reader: hyperparameter sensitivity and seed stability. Section~\ref{sec:eval-case} presents an item-level case study of the rationale module, and Section~\ref{sec:eval-cost} reports computational cost.
 
 \section{Dataset and KG Construction}
@@ -99,9 +101,9 @@ To make the experimental setting reproducible, all experiments are conducted on 
 \section{Main Results}
 \label{sec:eval-main}
 
-Table~\ref{tab:main} reports the main test-set results. RA-GARK attains NDCG@$20 = 0.1243$, improving on the strongest KG-aware baseline (KGRec) by $+13.5\%$ and on pure LightGCN by $+5.4\%$. The improvement is consistent across the secondary ranking metrics (HR@$20$, Recall@$20$, and MAP@$20$); the largest relative gain over KGRec is $+18.8\%$ on MAP@$20$, indicating that the rank quality of correctly retrieved items is also better than the baselines'. As a stricter cutoff check, RA-GARK also improves over pure LightGCN at Top-10, with NDCG@$10 = 0.0960$ versus $0.0908$.
+Tables~\ref{tab:main} and~\ref{tab:main@10} report the main test-set results at Top-20 and Top-10. RA-GARK attains NDCG@$20 = 0.1243$, improving on the strongest KG-aware baseline (KGRec) by $+13.5\%$ and on pure LightGCN by $+5.4\%$. The improvement is consistent across the secondary ranking metrics (HR, Recall, and MAP) and across both cutoffs; at Top-10, RA-GARK also leads all baselines on NDCG@$10$, HR@$10$, Recall@$10$, and MAP@$10$. The largest relative gain over KGRec is $+18.8\%$ on MAP@$20$, indicating that the rank quality of correctly retrieved items is also better than the baselines. Read together, the two cutoffs show that the gain is not a depth artifact: the model remains strongest when the candidate list is shortened, which is the behavior we expect from a genuinely better ranking signal rather than from a favorable tail effect.
 
-\begin{table}[!htbp]
+\begin{table}[H]
 \centering
 \caption{Comparison of recommendation performance under Top-20 evaluation.}
 \label{tab:main}
@@ -113,18 +115,42 @@ MCCLK~\cite{zou2022mcclk}   & $0.1067$ & $0.4530$ & $0.1720$ & $0.0497$ \\
 KGCL~\cite{yang2022kgcl}    & $0.1073$ & $0.4696$ & $0.1827$ & $0.0479$ \\
 KGAT~\cite{wang2019kgat}    & $0.1079$ & $0.4773$ & $0.1807$ & $0.0491$ \\
 KGRec~\cite{yang2023kgrec}  & $0.1095$ & $0.4729$ & $0.1834$ & $0.0500$ \\
-LightGCN~\cite{he2020lightgcn} (no KG) & $0.1179$ & $0.4917$ & $0.1937$ & $0.0555$ \\
+LightGCN~\cite{he2020lightgcn} & $0.1179$ & $0.4917$ & $0.1937$ & $0.0555$ \\
 \midrule
-\textbf{RA-GARK (ours)}     & $\mathbf{0.1243}$ & $\mathbf{0.4972}$ & $\mathbf{0.2020}$ & $\mathbf{0.0594}$ \\
+\textbf{RA-GARK}     & $\mathbf{0.1243}$ & $\mathbf{0.4972}$ & $\mathbf{0.2020}$ & $\mathbf{0.0594}$ \\
 \midrule
 $\Delta$ vs KGRec            & $+13.5\%$ & $+5.1\%$  & $+10.1\%$ & $+18.8\%$ \\
 $\Delta$ vs LightGCN         & $+5.4\%$  & $+1.1\%$  & $+4.3\%$  & $+7.0\%$  \\
 \bottomrule
 \end{tabular}
 \end{table}
+
+At the Top-20 cutoff, two readings are worth separating. The first, $+13.5\%$ over KGRec, shows that, with the underlying KG held fixed, RA-GARK's design choices yield a substantially better recommender than the strongest published KG-aware method on the same data. The second, $+5.4\%$ over pure LightGCN, is the methodologically more interesting one. In this sparse-KG setting, all four KG-aware baselines fall below the no-KG anchor; RA-GARK is the only KG-aware configuration evaluated here that turns the KG signal from a net liability into a net asset.
+
+\begin{table}[H]
+\centering
+\caption{Comparison of recommendation performance under Top-10 evaluation.}
+\label{tab:main@10}
+\begin{tabular}{lcccc}
+\toprule
+Model & NDCG@10 & HR@10 & Recall@10 & MAP@10 \\
+\midrule
+MCCLK~\cite{zou2022mcclk}   & $0.0804$ & $0.3182$ & $0.1047$ & $0.0416$ \\
+KGCL~\cite{yang2022kgcl}    & $0.0809$ & $0.3260$ & $0.1096$ & $0.0410$ \\
+KGAT~\cite{wang2019kgat}    & $0.0786$ & $0.3215$ & $0.1102$ & $0.0388$ \\
+KGRec~\cite{yang2023kgrec}  & $0.0874$ & $0.3249$ & $0.1155$ & $0.0465$ \\
+LightGCN~\cite{he2020lightgcn} & $0.0908$ & $0.3436$ & $0.1201$ & $0.0483$ \\
+\midrule
+\textbf{RA-GARK}     & $\mathbf{0.0966}$ & $\mathbf{0.3558}$ & $\mathbf{0.1265}$ & $\mathbf{0.0520}$ \\
+\midrule
+$\Delta$ vs KGRec            & $+10.5\%$ & $+9.5\%$  & $+9.5\%$  & $+11.8\%$ \\
+$\Delta$ vs LightGCN         & $+6.4\%$  & $+3.6\%$  & $+5.4\%$  & $+7.7\%$  \\
+\bottomrule
+\end{tabular}
+\end{table}
 \FloatBarrier
 
-Two readings of this table are worth separating. The first, $+13.5\%$ over KGRec, shows that, with the underlying KG held fixed, RA-GARK's design choices yield a substantially better recommender than the strongest published KG-aware method on the same data. The second, $+5.4\%$ over pure LightGCN, is the methodologically more interesting one. In this sparse-KG setting, all four KG-aware baselines fall below the no-KG anchor; RA-GARK is the only one of the five KG-aware configurations evaluated here that turns the KG signal from a net liability into a net asset. The architectural mechanism responsible for this flip, namely gating the KG channel behind a bias-initialized fusion gate so that it is engaged only when its contribution reduces loss, is examined in detail in the next section.
+The stricter Top-10 cutoff preserves the same ordering while reducing the chance that the gain is an artifact of deeper recommendation lists. RA-GARK improves over KGRec by $+10.5\%$ on NDCG@$10$ and over pure LightGCN by $+6.4\%$, with matching gains on HR, Recall, and MAP. The architectural mechanism responsible for this flip, namely gating the KG channel behind a bias-initialized fusion gate so that it is engaged only when its contribution reduces loss, is examined in detail in the next section; this is the same mechanism that keeps the Top-20 and Top-10 conclusions aligned.
 
 \section{Ablation Study}
 \label{sec:eval-ablation}
@@ -132,9 +158,9 @@ Two readings of this table are worth separating. The first, $+13.5\%$ over KGRec
 \label{sec:ablation-softmax}
 \label{sec:ablation-gate}
 
-We measure the contribution of each headline design choice--KG-SVD initialization (Section~\ref{sec:kgsvd}), softmax rationale masking (Section~\ref{sec:softmax}), and the locally biased fusion gate (Section~\ref{sec:gate})--by removing one component at a time and retraining from scratch with all other settings held fixed. We additionally include diagnostic rows that remove the global view, replace the per-(user, item) gate with a single learnable scalar $\alpha$, disable rationale selection, or drop each contrastive channel individually. All rows use seed $= 42$. Because the purpose of the ablation is to isolate ranking-quality changes, we report NDCG and MAP rather than coverage-oriented metrics such as HR and Recall.
+We measure the contribution of each headline design choice--KG-SVD initialization (Section~\ref{sec:kgsvd}), softmax rationale masking (Section~\ref{sec:softmax}), and the locally biased fusion gate (Section~\ref{sec:gate})--by removing one component at a time and retraining from scratch with all other settings held fixed. We additionally include diagnostic rows that remove the global view, replace the per-(user, item) gate with a single learnable scalar $\alpha$, disable rationale selection, or drop each contrastive channel individually. All rows use seed $= 42$. Because the purpose of the ablation is to isolate ranking-quality changes, we report NDCG and MAP rather than coverage-oriented metrics such as HR and Recall; Tables~\ref{tab:ablation@20} and~\ref{tab:ablation@10} present the same ablation set at Top-20 and Top-10.
 
-\begin{table}[!htbp]
+\begin{table}[H]
 \centering
 \caption{Ablation results for RA-GARK design components under Top-20 evaluation.}
 \label{tab:ablation@20}
@@ -156,10 +182,9 @@ w/o global view (CL-only dual view)  & $0.1219$ & $0.0575$ \\
 \end{tabular}
 \end{table}
 
-\vspace{0.9em}
-\noindent The Top-10 results show the same pattern.
+NDCG@$20$ reflects the broader ranking degradation caused by removing each design component, whereas NDCG@$10$ applies a stricter cutoff and therefore reports slightly smaller absolute drops. The ordering, however, is stable across the two settings: the softmax head is the largest ablation, KG-SVD initialization and the fusion gate remain necessary, and the two contrastive terms provide smaller but consistent support. This is the comparison to keep in mind when reading the Top-10 table below, because the main point is the persistence of the same ranking pattern across cutoffs rather than the absolute size of any single delta.
 
-\begin{table}[!htbp]
+\begin{table}[H]
 \centering
 \caption{Ablation results for RA-GARK design components under Top-10 evaluation.}
 \label{tab:ablation@10}
@@ -180,10 +205,9 @@ w/o global view (CL-only dual view)  & $0.0949$ & $0.0504$ \\
 \bottomrule
 \end{tabular}
 \end{table}
+\FloatBarrier
 
-Tables~\ref{tab:ablation@20} and~\ref{tab:ablation@10} support two observations.
-
-\paragraph{Component contributions} Removing any one of the softmax rationale, KG-SVD initialization, local-biased fusion bias, or the per-(u,i) MLP gate lowers NDCG and MAP at both cutoffs. The largest degradation is the softmax head: NDCG@$20$ falls from $0.1243$ to $0.1005$, MAP@$20$ from $0.0594$ to $0.0451$, NDCG@$10$ from $0.0960$ to $0.0785$, and MAP@$10$ from $0.0519$ to $0.0397$. The other three components produce smaller but consistent rank-quality losses. KG-SVD removal gives NDCG@$20 = 0.1171$ and MAP@$20 = 0.0545$; removing the fusion-gate bias gives $0.1194$ and $0.0555$; replacing the per-(u,i) MLP gate gives $0.1180$ and $0.0552$.
+\paragraph{Component contributions} Across the two ablation cutoffs, removing any one of the softmax rationale, KG-SVD initialization, local-biased fusion bias, or the per-(u,i) MLP gate lowers NDCG and MAP. The largest degradation is the softmax head: NDCG@$20$ falls from $0.1243$ to $0.1005$, MAP@$20$ from $0.0594$ to $0.0451$, NDCG@$10$ from $0.0960$ to $0.0785$, and MAP@$10$ from $0.0519$ to $0.0397$. The other three components produce smaller but consistent rank-quality losses. KG-SVD removal gives NDCG@$20 = 0.1171$ and MAP@$20 = 0.0545$; removing the fusion-gate bias gives $0.1194$ and $0.0555$; replacing the per-(u,i) MLP gate gives $0.1180$ and $0.0552$.
 
 \paragraph{Softmax versus sigmoid} The w/o-softmax row is the largest ablation under both NDCG and MAP at both cutoffs. This is the empirical basis for the methodological observation we develop in Chapter~\ref{ch:conclusion}: in our rationale module, the choice of attention normalization is not a tuning detail but a design choice tied to the rationale's semantic assumption, namely that the $A$ slots compete with one another rather than contribute independently.
 
@@ -194,14 +218,15 @@ The contrastive losses contribute smaller but non-trivial rank-quality gains. Re
 
 We probe RA-GARK's sensitivity along the four hyperparameter axes that a reader is most likely to question: the softmax temperature $\tau$, the number of latent aspect slots $A$, the fusion-gate bias $b$, and the contrastive weight $\lambda_{\mathrm{CL}}$. Each axis is swept with all other settings held at the values of Table~\ref{tab:hparams} and seed $= 42$. The best configuration, NDCG@$20 = 0.1243$, anchors the section, and Figure~\ref{fig:sensitivity-2x2} summarizes the measured trends.
 
-\begin{figure}[!htbp]
+\begin{figure}[H]
 \centering
 \includegraphics[width=0.95\textwidth]{img/sensitivity_2x2.pdf}
 \caption{Sensitivity of RA-GARK to the four main hyperparameters under NDCG@20.}
 \label{fig:sensitivity-2x2}
 \end{figure}
+\FloatBarrier
 
-The figure is intended as a trend view rather than a second results table: it shows whether each design choice is locally stable around the default setting.
+We treat the figure as a trend view rather than a second results table, because the point is to check whether each design choice is locally stable around the default setting rather than to add another ranked summary.
 
 \subsection{Softmax Temperature $\tau$}
 \label{sec:sens-tau}
@@ -235,22 +260,21 @@ The dataset is small ($905$ users, $1{,}399$ items), so the dominant source of t
 
 To inspect what the rationale module actually learns, we sampled five popular items (each with $\geq 3$ KG aspect edges) from the training set and recorded the softmax aspect weights $w_{u,i,k}$ produced by the trained model for three users who interacted with each item. The main text uses the heatmap for interpretation; the exact numeric weights are listed in Appendix Table~\ref{tab:case-appendix}.
 
-\begin{figure}[!htbp]
+\begin{figure}[H]
 \centering
 \includegraphics[width=0.98\textwidth]{img/case_study_heatmap.pdf}
 \caption{Case-study heatmap of softmax aspect weights for the sampled user--item pairs.}
 \label{fig:case-heatmap}
 \end{figure}
+\FloatBarrier
 
-Figure~\ref{fig:case-heatmap} makes two empirical patterns clear. Neither matches the strong per-(user, item) selection story one might naively expect from a rationale module.
+Figure~\ref{fig:case-heatmap} makes two empirical patterns clear, and neither matches the strong per-(user, item) selection story one might naively expect from a rationale module. The more important point is that the behavior is item-conditioned rather than user-conditioned, which is exactly what the following paragraphs unpack.
 
 \paragraph{Item-level slot specialization} Across the five sampled items the argmax slot is distinct (slot $1$, slot $0$, slot $1$, slot $0$, and slot $3$), and the dominant slot carries a small but consistent excess of mass (typically $0.27$--$0.29$ versus approximately $0.24$ on the others). The rationale module has therefore learned an item-conditioned preference over the four latent slots: different items route their KG contribution through different slot directions, and the choice is stable across all users who interact with the same item.
 
 \paragraph{User-conditioned selectivity} For any given item the three sampled users produce nearly identical weight vectors, within-item differences across users are at most $\pm 0.003$. The user conditioning in \Eqref{eq:logit} is structurally present, but in the trained model the user input does not move the slot distribution by more than measurement noise. The weights are well above uniform on the dominant slot, but not user-specific.
 
-\paragraph{Interpretation} This pattern is consistent with, rather than contradictory to, the design principle of Section~\ref{sec:approach-principle}. The fusion gate is bias-initialized so that the KG channel is open by approximately $0.7\%$ at training start, and it remains only a small fraction of the score throughout training; the ablation in Tables~\ref{tab:ablation@20} and~\ref{tab:ablation@10} shows that removing the entire global view costs only $1.9\%$ NDCG@$20$ and replacing the rationale with a uniform mean costs only $0.3\%$. The gradient flowing back into the rationale module is correspondingly small. It is sufficient to determine \emph{which slot} each item should use, an item-level selection problem of size $|\mathcal{I}| \times A$, but too small to additionally learn a user-specific reweighting on top, which would require differentiating $|\mathcal{U}| \times |\mathcal{I}| \times A$ slot weights against a tightly bounded KG contribution. The case study therefore reads not as a failure of the rationale module but as direct evidence of graceful degradation: the KG channel learns only as much structure as the gate allows it to influence the loss.
-
-The $5.3\%$ improvement over pure LightGCN (Table~\ref{tab:main}) is therefore attributable to item-level slot routing on top of the KG-SVD-initialized geometry, rather than to per-user rationale assignment. We state this distinction explicitly so that future work using the rationale module under denser KGs, where a wider gate could in principle allow user-level differentiation to emerge, knows what to look for.
+\paragraph{Interpretation} This pattern is consistent with, rather than contradictory to, the design principle of Section~\ref{sec:approach-principle}. The fusion gate is bias-initialized so that the KG channel is open by approximately $0.7\%$ at training start, and it remains only a small fraction of the score throughout training; the ablation in Tables~\ref{tab:ablation@20} and~\ref{tab:ablation@10} shows that removing the entire global view costs only $1.9\%$ NDCG@$20$ and replacing the rationale with a uniform mean costs only $0.3\%$. The gradient flowing back into the rationale module is correspondingly small. It is sufficient to determine \emph{which slot} each item should use, an item-level selection problem of size $|\mathcal{I}| \times A$, but too small to additionally learn a user-specific reweighting on top, which would require differentiating $|\mathcal{U}| \times |\mathcal{I}| \times A$ slot weights against a tightly bounded KG contribution. The case study therefore reads not as a failure of the rationale module but as direct evidence of graceful degradation: the KG channel learns only as much structure as the gate allows it to influence the loss, and the $5.3\%$ improvement over pure LightGCN (Table~\ref{tab:main}) is therefore attributable to item-level slot routing on top of the KG-SVD-initialized geometry rather than to per-user rationale assignment. We state this distinction explicitly so that future work using the rationale module under denser KGs, where a wider gate could in principle allow user-level differentiation to emerge, knows what to look for.
 
 \section{Computational Cost}
 \label{sec:eval-cost}
