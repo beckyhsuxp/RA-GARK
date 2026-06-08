@@ -32,7 +32,7 @@ from data import (
 )
 from evaluate import evaluate
 from losses import bpr_loss
-from train_v1 import set_seed, user_stratified_split
+from utils import set_seed, user_stratified_split
 
 logging.basicConfig(
     level=logging.INFO,
