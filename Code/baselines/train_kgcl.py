@@ -137,7 +137,7 @@ def train_kgcl(cfg: Config, device: torch.device) -> None:
 
         val_res = evaluate(
             model, val_gt, train_hist, device,
-            k=cfg.eval_k, batch_size=cfg.eval_batch_size, extra_ks=(10,),
+            k=cfg.eval_k, batch_size=cfg.eval_batch_size, extra_ks=cfg.eval_extra_ks,
         )
 
         note = ""
@@ -171,7 +171,7 @@ def train_kgcl(cfg: Config, device: torch.device) -> None:
     )
     test_res = evaluate(
         model, test_gt, train_hist, device,
-        k=cfg.eval_k, batch_size=cfg.eval_batch_size, extra_ks=(10,),
+        k=cfg.eval_k, batch_size=cfg.eval_batch_size, extra_ks=cfg.eval_extra_ks,
     )
     log.info("─" * 55)
     log.info("TEST metrics @ K=%d  (best epoch: %d)", cfg.eval_k, best_epoch)
