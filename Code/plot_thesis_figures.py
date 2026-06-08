@@ -94,10 +94,12 @@ def plot_sensitivity_2x2(rows: dict[str, dict[str, str]]) -> None:
     ]
 
     fig, axes = plt.subplots(2, 2, figsize=(12.2, 8.2))
+    fig.patch.set_alpha(0)
     fig.subplots_adjust(wspace=0.24, hspace=0.28, left=0.08, right=0.98, top=0.96, bottom=0.08)
     axes = axes.flatten()
     for idx, (title, labels, presets, highlight_idx) in enumerate(panels):
         ax = axes[idx]
+        ax.set_facecolor("none")
         values = [to_float(rows[preset], "NDCG") for preset in presets]
         xs = list(range(len(labels)))
         ax.plot(xs, values, color=ARCH_LINE, linewidth=1.9, marker="o", markersize=5.0)
@@ -110,8 +112,8 @@ def plot_sensitivity_2x2(rows: dict[str, dict[str, str]]) -> None:
         style_axes(ax)
 
     THESIS_IMG_DIR.mkdir(parents=True, exist_ok=True)
-    fig.savefig(THESIS_IMG_DIR / "sensitivity_2x2.pdf", bbox_inches="tight")
-    fig.savefig(THESIS_IMG_DIR / "sensitivity_2x2.png", dpi=300, bbox_inches="tight")
+    fig.savefig(THESIS_IMG_DIR / "sensitivity_2x2.pdf", bbox_inches="tight", transparent=True)
+    fig.savefig(THESIS_IMG_DIR / "sensitivity_2x2.png", dpi=300, bbox_inches="tight", transparent=True)
     plt.close(fig)
 
 
@@ -126,6 +128,7 @@ def plot_case_heatmap(rows: list[dict[str, str]]) -> None:
         grouped[asin].append(row)
 
     fig, axes = plt.subplots(2, 3, figsize=(13.6, 6.1))
+    fig.patch.set_alpha(0)
     fig.subplots_adjust(wspace=0.18, hspace=0.44, left=0.05, right=0.96, top=0.95, bottom=0.06)
     axes_flat = axes.flatten()
     cmap = ARCH_HOTMAP
@@ -134,6 +137,7 @@ def plot_case_heatmap(rows: list[dict[str, str]]) -> None:
 
     for idx, asin in enumerate(items):
         ax = axes_flat[idx]
+        ax.set_facecolor("none")
         item_rows = grouped[asin]
         matrix = [[float(item_row[f"w{i}"]) for i in range(4)] for item_row in item_rows]
         im = ax.imshow(matrix, cmap=cmap, vmin=vmin, vmax=vmax, aspect="equal")
@@ -162,8 +166,8 @@ def plot_case_heatmap(rows: list[dict[str, str]]) -> None:
         cbar.set_label("Weight")
 
     THESIS_IMG_DIR.mkdir(parents=True, exist_ok=True)
-    fig.savefig(THESIS_IMG_DIR / "case_study_heatmap.pdf", bbox_inches="tight")
-    fig.savefig(THESIS_IMG_DIR / "case_study_heatmap.png", dpi=300, bbox_inches="tight")
+    fig.savefig(THESIS_IMG_DIR / "case_study_heatmap.pdf", bbox_inches="tight", transparent=True)
+    fig.savefig(THESIS_IMG_DIR / "case_study_heatmap.png", dpi=300, bbox_inches="tight", transparent=True)
     plt.close(fig)
 
 

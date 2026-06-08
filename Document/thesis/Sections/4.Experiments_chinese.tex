@@ -2,6 +2,8 @@
 \label{ch:experiments-zh}
 \label{ch:evaluation-zh}
 
+\setlength{\tabcolsep}{8pt}
+
 本章在第~\ref{ch:intro-zh}~章所動機之稀疏評論衍生 KG 上評估 RA-GARK。第~\ref{sec:eval-dataset-zh}~節整理資料集與 KG 建構流程，其中後者沿用既有工作，並非本文貢獻。第~\ref{sec:eval-setup-zh}~節說明評估協議與 baseline 重現設定。第~\ref{sec:eval-main-zh}~與~\ref{sec:eval-ablation-zh}~節報告主結果與逐元件消融。第~\ref{sec:eval-sensitivity-zh}~至~\ref{sec:eval-seed-zh}~節則檢查讀者最可能關心的兩個面向：超參數敏感性與種子穩定性。第~\ref{sec:eval-case-zh}~節以個別 (使用者, 物品) 配對展示合理化模組的可解釋性，第~\ref{sec:eval-cost-zh}~節報告計算成本。
 
 \section{資料集與 KG 建構}
@@ -99,9 +101,9 @@ Early-stopping patience            & $10$ \\
 \section{主要結果}
 \label{sec:eval-main-zh}
 
-表~\ref{tab:main-zh} 報告主要測試集結果。RA-GARK 取得 NDCG@$20 = 0.1243$，較最強 KG-aware baseline（KGRec）提升 $+13.5\%$，較純 LightGCN 提升 $+5.4\%$。提升於各次要排序指標（HR@$20$、Recall@$20$、MAP@$20$）皆一致；對 KGRec 之最大相對增益為 MAP@$20$ 的 $+18.8\%$，顯示正確檢索物品之排序品質亦優於 baseline。作為更嚴格 cutoff 之檢查，RA-GARK 在 Top-10 亦優於純 LightGCN，NDCG@$10 = 0.0960$，對照純 LightGCN 之 $0.0908$。
+表~\ref{tab:main-zh} 與表~\ref{tab:main10-zh} 分別報告 Top-20 與 Top-10 的主要測試集結果。RA-GARK 取得 NDCG@$20 = 0.1243$，較最強 KG-aware baseline（KGRec）提升 $+13.5\%$，較純 LightGCN 提升 $+5.4\%$。提升於各次要排序指標（HR、Recall、MAP）與兩個 cutoff 下皆一致；在 Top-10 下，RA-GARK 亦於 NDCG@$10$、HR@$10$、Recall@$10$ 與 MAP@$10$ 領先所有 baseline。對 KGRec 之最大相對增益為 MAP@$20$ 的 $+18.8\%$，顯示正確檢索物品之排序品質亦優於 baseline。
 
-\begin{table}[!htbp]
+\begin{table}[H]
 \centering
 \caption{Top-20 評估下之推薦表現比較。}
 \label{tab:main-zh}
@@ -113,18 +115,42 @@ MCCLK~\cite{zou2022mcclk}   & $0.1067$ & $0.4530$ & $0.1720$ & $0.0497$ \\
 KGCL~\cite{yang2022kgcl}    & $0.1073$ & $0.4696$ & $0.1827$ & $0.0479$ \\
 KGAT~\cite{wang2019kgat}    & $0.1079$ & $0.4773$ & $0.1807$ & $0.0491$ \\
 KGRec~\cite{yang2023kgrec}  & $0.1095$ & $0.4729$ & $0.1834$ & $0.0500$ \\
-LightGCN~\cite{he2020lightgcn}（無 KG） & $0.1179$ & $0.4917$ & $0.1937$ & $0.0555$ \\
+LightGCN~\cite{he2020lightgcn} & $0.1179$ & $0.4917$ & $0.1937$ & $0.0555$ \\
 \midrule
-\textbf{RA-GARK（本文）}     & $\mathbf{0.1243}$ & $\mathbf{0.4972}$ & $\mathbf{0.2020}$ & $\mathbf{0.0594}$ \\
+\textbf{RA-GARK}     & $\mathbf{0.1243}$ & $\mathbf{0.4972}$ & $\mathbf{0.2020}$ & $\mathbf{0.0594}$ \\
 \midrule
 $\Delta$ vs KGRec            & $+13.5\%$ & $+5.1\%$  & $+10.1\%$ & $+18.8\%$ \\
 $\Delta$ vs LightGCN         & $+5.4\%$  & $+1.1\%$  & $+4.3\%$  & $+7.0\%$  \\
 \bottomrule
 \end{tabular}
 \end{table}
+
+在 Top-20 cutoff 下，此結果有兩種讀法值得分開敘述。其一（較 KGRec $+13.5\%$）顯示在相同 KG 下，RA-GARK 的設計選擇在同一資料集上產生比最強既有 KG-aware 方法更佳的推薦器。其二（較純 LightGCN $+5.4\%$）在方法論上更具意義。在同一稀疏 KG 情境中，四個 KG-aware baseline 皆低於無 KG 對照；RA-GARK 是此處所評 KG-aware 配置中，唯一將 KG 訊號由淨負債轉為淨資產者。把 Top-20 與 Top-10 一起看，這個提升顯然不是只靠較深推薦列表撐出來的，而是排序訊號本身真的較強。
+
+\begin{table}[H]
+\centering
+\caption{Top-10 評估下之推薦表現比較。}
+\label{tab:main10-zh}
+\begin{tabular}{lcccc}
+\toprule
+模型 & NDCG@10 & HR@10 & Recall@10 & MAP@10 \\
+\midrule
+MCCLK~\cite{zou2022mcclk}   & $0.0804$ & $0.3182$ & $0.1047$ & $0.0416$ \\
+KGCL~\cite{yang2022kgcl}    & $0.0809$ & $0.3260$ & $0.1096$ & $0.0410$ \\
+KGAT~\cite{wang2019kgat}    & $0.0786$ & $0.3215$ & $0.1102$ & $0.0388$ \\
+KGRec~\cite{yang2023kgrec}  & $0.0874$ & $0.3249$ & $0.1155$ & $0.0465$ \\
+LightGCN~\cite{he2020lightgcn} & $0.0908$ & $0.3436$ & $0.1201$ & $0.0483$ \\
+\midrule
+\textbf{RA-GARK}     & $\mathbf{0.0966}$ & $\mathbf{0.3558}$ & $\mathbf{0.1265}$ & $\mathbf{0.0520}$ \\
+\midrule
+$\Delta$ vs KGRec            & $+10.5\%$ & $+9.5\%$  & $+9.5\%$  & $+11.8\%$ \\
+$\Delta$ vs LightGCN         & $+6.4\%$  & $+3.6\%$  & $+5.4\%$  & $+7.7\%$  \\
+\bottomrule
+\end{tabular}
+\end{table}
 \FloatBarrier
 
-此表有兩種讀法值得分開敘述。其一（較 KGRec $+13.5\%$）顯示在相同 KG 下，RA-GARK 的設計選擇在同一資料集上產生比最強既有 KG-aware 方法更佳的推薦器。其二（較純 LightGCN $+5.4\%$）在方法論上更具意義。在同一稀疏 KG 情境中，四個 KG-aware baseline 皆低於無 KG 對照；RA-GARK 是此處所評之五個 KG-aware 配置中，唯一將 KG 訊號由淨負債轉為淨資產者。促成此翻轉之架構機制，也就是將 KG 通道置於偏置初始化之融合閘後，使其僅在貢獻降低損失時才啟用，將於下一節詳細審視。
+更嚴格的 Top-10 cutoff 保留相同排序，並降低增益只是來自較深推薦列表的可能性。RA-GARK 在 NDCG@$10$ 上較 KGRec 提升 $+10.5\%$，較純 LightGCN 提升 $+6.4\%$，且 HR、Recall 與 MAP 亦呈現一致增益。促成此翻轉之架構機制，也就是將 KG 通道置於偏置初始化之融合閘後，使其僅在貢獻降低損失時才啟用，將於下一節詳細審視；這也是 Top-20 與 Top-10 兩個表格結論彼此一致的原因。
 
 \section{消融研究}
 \label{sec:eval-ablation-zh}
@@ -132,9 +158,9 @@ $\Delta$ vs LightGCN         & $+5.4\%$  & $+1.1\%$  & $+4.3\%$  & $+7.0\%$  \\
 \label{sec:ablation-softmax-zh}
 \label{sec:ablation-gate-zh}
 
-我們對三項核心設計選擇，KG-SVD 初始化（第~\ref{sec:kgsvd-zh}~節）、Softmax 合理化遮罩（第~\ref{sec:softmax-zh}~節）、區域偏置融合閘（第~\ref{sec:gate-zh}~節），逐一移除並於其他設定固定下從頭重新訓練，以衡量其貢獻。另外加入數個診斷列：完全移除全域視角、以單一可學習純量 $\alpha$ 取代 per-(使用者, 物品) 閘、停用合理化選擇，或分別丟棄兩條對比通道。所有列皆使用種子 $= 42$。由於消融分析的目的在於隔離排序品質變化，本文回報 NDCG 與 MAP，而不列入 HR 與 Recall 等偏向覆蓋率的指標。
+我們對三項核心設計選擇，KG-SVD 初始化（第~\ref{sec:kgsvd-zh}~節）、Softmax 合理化遮罩（第~\ref{sec:softmax-zh}~節）、區域偏置融合閘（第~\ref{sec:gate-zh}~節），逐一移除並於其他設定固定下從頭重新訓練，以衡量其貢獻。另外加入數個診斷列：完全移除全域視角、以單一可學習純量 $\alpha$ 取代 per-(使用者, 物品) 閘、停用合理化選擇，或分別丟棄兩條對比通道。所有列皆使用種子 $= 42$。由於消融分析的目的在於隔離排序品質變化，本文回報 NDCG 與 MAP，而不列入 HR 與 Recall 等偏向覆蓋率的指標；表~\ref{tab:ablation@20} 與表~\ref{tab:ablation@10} 分別呈現相同消融集合於 Top-20 與 Top-10 下的結果。
 
-\begin{table}[!htbp]
+\begin{table}[H]
 \centering
 \caption{RA-GARK 設計元件之消融結果（Top-20 評估）。}
 \label{tab:ablation@20}
@@ -156,10 +182,9 @@ w/o 全域視角（純 CL 雙視角）   & $0.1219$ & $0.0575$ \\
 \end{tabular}
 \end{table}
 
-\vspace{0.9em}
-\noindent Top-10 的結果呈現相同趨勢。
+NDCG@$20$ 反映較大幅度的整體排序退化；NDCG@$10$ 則使用更嚴格 cutoff，因此絕對降幅略小。兩者的相對排序仍然穩定：softmax 頭是最大消融，KG-SVD 初始化與融合閘仍屬必要，兩條對比項則提供較小但一致的輔助效果。讀這兩張表時，重點應放在同一排名模式是否跨 cutoff 持續成立，而不是某一個 delta 的絕對大小。
 
-\begin{table}[!htbp]
+\begin{table}[H]
 \centering
 \caption{RA-GARK 設計元件之消融結果（Top-10 評估）。}
 \label{tab:ablation@10}
@@ -180,10 +205,9 @@ w/o 全域視角（純 CL 雙視角）   & $0.0949$ & $0.0504$ \\
 \bottomrule
 \end{tabular}
 \end{table}
+\FloatBarrier
 
-表~\ref{tab:ablation@20} 與表~\ref{tab:ablation@10} 支持兩項觀察。
-
-\paragraph{元件貢獻} 移除 softmax 頭、KG-SVD 初始化、區域偏置融合閘、或 per-(u,i) MLP 閘任一項，皆使兩個 cutoff 的 NDCG 與 MAP 低於完整模型。其中影響最大者為 softmax 頭：NDCG@$20$ 由 $0.1243$ 降至 $0.1005$，MAP@$20$ 由 $0.0594$ 降至 $0.0451$，NDCG@$10$ 由 $0.0960$ 降至 $0.0785$，MAP@$10$ 由 $0.0519$ 降至 $0.0397$。其他三項元件之排序品質損失較小但一致。移除 KG-SVD 時 NDCG@$20 = 0.1171$、MAP@$20 = 0.0545$；移除融合閘偏置時為 $0.1194$ 與 $0.0555$；以純量閘取代 per-(u,i) MLP 閘時為 $0.1180$ 與 $0.0552$。
+\paragraph{元件貢獻} 綜合兩個消融 cutoff，移除 softmax 頭、KG-SVD 初始化、區域偏置融合閘、或 per-(u,i) MLP 閘任一項，皆使 NDCG 與 MAP 低於完整模型。其中影響最大者為 softmax 頭：NDCG@$20$ 由 $0.1243$ 降至 $0.1005$，MAP@$20$ 由 $0.0594$ 降至 $0.0451$，NDCG@$10$ 由 $0.0960$ 降至 $0.0785$，MAP@$10$ 由 $0.0519$ 降至 $0.0397$。其他三項元件之排序品質損失較小但一致。移除 KG-SVD 時 NDCG@$20 = 0.1171$、MAP@$20 = 0.0545$；移除融合閘偏置時為 $0.1194$ 與 $0.0555$；以純量閘取代 per-(u,i) MLP 閘時為 $0.1180$ 與 $0.0552$。
 
 \paragraph{Softmax 與 sigmoid} w/o softmax 列在兩個 cutoff 的 NDCG 與 MAP 下皆是最大消融。這即是我們於第~\ref{ch:conclusion-zh}~章發展之方法論觀察的實證基礎：於本合理化模組中，注意力歸一化之選擇不是調參細節，而是與合理化語意假設綁定的設計選擇，也就是 $A$ 個槽位彼此競爭，而非各自獨立相關。
 
@@ -194,14 +218,15 @@ w/o 全域視角（純 CL 雙視角）   & $0.0949$ & $0.0504$ \\
 
 我們沿讀者最可能質疑之四個超參數軸探究 RA-GARK 之敏感性：Softmax 溫度 $\tau$、潛在面向槽數 $A$、融合閘偏置 $b$、對比權重 $\lambda_{\mathrm{CL}}$。各軸於其他設定固定為表~\ref{tab:hparams-zh} 之值、種子 $= 42$ 下掃描。主結果中的最佳設定（NDCG@$20 = 0.1243$）作為本節錨點，圖~\ref{fig:sensitivity-2x2-zh} 總覽四個 sweep 的量測趨勢。
 
-\begin{figure}[!htbp]
+\begin{figure}[H]
 \centering
 \includegraphics[width=0.95\textwidth]{img/sensitivity_2x2.pdf}
 \caption{RA-GARK 在 NDCG@20 下對四個主要超參數之敏感性。}
 \label{fig:sensitivity-2x2-zh}
 \end{figure}
+\FloatBarrier
 
-此圖作為趨勢檢視，而非第二份結果表；其重點在於各設計選擇於預設值附近是否穩定。
+此圖作為趨勢檢視，而非第二份結果表；其重點在於各設計選擇於預設值附近是否穩定，而不是再多列一份排序摘要。
 
 \subsection{Softmax 溫度 $\tau$}
 \label{sec:sens-tau-zh}
@@ -235,22 +260,21 @@ w/o 全域視角（純 CL 雙視角）   & $0.0949$ & $0.0504$ \\
 
 為檢視合理化模組實際學到什麼，我們自訓練集中取樣 $5$ 件熱門物品（每件至少 $3$ 條 KG 面向邊），並記錄訓練完成之模型對其中三位互動使用者所產生之 Softmax 面向權重 $w_{u,i,k}$。正文以熱圖進行詮釋，精確數值則移至附錄保存。
 
-\begin{figure}[!htbp]
+\begin{figure}[H]
 \centering
 \includegraphics[width=0.98\textwidth]{img/case_study_heatmap.pdf}
 \caption{取樣使用者—物品配對之 Softmax 面向權重熱圖。}
 \label{fig:case-heatmap-zh}
 \end{figure}
+\FloatBarrier
 
-圖~\ref{fig:case-heatmap-zh} 呈現兩項明確之經驗模式，二者皆與一般對合理化模組所期望的強 per-(使用者, 物品) 選擇敘事不符。
+圖~\ref{fig:case-heatmap-zh} 呈現兩項明確之經驗模式，二者皆與一般對合理化模組所期望的強 per-(使用者, 物品) 選擇敘事不符。更重要的是，這裡看到的是物品條件化而非使用者條件化，這正是後文要展開的重點。
 
 \paragraph{物品層級槽位專化} 五件取樣物品之 argmax 槽各異（槽 $1$、槽 $0$、槽 $1$、槽 $0$、槽 $3$），主導槽承載一個小但穩定之質量超額（通常 $0.27$--$0.29$，其餘約 $0.24$）。合理化模組因此學得了物品條件之四槽偏好：不同物品將其 KG 貢獻路由至不同槽向，且該選擇於所有與該物品互動之使用者間穩定。
 
 \paragraph{使用者條件選擇性} 對任一物品，三位取樣使用者所產生之權重向量幾乎相同，物品內跨使用者之差異至多 $\pm 0.003$。\Eqref{eq:logit-zh} 之使用者條件化在結構上存在，但於訓練完成之模型中，使用者輸入對槽分布之擾動不超過量測雜訊。權重雖明顯高於主導槽上之均勻值，但並非使用者特定。
 
-\paragraph{詮釋} 此模式與第~\ref{sec:approach-principle-zh}~節之設計原則一致而非衝突。融合閘以偏置初始化，使 KG 通道於訓練起點開啟約 $0.7\%$，且整個訓練過程中僅佔分數之一小部分；表~\ref{tab:ablation@20} 與表~\ref{tab:ablation@10} 之消融顯示移除整個全域視角僅損失 $1.9\%$ NDCG@$20$，將合理化改為均勻平均僅損失 $0.3\%$。回傳至合理化模組之梯度因而相應偏小，足以決定\emph{每件物品該用哪個槽}（一個大小為 $|\mathcal{I}| \times A$ 之物品層級選擇問題），但不足以在其之上再學得使用者特定之再加權，因後者需於緊縮 KG 貢獻下區分 $|\mathcal{U}| \times |\mathcal{I}| \times A$ 個槽權重。個案研究因此不應讀為合理化模組之失敗，而是優雅退化性質之直接證據：KG 通道僅學得閘允許其影響損失之結構量。
-
-對純 LightGCN 之 $5.3\%$ 提升（表~\ref{tab:main-zh}）因此可歸因於在 KG-SVD 初始化幾何之上的物品層級槽路由，而非 per-user 合理化指派。我們明確區分此點，俾後續於較稠密 KG 上使用合理化模組之工作（其中較寬閘原則上能允許使用者層級分化湧現）知曉應觀察何種訊號。
+\paragraph{詮釋} 此模式與第~\ref{sec:approach-principle-zh}~節之設計原則一致而非衝突。融合閘以偏置初始化，使 KG 通道於訓練起點開啟約 $0.7\%$，且整個訓練過程中僅佔分數之一小部分；表~\ref{tab:ablation@20} 與表~\ref{tab:ablation@10} 之消融顯示移除整個全域視角僅損失 $1.9\%$ NDCG@$20$，將合理化改為均勻平均僅損失 $0.3\%$。回傳至合理化模組之梯度因而相應偏小，足以決定\emph{每件物品該用哪個槽}（一個大小為 $|\mathcal{I}| \times A$ 之物品層級選擇問題），但不足以在其之上再學得使用者特定之再加權，因後者需於緊縮 KG 貢獻下區分 $|\mathcal{U}| \times |\mathcal{I}| \times A$ 個槽權重。個案研究因此不應讀為合理化模組之失敗，而是優雅退化性質之直接證據：KG 通道僅學得閘允許其影響損失之結構量，而對純 LightGCN 之 $5.3\%$ 提升（表~\ref{tab:main-zh}）因此可歸因於在 KG-SVD 初始化幾何之上的物品層級槽路由，而非 per-user 合理化指派。我們明確區分此點，俾後續於較稠密 KG 上使用合理化模組之工作（其中較寬閘原則上能允許使用者層級分化湧現）知曉應觀察何種訊號。
 
 \section{計算成本}
 \label{sec:eval-cost-zh}
