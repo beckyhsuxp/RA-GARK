@@ -108,7 +108,8 @@ def run_trial(cfg: Config, device: torch.device, seed: int = 42) -> float:
             optimizer.step()
 
         val_res = evaluate(model, val_gt, train_hist, device,
-                           k=cfg.eval_k, batch_size=cfg.eval_batch_size)
+                           k=cfg.eval_k, batch_size=cfg.eval_batch_size,
+                           extra_ks=cfg.eval_extra_ks)
         best_val_ndcg = max(best_val_ndcg, val_res["NDCG"])
 
     return best_val_ndcg

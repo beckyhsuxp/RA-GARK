@@ -79,3 +79,4 @@ class Config:
     # --- Evaluation ---
     eval_k: int = 20
     eval_batch_size: int = 128
+    eval_extra_ks: tuple[int, ...] = (10,)

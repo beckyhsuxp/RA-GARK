@@ -40,10 +40,10 @@ KGRec 的隱含假設是：具資訊量的邊\emph{存在}於 KG 中，因此合
 RA-GARK 的前提較弱。我們不假設 KG 整體是可靠的。aspect-saliency softmax（第~\ref{sec:softmax-zh}~節）在 KG 具資訊量時選取合理化依據，但具局部偏置的融合閘（第~\ref{sec:gate-zh}~節）可在閘的梯度顯示無益時，另外地\emph{脫接整條 KG 通道}。此可信度差異展現於四項設計分歧上：
 
 \begin{itemize}
-  \item \textbf{合理化粒度。} KGRec 在邊（KG 三元組）層級進行選擇。RA-GARK 將每件物品的 KG 語意聚合為 $A=4$ 個\emph{潛在}面向槽（槽位內容由 IDF 加權商品—面向共現矩陣之截斷 SVD 投影得到）並在槽位層級進行選擇。此槽位數為模型設計參數，與每件物品所擁有的原始面向標籤數無關；粒度雖較邊層級選擇為粗，但直接產生可解讀的每物品 aspect 偏好。
-  \item \textbf{選擇機制。} KGRec 採用離散 Bernoulli dropout 配合對比學習。RA-GARK 採用可微分的 softmax 注意力，能端到端訓練，並將推論期的權重作為可解釋性產物外露。
-  \item \textbf{作用位置。} KGRec 在 KGAT 訊息傳遞路徑\emph{之內}施加合理化；合理化與聚合糾纏在一起。RA-GARK 將合理化置於與 LightGCN 區域視角分離的旁路通道，僅於後期由閘將兩者結合。
-  \item \textbf{對 KG 可信度的處理。} KGRec 沒有任何架構機制可脫接 KG。RA-GARK 的偏置初始化融合閘正提供此一機制：訓練起始時 $\alpha^{(0)} \approx 0.993$，模型實質上即為純 LightGCN；唯當學習顯示 KG 通道能降低損失時，閘才會被打開。
+  \item \textbf{合理化粒度}：KGRec 在邊（KG 三元組）層級進行選擇。RA-GARK 將每件物品的 KG 語意聚合為 $A=4$ 個\emph{潛在}面向槽（槽位內容由 IDF 加權商品—面向共現矩陣之截斷 SVD 投影得到）並在槽位層級進行選擇。此槽位數為模型設計參數，與每件物品所擁有的原始面向標籤數無關；粒度雖較邊層級選擇為粗，但直接產生可解讀的每物品 aspect 偏好。
+  \item \textbf{選擇機制}：KGRec 採用離散 Bernoulli dropout 配合對比學習。RA-GARK 採用可微分的 softmax 注意力，能端到端訓練，並將推論期的權重作為可解釋性產物外露。
+  \item \textbf{作用位置}：KGRec 在 KGAT 訊息傳遞路徑\emph{之內}施加合理化；合理化與聚合糾纏在一起。RA-GARK 將合理化置於與 LightGCN 區域視角分離的旁路通道，僅於後期由閘將兩者結合。
+  \item \textbf{對 KG 可信度的處理}：KGRec 沒有任何架構機制可脫接 KG。RA-GARK 的偏置初始化融合閘正提供此一機制：訓練起始時 $\alpha^{(0)} \approx 0.993$，模型實質上即為純 LightGCN；唯當學習顯示 KG 通道能降低損失時，閘才會被打開。
 \end{itemize}
 
 表~\ref{tab:rw-kgrec-vs-ragark-zh} 將上述四項軸線並列對照。
