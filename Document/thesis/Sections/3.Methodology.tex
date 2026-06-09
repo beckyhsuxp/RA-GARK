@@ -383,12 +383,12 @@ The bias magnitude is chosen by a single principle: large enough that the initia
 
 The local and global views are structurally heterogeneous: one is a collaborative representation derived from interactions, the other a KG-derived representation living in a different inductive subspace. Without any explicit alignment, nothing prevents the two representations from drifting into incompatible regions of $\mathbb{R}^d$ during training, in which case the fusion gate would be combining vectors that are not directly comparable. The cross-view contrastive regularization addresses this geometry mismatch.
 
-\subsubsection{Role in the Architecture}
+\paragraph{Role in the Architecture}
 \label{sec:cl-role}
 
 In RA-GARK the contrastive losses play an explicitly limited role. They are not the primary integration mechanism, that role is filled by the fusion gate (Section~\ref{sec:gate}), but a regularizer that nudges the two views toward a shared angular geometry. In particular we deliberately do not use contrastive learning to make the KG channel ``earn'' its way into the model, as KGCL~\cite{yang2022kgcl} and MCCLK~\cite{zou2022mcclk} do; that would re-introduce the failure mode of treating KG signal as a mandatory primary fusion path.
 
-\subsubsection{Aspect-Level Contrastive Loss}
+\paragraph{Aspect-Level Contrastive Loss}
 \label{sec:cl-acl}
 
 For each item $i$ in a training batch, we contrast the projected local embedding against each of the item's $A$ aspect slots:
@@ -403,7 +403,7 @@ where $g : \mathbb{R}^d \to \mathbb{R}^d$ is a learnable projection head (a two-
 \end{equation}
 with $\tau_{\mathrm{CL}} = 0.2$ and $B$ the batch size (negatives are the remaining items in the batch). Vectors are $\ell_2$-normalized prior to the inner product.
 
-\subsubsection{User-Level Contrastive Loss}
+\paragraph{User-Level Contrastive Loss}
 \label{sec:cl-ucl}
 
 A symmetric user-level loss aligns the local and global user embeddings:
@@ -413,12 +413,12 @@ A symmetric user-level loss aligns the local and global user embeddings:
 \end{equation}
 The projection head $g$ is shared with $\mathcal{L}_{\mathrm{aCL}}$, since both losses operate on local-side inputs and we want the projection to encode a single ``how the local view maps into the global view's angular geometry'' transformation.
 
-\subsubsection{Stop-Gradient on the Global Side}
+\paragraph{Stop-Gradient on the Global Side}
 \label{sec:cl-stopgrad}
 
 The stop-gradient on the KG side in \Eqref{eq:lacl} and \Eqref{eq:lucl} is structurally important. Without it, the contrastive gradient would propagate back into the SVD-initialized aspect slots and the global user table, slowly destroying the angular geometry that the KG-SVD initialization installed (Section~\ref{sec:kgsvd}). With stop-gradient, the contrastive losses act asymmetrically: they pull the local view toward the global view's pre-existing geometry, but they cannot push the global view in any direction. The KG-derived semantic subspace is preserved as an external reference, and the local view absorbs the alignment cost.
 
-\subsubsection{Loss Weight}
+\paragraph{Loss Weight}
 \label{sec:cl-lambda}
 
 The contrastive weight $\lambda_{\mathrm{CL}}$ in \Eqref{eq:total-loss} is fixed at $0.005$. This is small enough that the contrastive losses contribute a non-dominant fraction of the total gradient (BPR remains the primary signal), and is consistent with the role we assigned to contrastive regularization in Section~\ref{sec:cl-role}: it is a geometric prior, not a primary learning objective. We do not tune $\lambda_{\mathrm{CL}}$ per dataset.
