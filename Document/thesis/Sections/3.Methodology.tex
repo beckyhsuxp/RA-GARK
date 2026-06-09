@@ -75,7 +75,7 @@ $\hat{y}(u, i) \in \mathbb{R}$         & predicted preference score for pair $(u
 \subsection{Problem Formulation}
 \label{sec:approach-problem}
 
-\paragraph{Task} We address top-$K$ recommendation in the implicit-feedback setting. Given $\mathcal{U}$, $\mathcal{I}$, observed interactions $\mathcal{R}$, and the item--aspect KG $\mathcal{G}_{\mathrm{KG}}$, the goal is to produce for each user $u \in \mathcal{U}$ a ranked list of items they have not previously interacted with, evaluated by ranking metrics (NDCG@$K$, Recall@$K$, Hit@$K$) against a held-out test interaction set.
+\paragraph{Recommendation Task} We address top-$K$ recommendation in the implicit-feedback setting. Given $\mathcal{U}$, $\mathcal{I}$, observed interactions $\mathcal{R}$, and the item--aspect KG $\mathcal{G}_{\mathrm{KG}}$, the goal is to produce for each user $u \in \mathcal{U}$ a ranked list of items they have not previously interacted with, evaluated by ranking metrics (NDCG@$K$, Recall@$K$, Hit@$K$) against a held-out test interaction set.
 
 \paragraph{Scoring function} RA-GARK assigns to each $(u, i)$ pair the inner-product score in \Eqref{eq:score}:
 \begin{equation}
@@ -243,7 +243,7 @@ The complete initialization is summarized as a five-step procedure:
 
 If $|\mathcal{A}| < A d$, the SVD rank is capped at $|\mathcal{A}| - 1$ and the remaining slot dimensions are filled with small Gaussian noise (standard deviation $0.01$) before rescaling; in our experiments $|\mathcal{A}| \gg A d$, so this fallback path is never exercised.
 
-\subsection{What the Initialization Buys}
+\subsection{Benefits of the Initialization}
 \label{sec:kgsvd-effect}
 
 The contribution of KG-SVD initialization is measured by ablation in Section~\ref{sec:ablation-svd}: replacing it with a Xavier-normal random initialization of the same tensor shape costs $6.0\%$ NDCG@20. The interpretation is that the SVD initialization preserves the angular geometry of the aspect-induced semantic subspace at the start of training; subsequent gradient descent fine-tunes this geometry, but cannot easily recover it from random under our sparse-KG conditions, because the gradient signal that would do so flows through the contrastive losses (with $\lambda_{\mathrm{CL}} = 0.005$) and is weak.
@@ -298,7 +298,7 @@ i_{\mathrm{glo}} = \sum_{k=1}^{A} w_{u, i, k} \cdot \mathbf{a}_{i, k} \;\in\; \m
 \end{equation}
 Implementation-wise this is the ``rationale masking'' step: the softmax weights serve as a soft mask over the slot dimension, and the masked slots are summed back into a single $d$-dimensional vector. Although \Eqref{eq:softmax-w} and \Eqref{eq:iglo} are conceptually two steps, in code they live inside a single module (\texttt{KGRationaleMasking}) and are computed in one forward call.
 
-\subsection{Why Softmax and Not Sigmoid}
+\subsection{Softmax versus Sigmoid}
 \label{sec:softmax-vs-sigmoid}
 
 A natural alternative is to score each slot independently with a sigmoid: $w_{u,i,k} = \sigma(\ell_{u,i,k})$, with no cross-slot normalization. The two operations differ in a key property that matters for the downstream fusion gate: softmax produces weights that sum to $1$ and yield an $i_{\mathrm{glo}}$ whose magnitude is bounded by $\max_k \|\mathbf{a}_{i,k}\|$ regardless of the logit scale, whereas the sigmoid output is unconstrained in its sum and produces an $i_{\mathrm{glo}}$ whose magnitude scales with the logit dynamic range.
@@ -367,7 +367,7 @@ The local-biased initialization provides a structural guarantee: if the KG turns
 
 This is a graceful degradation property in the precise architectural sense of Highway Networks~\cite{srivastava2015highway}, transplanted from intra-network skip connections to inter-view fusion. We are not aware of any KG-aware recommender that employs this design.
 
-\subsection{Why $+5$ and Not $+\infty$}
+\subsection{Selecting the Fusion-Bias Magnitude}
 \label{sec:gate-bias-magnitude}
 
 The bias magnitude is chosen by a single principle: large enough that the initial gate output is overwhelmingly local, small enough that gradients on $b$ are nonzero and can adjust the gate during training. At $b = +5$, $\sigma'(5) = \sigma(5)(1 - \sigma(5)) \approx 0.007$, small, but not vanishing. With $b = +10$ or beyond, the gradient on $b$ becomes numerically negligible and the gate cannot learn to open at all. The choice $b = +5$ is the smallest integer for which $\alpha^{(0)} > 0.99$ while keeping $\sigma'(b) > 10^{-3}$, and it survives a sensitivity sweep without further tuning (Section~\ref{sec:sens-bias}). Removing the bias initialization entirely (setting $b = 0$) costs $3.7\%$ NDCG@20 (Section~\ref{sec:ablation-gate}).
