@@ -77,12 +77,12 @@ $\hat{y}(u, i) \in \mathbb{R}$         & predicted preference score for pair $(u
 
 \paragraph{Task} We address top-$K$ recommendation in the implicit-feedback setting. Given $\mathcal{U}$, $\mathcal{I}$, observed interactions $\mathcal{R}$, and the item--aspect KG $\mathcal{G}_{\mathrm{KG}}$, the goal is to produce for each user $u \in \mathcal{U}$ a ranked list of items they have not previously interacted with, evaluated by ranking metrics (NDCG@$K$, Recall@$K$, Hit@$K$) against a held-out test interaction set.
 
-\paragraph{Scoring function} RA-GARK assigns to each $(u, i)$ pair the inner-product score
+\paragraph{Scoring function} RA-GARK assigns to each $(u, i)$ pair the inner-product score in \Eqref{eq:score}:
 \begin{equation}
 \label{eq:score}
 \hat{y}(u, i) = \langle u_{\mathrm{final}},\ i_{\mathrm{final}} \rangle,
 \end{equation}
-where $u_{\mathrm{final}}$ and $i_{\mathrm{final}}$ are produced by gated fusion of the local and global representations:
+where $u_{\mathrm{final}}$ and $i_{\mathrm{final}}$ are produced by the gated fusion rule in \Eqref{eq:fusion}:
 \begin{equation}
 \label{eq:fusion}
 u_{\mathrm{final}} = \alpha_u\, u_{\mathrm{loc}} + (1 - \alpha_u)\, u_{\mathrm{glo}}, \qquad
@@ -90,12 +90,12 @@ i_{\mathrm{final}} = \alpha_i\, i_{\mathrm{loc}} + (1 - \alpha_i)\, i_{\mathrm{g
 \end{equation}
 The gate outputs $\alpha_u, \alpha_i$ are computed by independent MLPs (Section~\ref{sec:gate}). With the bias initialization used throughout this thesis, $\alpha_u^{(0)}, \alpha_i^{(0)} \approx 0.993$, so $\hat{y}^{(0)}(u, i) \approx \langle u_{\mathrm{loc}}, i_{\mathrm{loc}} \rangle$ at the start of training, i.e.\ the score is essentially that of pure LightGCN until the gate learns otherwise.
 
-\paragraph{Training objective} We optimize a Bayesian Personalized Ranking (BPR)~\cite{rendle2009bpr} loss with two auxiliary cross-view contrastive regularizers:
+\paragraph{Training objective} We optimize the objective in \Eqref{eq:total-loss}, a Bayesian Personalized Ranking (BPR)~\cite{rendle2009bpr} loss with two auxiliary cross-view contrastive regularizers:
 \begin{equation}
 \label{eq:total-loss}
 \mathcal{L} = \mathcal{L}_{\mathrm{BPR}} + \lambda_{\mathrm{CL}} \bigl( \mathcal{L}_{\mathrm{aCL}} + \mathcal{L}_{\mathrm{uCL}} \bigr),
 \end{equation}
-where for each observed pair $(u, i^+) \in \mathcal{R}$ and a sampled negative item $i^- \notin \mathcal{R}_u$,
+where the BPR term in \Eqref{eq:bpr} is computed for each observed pair $(u, i^+) \in \mathcal{R}$ and a sampled negative item $i^- \notin \mathcal{R}_u$:
 \begin{equation}
 \label{eq:bpr}
 \mathcal{L}_{\mathrm{BPR}} = - \log \sigma\bigl( \hat{y}(u, i^+) - \hat{y}(u, i^-) \bigr),
@@ -115,12 +115,12 @@ LightGCN is chosen as the local-view backbone for three reasons. First, on the s
 \subsection{Graph Construction}
 \label{sec:local-graph}
 
-Let $\mathbf{R} \in \{0,1\}^{|\mathcal{U}| \times |\mathcal{I}|}$ be the user--item interaction matrix derived from $\mathcal{R}$, with $\mathbf{R}_{u,i} = 1$ if $(u,i) \in \mathcal{R}$ and $0$ otherwise. We form the bipartite adjacency
+Let $\mathbf{R} \in \{0,1\}^{|\mathcal{U}| \times |\mathcal{I}|}$ be the user--item interaction matrix derived from $\mathcal{R}$, with $\mathbf{R}_{u,i} = 1$ if $(u,i) \in \mathcal{R}$ and $0$ otherwise. We form the bipartite adjacency in \Eqref{eq:bipartite-A}:
 \begin{equation}
 \label{eq:bipartite-A}
 \mathbf{A} = \begin{bmatrix} \mathbf{0} & \mathbf{R} \\ \mathbf{R}^{\top} & \mathbf{0} \end{bmatrix} \in \mathbb{R}^{(|\mathcal{U}| + |\mathcal{I}|) \times (|\mathcal{U}| + |\mathcal{I}|)},
 \end{equation}
-and its symmetrically normalized variant
+and then use the symmetrically normalized variant in \Eqref{eq:normalized-A}:
 \begin{equation}
 \label{eq:normalized-A}
 \tilde{\mathbf{A}} = \mathbf{D}^{-1/2}\, \mathbf{A}\, \mathbf{D}^{-1/2}, \qquad \mathbf{D} = \mathrm{diag}\!\left(\mathbf{A}\,\mathbf{1}\right).
@@ -130,7 +130,7 @@ The normalization downweights edges incident to high-degree users or popular ite
 \subsection{Propagation}
 \label{sec:local-prop}
 
-Let $\mathbf{E}^{(0)} \in \mathbb{R}^{(|\mathcal{U}| + |\mathcal{I}|) \times d}$ be the initial embedding table, with the first $|\mathcal{U}|$ rows storing user embeddings and the remaining $|\mathcal{I}|$ rows storing item embeddings. Both blocks are initialized with Xavier-normal random entries. The $\ell$-th layer is obtained by a single normalized neighbor aggregation:
+Let $\mathbf{E}^{(0)} \in \mathbb{R}^{(|\mathcal{U}| + |\mathcal{I}|) \times d}$ be the initial embedding table, with the first $|\mathcal{U}|$ rows storing user embeddings and the remaining $|\mathcal{I}|$ rows storing item embeddings. Both blocks are initialized with Xavier-normal random entries. The $\ell$-th layer is obtained by the normalized neighbor aggregation in \Eqref{eq:lightgcn-prop}:
 \begin{equation}
 \label{eq:lightgcn-prop}
 \mathbf{E}^{(\ell+1)} = \tilde{\mathbf{A}}\, \mathbf{E}^{(\ell)}, \qquad \ell = 0, 1, \dots, K-1.
@@ -140,7 +140,7 @@ There is no learnable weight matrix, no nonlinearity, and no self-loop bias, the
 \subsection{Layer-wise Aggregation and Output}
 \label{sec:local-output}
 
-We adopt the standard LightGCN layer-wise average
+We adopt the standard LightGCN layer-wise average in \Eqref{eq:lightgcn-avg}:
 \begin{equation}
 \label{eq:lightgcn-avg}
 \bar{\mathbf{E}} = \frac{1}{K+1} \sum_{\ell=0}^{K} \mathbf{E}^{(\ell)},
@@ -165,7 +165,7 @@ The global view introduces a separate user-side embedding $u_{\mathrm{glo}}$ (a 
 \subsection{Aspect Slots as the Item-side KG Representation}
 \label{sec:kgsvd-slots}
 
-Each item $i$ is represented in the global view by an aspect-slot tensor
+Each item $i$ is represented in the global view by the aspect-slot tensor in \Eqref{eq:aspect-slots-def}:
 \begin{equation}
 \label{eq:aspect-slots-def}
 \mathbf{a}_i \in \mathbb{R}^{A \times d}, \qquad A = 4,
@@ -177,7 +177,7 @@ A key clarification is in order: the slot count $A = 4$ is a model hyperparamete
 \subsection{Co-occurrence Matrix}
 \label{sec:kgsvd-cooc}
 
-We start from a binary item--aspect co-occurrence matrix $\mathbf{M} \in \{0,1\}^{|\mathcal{I}| \times |\mathcal{A}|}$:
+We start from the binary item--aspect co-occurrence matrix $\mathbf{M} \in \{0,1\}^{|\mathcal{I}| \times |\mathcal{A}|}$ defined in \Eqref{eq:cooc}:
 \begin{equation}
 \label{eq:cooc}
 \mathbf{M}_{i,a} = \begin{cases} 1, & (i, a) \in \mathcal{G}_{\mathrm{KG}}, \\ 0, & \text{otherwise}. \end{cases}
@@ -187,12 +187,12 @@ Each row of $\mathbf{M}$ is therefore a sparse indicator vector: at most a few e
 \subsection{IDF Weighting}
 \label{sec:kgsvd-idf}
 
-Some aspect tags appear across many items (e.g.\ ``well-written'', ``engaging''); others are highly specific (e.g.\ a niche genre or theme). Without correction, the SVD that follows would be dominated by the high-frequency tags, producing latent directions that are essentially popularity priors. We mitigate this with a standard inverse document frequency (IDF) reweighting:
+Some aspect tags appear across many items (e.g.\ ``well-written'', ``engaging''); others are highly specific (e.g.\ a niche genre or theme). Without correction, the SVD that follows would be dominated by the high-frequency tags, producing latent directions that are essentially popularity priors. We mitigate this with the standard inverse document frequency (IDF) reweighting in \Eqref{eq:idf}:
 \begin{equation}
 \label{eq:idf}
 \mathrm{idf}(a) = \log\!\left( \frac{|\mathcal{I}|}{|\{i : \mathbf{M}_{i,a} = 1\}| + 1} \right) + 1,
 \end{equation}
-and rescale columns of $\mathbf{M}$ by their IDF:
+and rescale columns of $\mathbf{M}$ by their IDF as in \Eqref{eq:idf-rescale}:
 \begin{equation}
 \label{eq:idf-rescale}
 \tilde{\mathbf{M}}_{i,a} = \mathrm{idf}(a) \cdot \mathbf{M}_{i,a}.
@@ -202,14 +202,14 @@ The $+1$ in the denominator avoids division by zero on aspects whose entire item
 \subsection{Truncated SVD}
 \label{sec:kgsvd-svd}
 
-We compute a rank-$k$ truncated SVD of $\tilde{\mathbf{M}}$:
+We compute the rank-$k$ truncated SVD of $\tilde{\mathbf{M}}$ in \Eqref{eq:svd}:
 \begin{equation}
 \label{eq:svd}
 \tilde{\mathbf{M}} \;\approx\; \mathbf{U}_k\, \boldsymbol{\Sigma}_k\, \mathbf{V}_k^{\top}, \qquad \mathbf{U}_k \in \mathbb{R}^{|\mathcal{I}| \times k},
 \end{equation}
 with $k = A \cdot d$. The left singular matrix $\mathbf{U}_k$ has one row per item; the rows live in a $k$-dimensional latent subspace within which IDF-weighted aspect co-occurrence is best explained at rank $k$.
 
-We then form the per-item latent embedding by scaling each component by the square root of its singular value:
+We then form the per-item latent embedding in \Eqref{eq:svd-embed} by scaling each component by the square root of its singular value:
 \begin{equation}
 \label{eq:svd-embed}
 \mathbf{E}_{\mathrm{KG}} = \mathbf{U}_k\, \boldsymbol{\Sigma}_k^{1/2} \in \mathbb{R}^{|\mathcal{I}| \times k}.
@@ -219,7 +219,7 @@ The square-root scaling distributes the spectral energy evenly between the left 
 \subsection{Reshape into Slots and Magnitude Rescaling}
 \label{sec:kgsvd-reshape}
 
-The flat embedding $\mathbf{E}_{\mathrm{KG}}$ of width $k = A d$ is reshaped into $A$ slots of width $d$ per item:
+The flat embedding $\mathbf{E}_{\mathrm{KG}}$ of width $k = A d$ is reshaped into $A$ slots of width $d$ per item according to \Eqref{eq:reshape}:
 \begin{equation}
 \label{eq:reshape}
 \mathbf{A}_{\mathrm{KG}}^{(0)}[i, k, :] = \mathbf{E}_{\mathrm{KG}}[i, k d : (k+1) d], \qquad k = 0, \dots, A-1.
@@ -251,7 +251,7 @@ The contribution of KG-SVD initialization is measured by ablation in Section~\re
 \section{Global View: Softmax Rationale Masking}
 \label{sec:softmax}
 
-Given the aspect-slot tensor $\mathbf{a}_i \in \mathbb{R}^{A \times d}$ of an item and the user-side global embedding $u_{\mathrm{glo}} \in \mathbb{R}^d$, the rationale masking module selects which of the $A$ latent slots best represents the item for that particular user, producing the global-view item embedding $i_{\mathrm{glo}}$. The user-side global embedding itself is the direct lookup
+Given the aspect-slot tensor $\mathbf{a}_i \in \mathbb{R}^{A \times d}$ of an item and the user-side global embedding $u_{\mathrm{glo}} \in \mathbb{R}^d$, the rationale masking module selects which of the $A$ latent slots best represents the item for that particular user, producing the global-view item embedding $i_{\mathrm{glo}}$. The user-side global embedding itself is the direct lookup in \Eqref{eq:uglo-lookup}:
 \begin{equation}
 \label{eq:uglo-lookup}
 u_{\mathrm{glo}} = \mathbf{E}^{\mathrm{glo}}_u, \qquad \mathbf{E}^{\mathrm{glo}} \in \mathbb{R}^{|\mathcal{U}| \times d},
@@ -266,12 +266,12 @@ Each item's KG semantics are spread across the $A$ latent slots of $\mathbf{a}_i
 \subsection{User-conditioned Attention Logits}
 \label{sec:softmax-logit}
 
-For each slot $k \in \{1, \dots, A\}$, we compute a scalar logit
+For each slot $k \in \{1, \dots, A\}$, we compute the scalar logit in \Eqref{eq:logit}:
 \begin{equation}
 \label{eq:logit}
 \ell_{u, i, k} = \mathrm{MLP}\!\left( [u_{\mathrm{glo}} \,\Vert\, \mathbf{a}_{i,k}] \right) \in \mathbb{R},
 \end{equation}
-where $\Vert$ denotes concatenation along the embedding dimension, and the MLP shares parameters across all slots and items. The MLP architecture is a two-layer feed-forward block:
+where $\Vert$ denotes concatenation along the embedding dimension, and the MLP shares parameters across all slots and items. The MLP architecture is the two-layer feed-forward block in \Eqref{eq:mlp}:
 \begin{equation}
 \label{eq:mlp}
 \mathrm{MLP}(\mathbf{z}) = \mathbf{w}^{\top} \cdot \mathrm{LeakyReLU}\!\left(\mathbf{W}\, \mathbf{z}\right),
@@ -281,7 +281,7 @@ with $\mathbf{W} \in \mathbb{R}^{d \times 2d}$ and $\mathbf{w} \in \mathbb{R}^{d
 \subsection{Softmax Normalization}
 \label{sec:softmax-softmax}
 
-The $A$ logits are normalized into a probability distribution over slots by a softmax with temperature $\tau$:
+The $A$ logits are normalized into a probability distribution over slots by the temperature-scaled softmax in \Eqref{eq:softmax-w}:
 \begin{equation}
 \label{eq:softmax-w}
 w_{u, i, k} = \frac{\exp(\ell_{u, i, k} / \tau)}{\sum_{k' = 1}^{A} \exp(\ell_{u, i, k'} / \tau)}.
@@ -291,7 +291,7 @@ By construction $\sum_k w_{u, i, k} = 1$, and the $A$ slot weights compete: incr
 \subsection{Weighted Aggregation}
 \label{sec:softmax-agg}
 
-The global-view item embedding is the slot-weighted average
+The global-view item embedding is the slot-weighted average in \Eqref{eq:iglo}:
 \begin{equation}
 \label{eq:iglo}
 i_{\mathrm{glo}} = \sum_{k=1}^{A} w_{u, i, k} \cdot \mathbf{a}_{i, k} \;\in\; \mathbb{R}^{d}.
@@ -320,7 +320,7 @@ The fusion gate is the architectural mechanism that turns RA-GARK's design princ
 \subsection{Per-Side Gates}
 \label{sec:gate-perside}
 
-RA-GARK uses two independent fusion gates, one on the user side and one on the item side. Both are scalar gates conditioned on the concatenation of the side's local and global embeddings:
+RA-GARK uses two independent fusion gates, one on the user side and one on the item side. Both are scalar gates conditioned on the concatenation of the side's local and global embeddings, as specified in \Eqref{eq:gate-u} and \Eqref{eq:gate-i}:
 \begin{equation}
 \label{eq:gate-u}
 \alpha_u = \mathrm{Gate}_{u}\!\left([u_{\mathrm{loc}} \,\Vert\, u_{\mathrm{glo}}]\right) \in (0, 1),
@@ -331,7 +331,7 @@ RA-GARK uses two independent fusion gates, one on the user side and one on the i
 \end{equation}
 The two gates have separate parameters; sharing them empirically degrades the result, because the marginal informativeness of the KG signal differs between user-side and item-side embeddings under sparse KG.
 
-The final per-side embeddings are convex combinations
+The final per-side embeddings are the convex combinations in \Eqref{eq:gate-mix}:
 \begin{equation}
 \label{eq:gate-mix}
 u_{\mathrm{final}} = \alpha_u\, u_{\mathrm{loc}} + (1 - \alpha_u)\, u_{\mathrm{glo}}, \qquad
@@ -342,7 +342,7 @@ and the final score is the inner product $\hat{y}(u,i) = \langle u_{\mathrm{fina
 \subsection{Gate Structure}
 \label{sec:gate-structure}
 
-Each $\mathrm{Gate}$ is a small MLP with a sigmoid head:
+Each $\mathrm{Gate}$ is the small MLP with a sigmoid head defined in \Eqref{eq:gate-mlp}:
 \begin{equation}
 \label{eq:gate-mlp}
 \mathrm{Gate}(\mathbf{z}) = \sigma\!\left( \mathbf{w}^{\top} \tanh\!\left( \mathbf{W} \mathbf{z} \right) + b \right),
@@ -354,12 +354,12 @@ with $\mathbf{W} \in \mathbb{R}^{d \times 2d}$, $\mathbf{w} \in \mathbb{R}^{d}$,
 
 The crucial design choice is the initialization of the scalar bias $b$ in \Eqref{eq:gate-mlp}. With $b = 0$, the gate output at the start of training is approximately $\sigma(0) = 0.5$, i.e.\ a 50/50 mix of local and global. With the global view initialized partly from the noisy KG, a 50/50 starting mix exposes the local representation to KG noise throughout training, and we have already observed in Chapter~\ref{ch:intro} that this is the failure mode of deep-fusion baselines.
 
-We instead initialize $b = +5$ on both gates. The gate output at the start of training is then
+We instead initialize $b = +5$ on both gates. The gate output at the start of training is then given by \Eqref{eq:alpha-init}:
 \begin{equation}
 \label{eq:alpha-init}
 \alpha^{(0)} \approx \sigma(b) = \sigma(5) \approx 0.993,
 \end{equation}
-so the initial mix is approximately
+so the initial mix is approximately the local-dominant combination in \Eqref{eq:mix-init}:
 \begin{equation}
 \label{eq:mix-init}
 u_{\mathrm{final}}^{(0)} \approx 0.993\, u_{\mathrm{loc}}^{(0)} + 0.007\, u_{\mathrm{glo}}^{(0)},
@@ -391,12 +391,12 @@ In RA-GARK the contrastive losses play an explicitly limited role. They are not 
 \paragraph{Aspect-Level Contrastive Loss}
 \label{sec:cl-acl}
 
-For each item $i$ in a training batch, we contrast the projected local embedding against each of the item's $A$ aspect slots:
+For each item $i$ in a training batch, the aspect-level loss in \Eqref{eq:lacl} contrasts the projected local embedding against each of the item's $A$ aspect slots:
 \begin{equation}
 \label{eq:lacl}
 \mathcal{L}_{\mathrm{aCL}} = \frac{1}{A} \sum_{k=1}^{A} \mathrm{InfoNCE}\!\left( g(i_{\mathrm{loc}}),\ \mathrm{sg}\!\left[\mathbf{a}_{i,k}\right] \right),
 \end{equation}
-where $g : \mathbb{R}^d \to \mathbb{R}^d$ is a learnable projection head (a two-layer MLP with ReLU) applied only to the local-side input, $\mathrm{sg}[\cdot]$ denotes stop-gradient, and InfoNCE is the standard contrastive objective
+where $g : \mathbb{R}^d \to \mathbb{R}^d$ is a learnable projection head (a two-layer MLP with ReLU) applied only to the local-side input, $\mathrm{sg}[\cdot]$ denotes stop-gradient, and InfoNCE is the standard contrastive objective in \Eqref{eq:infonce}:
 \begin{equation}
 \label{eq:infonce}
 \mathrm{InfoNCE}(\mathbf{x}, \mathbf{y}) = -\log \frac{\exp(\langle \mathbf{x}, \mathbf{y} \rangle / \tau_{\mathrm{CL}})}{\sum_{j=1}^{B} \exp(\langle \mathbf{x}, \mathbf{y}_j \rangle / \tau_{\mathrm{CL}})},
@@ -406,7 +406,7 @@ with $\tau_{\mathrm{CL}} = 0.2$ and $B$ the batch size (negatives are the remain
 \paragraph{User-Level Contrastive Loss}
 \label{sec:cl-ucl}
 
-A symmetric user-level loss aligns the local and global user embeddings:
+A symmetric user-level loss aligns the local and global user embeddings as in \Eqref{eq:lucl}:
 \begin{equation}
 \label{eq:lucl}
 \mathcal{L}_{\mathrm{uCL}} = \mathrm{InfoNCE}\!\left( g(u_{\mathrm{loc}}),\ \mathrm{sg}\!\left[u_{\mathrm{glo}}\right] \right).
@@ -429,17 +429,12 @@ The contrastive weight $\lambda_{\mathrm{CL}}$ in \Eqref{eq:total-loss} is fixed
 \subsection{Total Objective}
 \label{sec:train-objective}
 
-The full training loss has already been stated in \Eqref{eq:total-loss} and is reproduced here for completeness:
-\begin{equation}
-\label{eq:total-loss-repeat}
-\mathcal{L} = \mathcal{L}_{\mathrm{BPR}} + \lambda_{\mathrm{CL}} \bigl( \mathcal{L}_{\mathrm{aCL}} + \mathcal{L}_{\mathrm{uCL}} \bigr).
-\end{equation}
-The BPR loss provides the primary ranking signal; the contrastive terms supply the cross-view geometric alignment.
+The full training loss is the objective in \Eqref{eq:total-loss}. The BPR loss provides the primary ranking signal; the contrastive terms supply the cross-view geometric alignment.
 
 \subsection{Optimization}
 \label{sec:train-opt}
 
-We optimize \Eqref{eq:total-loss-repeat} with Adam (default $\beta_1 = 0.9, \beta_2 = 0.999, \epsilon = 10^{-8}$), learning rate $10^{-3}$, batch size $128$, for up to $80$ epochs. Early stopping with patience $10$ is applied on validation NDCG@20. Each training batch consists of $128$ triplets $(u, i^+, i^-)$ where $i^-$ is sampled uniformly from items not in $\mathcal{R}_u$. The LightGCN propagation in \Eqref{eq:lightgcn-prop}--\Eqref{eq:lightgcn-avg} is recomputed once per batch and reused for both positive and negative scoring within the batch.
+We optimize \Eqref{eq:total-loss} with Adam (default $\beta_1 = 0.9, \beta_2 = 0.999, \epsilon = 10^{-8}$), learning rate $10^{-3}$, batch size $128$, for up to $80$ epochs. Early stopping with patience $10$ is applied on validation NDCG@20. Each training batch consists of $128$ triplets $(u, i^+, i^-)$ where $i^-$ is sampled uniformly from items not in $\mathcal{R}_u$. The LightGCN propagation in \Eqref{eq:lightgcn-prop}--\Eqref{eq:lightgcn-avg} is recomputed once per batch and reused for both positive and negative scoring within the batch.
 
 \subsection{Inference}
 \label{sec:train-inference}
