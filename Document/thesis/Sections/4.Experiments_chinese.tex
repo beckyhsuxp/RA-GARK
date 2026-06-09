@@ -53,6 +53,14 @@
 
 我們將 RA-GARK 與五個 baseline 比較：純 LightGCN~\cite{he2020lightgcn} 作為非 KG 對照，以及四個代表性 KG-aware 推薦器，KGAT~\cite{wang2019kgat}、KGCL~\cite{yang2022kgcl}、MCCLK~\cite{zou2022mcclk}、KGRec~\cite{yang2023kgrec}。此四個 KG-aware baseline 涵蓋第~\ref{ch:relatedwork-zh}~章所綜述之主要整合範式：深度聚合器融合（KGAT）、跨視角對比學習（KGCL、MCCLK）、邊層級合理化學習（KGRec）。
 
+\begin{itemize}
+  \item \textbf{LightGCN} 移除圖協同過濾中的特徵轉換與非線性 activation，僅保留歸一化使用者—物品傳播與層平均嵌入；在本文稀疏評論情境中作為最強非 KG 對照。
+  \item \textbf{KGAT} 透過使用者—物品—實體圖上的 attention message passing 注入 KG 資訊，代表 KG 實體直接參與表示傳播的深度融合類方法。
+  \item \textbf{KGCL} 將協同推薦與互動視角、KG 視角增強之間的對比學習結合，透過跨視角一致性正則化推薦器。
+  \item \textbf{MCCLK} 以多個對比目標延伸 KG-aware 對比推薦，目標是對齊協同、語意與知識感知訊號。
+  \item \textbf{KGRec} 於 KG 邊上學習 rationale，是動機上最接近 RA-GARK 的 baseline；但其 rationale 機制作用於邊選擇，而非本文的閘控面向槽融合。
+\end{itemize}
+
 所有 baseline 皆由作者公開程式碼於相同處理後之 KG（第~\ref{sec:eval-dataset-kg-zh}~節）與相同使用者分層切分上重現。我們保留各 baseline 已發表之超參數預設，而非逐一重新調參，原因在於針對四種不同超參數空間重新調參會引入比較偽影；原作者最了解自己模型的最佳配置。唯一介入為固定嵌入維度 $d = 128$（與 RA-GARK 一致），並對齊最佳化預算（epoch 與 early-stopping patience）。此選擇刻意保守：可能低估 baseline 於本資料集所能達之上限，但可確保比較不受調參投入不均所污染。
 
 \subsection{評估協議}
