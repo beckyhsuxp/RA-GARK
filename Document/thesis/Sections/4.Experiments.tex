@@ -4,7 +4,7 @@
 
 \setlength{\tabcolsep}{8pt}
 
-This chapter evaluates RA-GARK on the sparse review-derived KG introduced in Chapter~\ref{ch:intro}. Section~\ref{sec:eval-dataset} summarizes the dataset and the KG construction pipeline, which we adopt from prior work rather than propose here. Section~\ref{sec:eval-setup} specifies the evaluation protocol and the baseline reproduction settings. Sections~\ref{sec:eval-main} and~\ref{sec:eval-ablation} report the main results and the per-component ablation study. Sections~\ref{sec:eval-sensitivity}--\ref{sec:eval-seed} examine the two axes most likely to concern a reader: hyperparameter sensitivity and seed stability. Section~\ref{sec:eval-case} presents an item-level case study of the rationale module, and Section~\ref{sec:eval-cost} reports computational cost.
+This chapter evaluates RA-GARK on the sparse review-derived KG introduced in Chapter~\ref{ch:intro}. Section~\ref{sec:eval-dataset} summarizes the dataset and the KG construction pipeline, which we adopt from prior work rather than propose here. Section~\ref{sec:eval-setup} specifies the evaluation protocol and the baseline reproduction settings. Sections~\ref{sec:eval-main} and~\ref{sec:eval-ablation} report the main results and the per-component ablation study. Section~\ref{sec:eval-sensitivity} examines hyperparameter sensitivity and seed stability. Section~\ref{sec:eval-case} presents an item-level case study of the rationale module and reports computational cost.
 
 \section{Dataset and KG Construction}
 \label{sec:eval-dataset}
@@ -248,14 +248,14 @@ The bias sweep is the most informative completed sensitivity run. The $b$ panel 
 
 The $\lambda_{\mathrm{CL}}$ panel in Figure~\ref{fig:sensitivity-2x2} sweeps $\lambda_{\mathrm{CL}} \in \{0, 0.001, 0.005, 0.01, 0.05\}$. The default $\lambda_{\mathrm{CL}} = 0.005$ is best, while removing the auxiliary loss or increasing it too aggressively both reduce NDCG@$20$. This matches the component ablations in Tables~\ref{tab:ablation@20} and~\ref{tab:ablation@10}: the two contrastive channels contribute smaller but non-trivial gains, and their role is regularization rather than the main integration mechanism.
 
-\section{Stability of Results}
+\subsection{Stability of Results}
 \label{sec:eval-seed}
 
 We report the stability of the headline result with respect to incidental optimization choices. Exploratory runs that keep the architecture and dataset split fixed while varying optimization details (weight decay on or off, learning-rate scheduler on or off, multi-negative sampling, and an additional $\mathcal{L}_{\mathrm{kgCL}}$ regularizer) all stay within $\pm 0.003$ NDCG@$20$ of the reported $0.1243$. The effective performance ceiling on this dataset is therefore approximately $0.124$, and the qualitative ordering of methods in Table~\ref{tab:main} as well as the ranking of ablation effects in Tables~\ref{tab:ablation@20} and~\ref{tab:ablation@10} are robust within this envelope.
 
 The dataset is small ($905$ users, $1{,}399$ items), so the dominant source of test-set variance is the user-stratified split itself rather than optimization stochasticity. Fixing the split removes the larger variance source; after that, the residual within-split variance is comparable to the smaller ablation effects we report and does not affect the comparative conclusions drawn in Sections~\ref{sec:eval-main} and~\ref{sec:eval-ablation}.
 
-\section{Case Study}
+\section{Case Study and Computational Cost}
 \label{sec:eval-case}
 
 To inspect what the rationale module actually learns, we sampled five popular items (each with $\geq 3$ KG aspect edges) from the training set and recorded the softmax aspect weights $w_{u,i,k}$ produced by the trained model for three users who interacted with each item. The main text uses the heatmap for interpretation; the exact numeric weights are listed in Appendix Table~\ref{tab:case-appendix}.
@@ -276,7 +276,7 @@ Figure~\ref{fig:case-heatmap} makes two empirical patterns clear, and neither ma
 
 \paragraph{Interpretation} This pattern is consistent with, rather than contradictory to, the design principle of Section~\ref{sec:approach-principle}. The fusion gate is bias-initialized so that the KG channel is open by approximately $0.7\%$ at training start, and it remains only a small fraction of the score throughout training; the ablation in Tables~\ref{tab:ablation@20} and~\ref{tab:ablation@10} shows that removing the entire global view costs only $1.9\%$ NDCG@$20$ and replacing the rationale with a uniform mean costs only $0.3\%$. The gradient flowing back into the rationale module is correspondingly small. It is sufficient to determine \emph{which slot} each item should use, an item-level selection problem of size $|\mathcal{I}| \times A$, but too small to additionally learn a user-specific reweighting on top, which would require differentiating $|\mathcal{U}| \times |\mathcal{I}| \times A$ slot weights against a tightly bounded KG contribution. The case study therefore reads not as a failure of the rationale module but as direct evidence of graceful degradation: the KG channel learns only as much structure as the gate allows it to influence the loss, and the $5.3\%$ improvement over pure LightGCN (Table~\ref{tab:main}) is therefore attributable to item-level slot routing on top of the KG-SVD-initialized geometry rather than to per-user rationale assignment. We state this distinction explicitly so that future work using the rationale module under denser KGs, where a wider gate could in principle allow user-level differentiation to emerge, knows what to look for.
 
-\section{Computational Cost}
+\subsection{Computational Cost}
 \label{sec:eval-cost}
 
 Per-epoch training wall-clock time on our hardware is approximately $1.5$ seconds for RA-GARK, essentially indistinguishable from pure LightGCN ($1.4$\,s) and from KGRec ($1.5$\,s) at matched embedding dimension. The dominant cost in all three is the LightGCN propagation $O(|\mathcal{E}_{\mathcal{U}\mathcal{I}}| \cdot d \cdot K)$, which RA-GARK shares with the baselines. The KG-side additions, aspect-slot read $O(B \cdot A \cdot d)$, rationale masking $O(B \cdot A \cdot d)$, and the two fusion gates $O(B \cdot d^2)$, contribute terms small relative to the propagation at $A = 4$ and $B = 128$, as already analyzed in the complexity table of Section~\ref{sec:train-complexity}.

@@ -4,7 +4,7 @@
 
 \setlength{\tabcolsep}{8pt}
 
-本章在第~\ref{ch:intro-zh}~章所動機之稀疏評論衍生 KG 上評估 RA-GARK。第~\ref{sec:eval-dataset-zh}~節整理資料集與 KG 建構流程，其中後者沿用既有工作，並非本文貢獻。第~\ref{sec:eval-setup-zh}~節說明評估協議與 baseline 重現設定。第~\ref{sec:eval-main-zh}~與~\ref{sec:eval-ablation-zh}~節報告主結果與逐元件消融。第~\ref{sec:eval-sensitivity-zh}~至~\ref{sec:eval-seed-zh}~節則檢查讀者最可能關心的兩個面向：超參數敏感性與種子穩定性。第~\ref{sec:eval-case-zh}~節以個別 (使用者, 物品) 配對展示合理化模組的可解釋性，第~\ref{sec:eval-cost-zh}~節報告計算成本。
+本章在第~\ref{ch:intro-zh}~章所動機之稀疏評論衍生 KG 上評估 RA-GARK。第~\ref{sec:eval-dataset-zh}~節整理資料集與 KG 建構流程，其中後者沿用既有工作，並非本文貢獻。第~\ref{sec:eval-setup-zh}~節說明評估協議與 baseline 重現設定。第~\ref{sec:eval-main-zh}~與~\ref{sec:eval-ablation-zh}~節報告主結果與逐元件消融。第~\ref{sec:eval-sensitivity-zh}~節檢查超參數敏感性與種子穩定性。第~\ref{sec:eval-case-zh}~節以個別 (使用者, 物品) 配對展示合理化模組的可解釋性，並報告計算成本。
 
 \section{資料集與 KG 建構}
 \label{sec:eval-dataset-zh}
@@ -248,14 +248,14 @@ w/o 全域視角（純 CL 雙視角）   & $0.0949$ & $0.0504$ \\
 
 圖~\ref{fig:sensitivity-2x2-zh} 之 $\lambda_{\mathrm{CL}}$ 面板掃描 $\lambda_{\mathrm{CL}} \in \{0, 0.001, 0.005, 0.01, 0.05\}$。預設 $\lambda_{\mathrm{CL}} = 0.005$ 最佳；移除此輔助損失或將其加得過強，皆會降低 NDCG@$20$。這與表~\ref{tab:ablation@20} 與表~\ref{tab:ablation@10} 之元件消融一致：兩條對比通道提供較小但非零的增益，其角色是正則化而非主要整合機制。
 
-\section{結果穩定性}
+\subsection{結果穩定性}
 \label{sec:eval-seed-zh}
 
 我們報告主結果對非本質之最佳化細節之穩健性。於架構與資料集切分固定、僅變動最佳化細節（weight decay 開關、scheduler 開關、multi-negative sampling、額外之 $\mathcal{L}_{\mathrm{kgCL}}$ 正則化）之探索性實驗，皆落在所報 $0.1243$ 的 $\pm 0.003$ NDCG@$20$ 內。本資料集之有效效能上限因此約為 $0.124$，且表~\ref{tab:main-zh}~之方法排序與表~\ref{tab:ablation@20}、表~\ref{tab:ablation@10} 之消融效應排序於此誤差帶內均穩健。
 
 資料集規模較小（$905$ 使用者、$1{,}399$ 物品），測試集變異之主要來源為使用者分層切分本身，而非最佳化隨機性。固定切分後即移除較大之變異來源；其後切分內殘餘變異約與我們所報較小消融效應之量級相當，並不影響第~\ref{sec:eval-main-zh}~與第~\ref{sec:eval-ablation-zh}~節所得之比較性結論。
 
-\section{個案研究}
+\section{個案研究與計算成本}
 \label{sec:eval-case-zh}
 
 為檢視合理化模組實際學到什麼，我們自訓練集中取樣 $5$ 件熱門物品（每件至少 $3$ 條 KG 面向邊），並記錄訓練完成之模型對其中三位互動使用者所產生之 Softmax 面向權重 $w_{u,i,k}$。正文以熱圖進行詮釋，精確數值則移至附錄保存。
@@ -276,7 +276,7 @@ w/o 全域視角（純 CL 雙視角）   & $0.0949$ & $0.0504$ \\
 
 \paragraph{詮釋} 此模式與第~\ref{sec:approach-principle-zh}~節之設計原則一致而非衝突。融合閘以偏置初始化，使 KG 通道於訓練起點開啟約 $0.7\%$，且整個訓練過程中僅佔分數之一小部分；表~\ref{tab:ablation@20} 與表~\ref{tab:ablation@10} 之消融顯示移除整個全域視角僅損失 $1.9\%$ NDCG@$20$，將合理化改為均勻平均僅損失 $0.3\%$。回傳至合理化模組之梯度因而相應偏小，足以決定\emph{每件物品該用哪個槽}（一個大小為 $|\mathcal{I}| \times A$ 之物品層級選擇問題），但不足以在其之上再學得使用者特定之再加權，因後者需於緊縮 KG 貢獻下區分 $|\mathcal{U}| \times |\mathcal{I}| \times A$ 個槽權重。個案研究因此不應讀為合理化模組之失敗，而是優雅退化性質之直接證據：KG 通道僅學得閘允許其影響損失之結構量，而對純 LightGCN 之 $5.3\%$ 提升（表~\ref{tab:main-zh}）因此可歸因於在 KG-SVD 初始化幾何之上的物品層級槽路由，而非 per-user 合理化指派。我們明確區分此點，俾後續於較稠密 KG 上使用合理化模組之工作（其中較寬閘原則上能允許使用者層級分化湧現）知曉應觀察何種訊號。
 
-\section{計算成本}
+\subsection{計算成本}
 \label{sec:eval-cost-zh}
 
 於本文硬體上，RA-GARK 每 epoch 訓練牆鐘時間約 $1.5$ 秒，與純 LightGCN（$1.4$\,s）及匹配嵌入維度之 KGRec（$1.5$\,s）幾乎不可區分。三者主導成本皆為 LightGCN 傳播 $O(|\mathcal{E}_{\mathcal{U}\mathcal{I}}| \cdot d \cdot K)$，RA-GARK 與 baseline 共享此項。KG 側額外項（面向槽讀取 $O(B \cdot A \cdot d)$、合理化遮罩 $O(B \cdot A \cdot d)$、兩個融合閘 $O(B \cdot d^2)$）在 $A = 4$、$B = 128$ 下相對傳播甚小，已於第~\ref{sec:train-complexity-zh}~節之複雜度表分析。

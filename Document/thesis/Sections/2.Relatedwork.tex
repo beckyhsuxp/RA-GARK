@@ -1,9 +1,9 @@
 \chapter{Related Work}
 \label{ch:relatedwork}
 
-This chapter reviews prior work along four axes that together motivate the design of RA-GARK. Section~\ref{sec:rw-foundations} covers the two foundations on which our local and global views are positioned: LightGCN as the collaborative-filtering backbone and KGAT as the canonical deep KG--CF fusion. Section~\ref{sec:rw-contrastive} reviews contrastive KG methods that align collaborative and KG views without explicit gating. Section~\ref{sec:rw-kgrec} discusses KGRec, the rationale-aware method most closely related to ours, and Section~\ref{sec:rw-paradigm} contrasts our rationale paradigm with KGRec's under the lens of \emph{KG trust}. Sections~\ref{sec:rw-gating} and \ref{sec:rw-gating-gap} survey gating mechanisms in deep learning broadly and observe that no existing KG-aware method employs a fusion gate to provide architectural graceful degradation. Section~\ref{sec:rw-summary} summarizes how RA-GARK is positioned with respect to all of the above.
+This chapter reviews prior work along five axes that together motivate the design of RA-GARK. Section~\ref{sec:rw-foundations} covers the collaborative and KG-aware recommendation foundations, including LightGCN, KGAT, contrastive KG methods, and KGRec. Section~\ref{sec:rw-paradigm} contrasts our rationale paradigm with KGRec's under the lens of \emph{KG trust}. Section~\ref{sec:rw-gating} surveys gating mechanisms and identifies the missing fusion-gate design in KG-aware recommendation. Section~\ref{sec:rw-attention-norm} discusses attention normalization, and Section~\ref{sec:rw-summary} summarizes how RA-GARK is positioned with respect to all of the above.
 
-\section{Foundations: LightGCN and KGAT}
+\section{Foundations and KG-Aware Baselines}
 \label{sec:rw-foundations}
 
 \textbf{LightGCN}~\cite{he2020lightgcn} is the immediate predecessor of our local view. Building on the observation that the non-linear feature transformation in NGCF~\cite{wang2019ngcf} contributes little to recommendation accuracy, LightGCN strips a graph convolutional network down to its bare essentials: repeated normalized neighborhood aggregation over the user--item bipartite graph, followed by a simple layer-wise average of the propagated embeddings. The simplification consistently outperforms NGCF on standard recommendation benchmarks while being faster and more stable to train. Subsequent self-supervised methods such as SGL~\cite{wu2021sgl} and DCCF~\cite{ren2023dccf} layer additional contrastive objectives on top of a LightGCN-style backbone.
@@ -14,7 +14,7 @@ In RA-GARK, we adopt LightGCN as the local view \emph{verbatim} (with $K=2$): no
 
 The implicit assumption is that the KG can be trusted to inject useful signal everywhere it appears in the propagation path. In our sparse setting this assumption breaks down: KGAT falls below pure LightGCN. Subsequent work~\cite{yang2022kgcl, zou2022mcclk, yang2023kgrec} retains the KGAT-style aggregator and inherits the same vulnerability. RA-GARK reverses this design choice: we do not merge the KG and user--item graphs at all, and instead route KG signal through a dedicated side channel that the model can attenuate or fully disengage when the KG proves unreliable.
 
-\section{Contrastive Knowledge-Graph Methods}
+\subsection{Contrastive Knowledge-Graph Methods}
 \label{sec:rw-contrastive}
 
 \textbf{KGCL}~\cite{yang2022kgcl} introduces relation-level structural perturbations to the KG and aligns the perturbed and original views via an InfoNCE~\cite{oord2018infonce} contrastive objective. The intuition is that informative KG structure should be invariant under stochastic perturbation, while noisy edges should not. KGCL substantially outperforms KGAT on dense KGs. In our sparse setting, however, the perturbed KG retains too few edges for the contrastive objective to provide reliable supervision.
@@ -23,7 +23,7 @@ The implicit assumption is that the KG can be trusted to inject useful signal ev
 
 RA-GARK also incorporates cross-view contrastive learning, but in a deliberately limited role. Our contrastive losses ($\mathcal{L}_{\mathrm{aCL}}$ and $\mathcal{L}_{\mathrm{uCL}}$, Section~\ref{sec:cl}) act only as auxiliary geometric regularizers with a small weight ($\lambda = 0.005$), and crucially apply a stop-gradient on the KG side so that the contrastive gradient never propagates back into the SVD-initialized aspect embeddings. Compared to KGCL/MCCLK, contrastive learning here is a cosmetic alignment layer, not the primary fusion mechanism; the actual integration of collaborative and KG signals is handled by an explicit gate (Section~\ref{sec:rw-gating}).
 
-\section{Rationale-Aware Recommendation: KGRec}
+\subsection{Rationale-Aware Recommendation: KGRec}
 \label{sec:rw-kgrec}
 
 \textbf{KGRec}~\cite{yang2023kgrec} is the work most directly related to ours. It is the first KG-aware recommender to make rationale selection explicit: instead of treating every KG triple as equally informative, KGRec computes an attention-based importance score per KG edge, and uses Bernoulli dropout to stochastically remove high-attention edges, encouraging the model not to depend on a small set of dominant edges. Robustness is then enforced via a contrastive objective between the original and dropped graphs. The rationalization machinery is built on top of a KGAT-style aggregator, so the rationale operates within the message-passing path of a unified user--item--entity graph. On our sparse benchmark KGRec is the strongest among the four KG-aware baselines, but still below pure LightGCN.
@@ -67,7 +67,7 @@ Treatment of KG trust & No disengage mechanism   & Bias-initialized gate \\
 
 We therefore position RA-GARK not as an engineering improvement of KGRec, but as a separate design that begins from a different premise about KG reliability. Whether this distinction matters empirically is settled in Chapter~\ref{ch:evaluation}.
 
-\section{Gating Mechanisms in Deep Learning}
+\section{Gating Mechanisms and the Fusion-Gate Gap}
 \label{sec:rw-gating}
 
 The fusion gate in RA-GARK has two close analogues outside KG-aware recommendation, both of which inform our design.
@@ -78,7 +78,7 @@ The fusion gate in RA-GARK has two close analogues outside KG-aware recommendati
 
 A further line of work, contrastive dual-view recommenders such as SGL~\cite{wu2021sgl} and DCCF~\cite{ren2023dccf}, builds multiple views by perturbing a single graph (edge dropout, node dropout, random walks). The two views in such methods reside in the \emph{same signal space}, and contrastive alignment is sufficient to integrate them. RA-GARK's two views, in contrast, are structurally heterogeneous: a user--item bipartite graph for the local view and an item--aspect KG for the global view. Implicit alignment via contrastive learning alone cannot adjust the relative weight of two heterogeneous signal spaces; an explicit gate is needed.
 
-\section{Gap: No Fusion Gate in KG-Aware Recommendation}
+\subsection{No Fusion Gate in KG-Aware Recommendation}
 \label{sec:rw-gating-gap}
 
 Despite the maturity of gating in deep learning, no method in the KG-aware recommendation literature we surveyed employs a fusion gate as the integration mechanism between collaborative and KG signals. Table~\ref{tab:rw-gating-gap} summarizes the integration mechanisms used by the four benchmarked baselines and three additional well-known KG-aware methods (CKAN~\cite{wang2020ckan}, MKR~\cite{wang2019mkr}, KGIN~\cite{wang2021kgin}). Across this set, KG signals are integrated via direct entity propagation, contrastive alignment, edge-level dropout, attention, cross-feature units, or intent-disentanglement modules. None of these mechanisms allows the KG channel to be \emph{architecturally disengaged} when its signal is unreliable.
