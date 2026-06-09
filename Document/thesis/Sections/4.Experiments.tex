@@ -166,7 +166,7 @@ The stricter Top-10 cutoff preserves the same ordering while reducing the chance
 \label{sec:ablation-softmax}
 \label{sec:ablation-gate}
 
-We measure the contribution of each headline design choice--KG-SVD initialization (Section~\ref{sec:kgsvd}), softmax rationale masking (Section~\ref{sec:softmax}), and the locally biased fusion gate (Section~\ref{sec:gate})--by removing one component at a time and retraining from scratch with all other settings held fixed. We additionally include diagnostic rows that remove the global view, replace the per-(user, item) gate with a single learnable scalar $\alpha$, disable rationale selection, or drop each contrastive channel individually. All rows use seed $= 42$. Because the purpose of the ablation is to isolate ranking-quality changes, we report NDCG and MAP rather than coverage-oriented metrics such as HR and Recall; Tables~\ref{tab:ablation@20} and~\ref{tab:ablation@10} present the same ablation set at Top-20 and Top-10.
+We measure the contribution of the main architectural choices by removing one component at a time and retraining from scratch with all other settings held fixed. For clarity, the ablations are grouped into three types: core architecture components (KG-SVD initialization, softmax rationale masking, and the locally biased fusion gate), auxiliary regularizers (user-side and aspect-side contrastive losses), and diagnostic variants (removing the global view, replacing the per-(user, item) gate with a single learnable scalar $\alpha$, or disabling rationale selection). All rows use seed $= 42$. Because the purpose of the ablation is to isolate ranking-quality changes, we report NDCG and MAP rather than coverage-oriented metrics such as HR and Recall; Tables~\ref{tab:ablation@20} and~\ref{tab:ablation@10} present the same ablation set at Top-20 and Top-10.
 
 \begin{table}[H]
 \centering
@@ -182,15 +182,17 @@ w/o softmax head                     & $0.1005$ & $0.0451$ \\
 w/o KG-SVD init                      & $0.1171$ & $0.0545$ \\
 w/o fusion-gate bias                 & $0.1194$ & $0.0555$ \\
 w/o MLP gate                         & $0.1180$ & $0.0552$ \\
+\midrule
 w/o user CL ($\mathcal{L}_{\mathrm{uCL}}$)  & $0.1192$ & $0.0563$ \\
 w/o aspect CL ($\mathcal{L}_{\mathrm{aCL}}$) & $0.1200$ & $0.0570$ \\
+\midrule
 w/o rationale-enabled selection      & $0.1213$ & $0.0568$ \\
 w/o global view (CL-only dual view)  & $0.1219$ & $0.0575$ \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-NDCG@$20$ reflects the broader ranking degradation caused by removing each design component, whereas NDCG@$10$ applies a stricter cutoff and therefore reports slightly smaller absolute drops. The ordering, however, is stable across the two settings: the softmax head is the largest ablation, KG-SVD initialization and the fusion gate remain necessary, and the two contrastive terms provide smaller but consistent support. This is the comparison to keep in mind when reading the Top-10 table below, because the main point is the persistence of the same ranking pattern across cutoffs rather than the absolute size of any single delta.
+NDCG@$20$ reflects the broader ranking degradation caused by removing each design component, whereas NDCG@$10$ applies a stricter cutoff and therefore reports slightly smaller absolute drops. The ordering, however, is stable across the two settings: the core architecture rows account for the largest changes, the contrastive rows contribute smaller but consistent support, and the diagnostic variants confirm that the gains are not an artifact of a single toggle. This is the comparison to keep in mind when reading the Top-10 table below, because the main point is the persistence of the same ranking pattern across cutoffs rather than the absolute size of any single delta.
 
 \begin{table}[H]
 \centering
@@ -206,8 +208,10 @@ w/o softmax head             & $0.0785$ & $0.0397$ \\
 w/o KG-SVD init              & $0.0922$ & $0.0479$ \\
 w/o fusion-gate bias         & $0.0923$ & $0.0482$ \\
 w/o MLP gate                 & $0.0926$ & $0.0484$ \\
+\midrule
 w/o user CL ($\mathcal{L}_{\mathrm{uCL}}$)  & $0.0924$ & $0.0492$ \\
 w/o aspect CL ($\mathcal{L}_{\mathrm{aCL}}$) & $0.0940$ & $0.0502$ \\
+\midrule
 w/o rationale-enabled selection & $0.0943$ & $0.0495$ \\
 w/o global view (CL-only dual view)  & $0.0949$ & $0.0504$ \\
 \bottomrule
@@ -215,7 +219,7 @@ w/o global view (CL-only dual view)  & $0.0949$ & $0.0504$ \\
 \end{table}
 \FloatBarrier
 
-\paragraph{Component contributions} Across the two ablation cutoffs, removing any one of the softmax rationale, KG-SVD initialization, local-biased fusion bias, or the per-(u,i) MLP gate lowers NDCG and MAP. The largest degradation is the softmax head: NDCG@$20$ falls from $0.1243$ to $0.1005$, MAP@$20$ from $0.0594$ to $0.0451$, NDCG@$10$ from $0.0960$ to $0.0785$, and MAP@$10$ from $0.0519$ to $0.0397$. The other three components produce smaller but consistent rank-quality losses. KG-SVD removal gives NDCG@$20 = 0.1171$ and MAP@$20 = 0.0545$; removing the fusion-gate bias gives $0.1194$ and $0.0555$; replacing the per-(u,i) MLP gate gives $0.1180$ and $0.0552$.
+\paragraph{Component contributions} Across the two ablation cutoffs, the core architecture rows dominate the ranking loss, while the contrastive rows provide smaller but consistent support. The largest degradation is the softmax head: NDCG@$20$ falls from $0.1243$ to $0.1005$, MAP@$20$ from $0.0594$ to $0.0451$, NDCG@$10$ from $0.0960$ to $0.0785$, and MAP@$10$ from $0.0519$ to $0.0397$. The other core components also matter: KG-SVD removal gives NDCG@$20 = 0.1171$ and MAP@$20 = 0.0545$; removing the fusion-gate bias gives $0.1194$ and $0.0555$; replacing the per-(u,i) MLP gate gives $0.1180$ and $0.0552$. The auxiliary contrastive losses are smaller in magnitude but remain consistently beneficial.
 
 \paragraph{Softmax versus sigmoid} The w/o-softmax row is the largest ablation under both NDCG and MAP at both cutoffs. This is the empirical basis for the methodological observation we develop in Chapter~\ref{ch:conclusion}: in our rationale module, the choice of attention normalization is not a tuning detail but a design choice tied to the rationale's semantic assumption, namely that the $A$ slots compete with one another rather than contribute independently.
 
