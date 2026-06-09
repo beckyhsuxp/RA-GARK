@@ -330,13 +330,7 @@ RA-GARK 使用兩個獨立融合閘，使用者側與物品側各一。兩者皆
 \end{equation}
 兩閘參數獨立；經驗上共享參數會劣化結果，因為在稀疏 KG 下 KG 訊號對使用者側與物品側嵌入的邊際資訊量不同。
 
-最終各側嵌入為 \Eqref{eq:gate-mix-zh} 中的凸組合：
-\begin{equation}
-\label{eq:gate-mix-zh}
-u_{\mathrm{final}} = \alpha_u\, u_{\mathrm{loc}} + (1 - \alpha_u)\, u_{\mathrm{glo}}, \qquad
-i_{\mathrm{final}} = \alpha_i\, i_{\mathrm{loc}} + (1 - \alpha_i)\, i_{\mathrm{glo}},
-\end{equation}
-最終分數為內積 $\hat{y}(u,i) = \langle u_{\mathrm{final}}, i_{\mathrm{final}} \rangle$，如 \Eqref{eq:score-zh} 已述。
+兩個純量閘接著透過 \Eqref{eq:fusion-zh} 已定義之融合規則作用；最終分數為內積 $\hat{y}(u,i) = \langle u_{\mathrm{final}}, i_{\mathrm{final}} \rangle$，如 \Eqref{eq:score-zh} 已述。
 
 \subsection{閘的結構}
 \label{sec:gate-structure-zh}

@@ -331,13 +331,7 @@ RA-GARK uses two independent fusion gates, one on the user side and one on the i
 \end{equation}
 The two gates have separate parameters; sharing them empirically degrades the result, because the marginal informativeness of the KG signal differs between user-side and item-side embeddings under sparse KG.
 
-The final per-side embeddings are the convex combinations in \Eqref{eq:gate-mix}:
-\begin{equation}
-\label{eq:gate-mix}
-u_{\mathrm{final}} = \alpha_u\, u_{\mathrm{loc}} + (1 - \alpha_u)\, u_{\mathrm{glo}}, \qquad
-i_{\mathrm{final}} = \alpha_i\, i_{\mathrm{loc}} + (1 - \alpha_i)\, i_{\mathrm{glo}},
-\end{equation}
-and the final score is the inner product $\hat{y}(u,i) = \langle u_{\mathrm{final}}, i_{\mathrm{final}} \rangle$ as already stated in \Eqref{eq:score}.
+The two scalar gates are then applied through the fusion rule already defined in \Eqref{eq:fusion}, and the final score is the inner product $\hat{y}(u,i) = \langle u_{\mathrm{final}}, i_{\mathrm{final}} \rangle$ as stated in \Eqref{eq:score}.
 
 \subsection{Gate Structure}
 \label{sec:gate-structure}

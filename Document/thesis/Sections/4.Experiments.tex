@@ -53,6 +53,14 @@ This filtered KG is the sole external signal available to all KG-aware methods i
 
 We compare RA-GARK against five baselines: pure LightGCN~\cite{he2020lightgcn} as the non-KG anchor, and four representative KG-aware recommenders, KGAT~\cite{wang2019kgat}, KGCL~\cite{yang2022kgcl}, MCCLK~\cite{zou2022mcclk}, and KGRec~\cite{yang2023kgrec}. These KG-aware baselines cover the main integration paradigms surveyed in Chapter~\ref{ch:relatedwork}: deep aggregator fusion (KGAT), contrastive cross-view learning (KGCL, MCCLK), and edge-level rationale learning (KGRec).
 
+\begin{itemize}
+  \item \textbf{LightGCN} removes feature transformation and nonlinear activation from graph collaborative filtering, leaving only normalized user--item propagation and layer-wise embedding averaging. It serves as the strongest non-KG anchor in our sparse review setting.
+  \item \textbf{KGAT} injects KG information through attention-based message passing over the user--item--entity graph, representing the deep-fusion family in which KG entities directly participate in representation propagation.
+  \item \textbf{KGCL} combines collaborative recommendation with contrastive learning between interaction-view and KG-view augmentations, using cross-view agreement to regularize the recommender.
+  \item \textbf{MCCLK} extends contrastive KG-aware recommendation with multiple contrastive objectives, aiming to align collaborative, semantic, and knowledge-aware signals.
+  \item \textbf{KGRec} learns rationales over KG edges and is the closest baseline to RA-GARK's motivation, but its rationale mechanism operates on edge selection rather than on gated aspect-slot fusion.
+\end{itemize}
+
 All baselines are reproduced from the authors' released code on the same processed KG (Section~\ref{sec:eval-dataset-kg}) and the same user-stratified split. We keep each baseline's published hyperparameter defaults rather than retuning per method, because retuning four distinct hyperparameter spaces would introduce comparison artifacts; the original authors are best positioned to know their own model's preferred configuration. The only intervention is to fix the embedding dimension at $d = 128$ across all methods, matching RA-GARK, and to align the optimization budget (epochs and early-stopping patience) with our own. These choices are intentionally conservative: they may understate the baselines' achievable performance on our dataset, but they keep the comparison free of uneven tuning effort.
 
 \subsection{Evaluation Protocol}
