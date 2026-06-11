@@ -4,8 +4,6 @@
 
 大家好，我今天要報告的題目是 RA-GARK，完整名稱是 Product Recommendation via Rationale-Aware Gating over Sparse Review-Aspect Knowledge Graphs，也就是基於理由感知門控與稀疏評論面向知識圖譜之產品推薦。
 
-這個工作的核心想法很直接：在稀疏的 knowledge graph 下，KG 不應該被硬塞進推薦模型的主路徑，而應該是一條可以被 gate 控制的 side channel。換句話說，KG 有用的時候就讓它進來，KG 不可靠的時候就把它關掉。
-
 今天的報告我會先講動機，再講相關研究，接著進入方法細節，最後看實驗結果和結論。
 
 ## Slide 2 — Roadmap
