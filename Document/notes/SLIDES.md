@@ -75,14 +75,6 @@ On this sparse KG, every KG-aware baseline loses to pure LightGCN.
 - Privacy-limited domains
 - KG completion may add noise
 
-**Dataset signal**
-
-- 905 users
-- 1,399 items
-- 22,265 interactions
-- 3,370 KG edges
-- 2,098 aspects
-
 ---
 
 ## Slide 5 — Failure Mode
@@ -481,6 +473,14 @@ lambda_CL = 0.005
 ---
 
 ## Slide 27 — Training and Evaluation
+
+**Dataset signal**
+
+- 905 users
+- 1,399 items
+- 22,265 interactions
+- 3,370 KG edges
+- 2,098 aspects
 
 **Training**
 
