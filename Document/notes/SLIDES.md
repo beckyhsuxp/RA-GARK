@@ -67,25 +67,21 @@ On this sparse KG, every KG-aware baseline loses to pure LightGCN.
 
 ## Slide 4 — Why Sparse KG
 
-**Sparse KG is the default, not an edge case**
+**Where sparse KG comes from**
 
-- Review-derived KG
-- Cold-start or niche domains
-- Long-tail items
-- Privacy-limited domains
-- KG completion may add noise
+- review-derived KG is sparse by construction
+- cold-start, niche, and privacy-limited domains
+- KG completion can add noise instead of signal
 
-**Why this matters**
+**What this means**
 
-- sparse KG makes deep fusion fragile
-- more KG is not always better if the signal is noisy
-- the model needs a safe fallback path
+- the issue is unreliable KG, not just missing KG
+- the design goal should be graceful fallback
+- this leads directly to the next question: how to use KG without forcing it
 
-**What this implies**
+**Takeaway**
 
-- the benchmark is a stress test, not a best-case setting
-- the design goal should be robustness, not only peak accuracy
-- later slides need an explicit mechanism to downweight KG
+- sparse KG is the regime this thesis targets
 
 ---
 
