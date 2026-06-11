@@ -34,6 +34,8 @@
 
 這也就是為什麼我們後面會強調 safe fallback 和 gateable side channel。對這種設定來說，模型在 KG 不可信時的穩健性，比 KG 豐富時的峰值更有意義。
 
+換句話說，這個 benchmark 是一個 stress test。它測的不是模型在理想 KG 下能跑多高，而是當 KG 變弱、變雜訊時，模型還能不能維持穩定。
+
 ## Slide 5 — Design Challenge
 
 這裡我先把現有 KG-aware 方法面臨的設計挑戰講清楚。
