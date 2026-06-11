@@ -472,7 +472,7 @@ lambda_CL = 0.005
 
 ---
 
-## Slide 27 — Training and Evaluation
+## Slide 27 — Training Setup
 
 **Dataset signal**
 
@@ -489,15 +489,25 @@ lambda_CL = 0.005
 - batch size 128
 - 80 epochs with early stopping
 
+---
+
+## Slide 28 — Evaluation Setup
+
 **Evaluation**
 
 - full ranking
 - exclude training interactions
 - metrics: HR, Precision, Recall, F1, MAP, NDCG @20
 
+**Efficiency**
+
+- about 1.5 seconds per epoch
+- comparable to KGRec
+- no extra training burden
+
 ---
 
-## Slide 28 — Main Results
+## Slide 29 — Main Results
 
 | Model | NDCG@20 | vs KGRec | vs LightGCN |
 |---|---:|---:|---:|
@@ -511,7 +521,7 @@ lambda_CL = 0.005
 
 ---
 
-## Slide 29 — Ablation Summary
+## Slide 30 — Ablation Summary
 
 | Setting | NDCG@20 |
 |---|---:|
@@ -526,7 +536,7 @@ lambda_CL = 0.005
 
 ---
 
-## Slide 30 — Case Study and Takeaways
+## Slide 31 — Case Study and Takeaways
 
 **圖片**
 
@@ -540,7 +550,7 @@ lambda_CL = 0.005
 
 ---
 
-## Slide 31 — Conclusion
+## Slide 32 — Conclusion
 
 **Conclusion**
 
