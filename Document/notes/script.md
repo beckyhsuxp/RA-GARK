@@ -34,13 +34,13 @@
 
 這也就是為什麼我們後面會強調 safe fallback 和 gateable side channel。對這種設定來說，模型在 KG 不可信時的穩健性，比 KG 豐富時的峰值更有意義。
 
-## Slide 5 — Failure Mode
+## Slide 5 — Design Challenge
 
-這裡我先把現有 KG-aware 方法的失敗模式講清楚。
+這裡我先把現有 KG-aware 方法面臨的設計挑戰講清楚。
 
-大多數 KG-aware recommenders 都有一個共通問題：KG entity embedding 會直接進入 message passing，user 和 item 的表示是在一條包含 KG 的路徑上學出來的。這表示只要 KG 本身有問題，雜訊就會一起進到 scoring representation 裡，沒有辦法把 KG 關掉。
+大多數 KG-aware recommenders 的共同點是：KG entity embedding 會直接進入 message passing，user 和 item 的表示是在一條包含 KG 的路徑上學出來的。這表示只要 KG 本身有問題，雜訊就會一起進到 scoring representation 裡，模型也比較難動態降低 KG 的影響。
 
-這也是為什麼在我們的設定裡，LightGCN 反而會贏。因為 LightGCN 只看 user-item interaction，不會碰到那條不可靠的 KG branch，所以它保留了一個乾淨又安全的 baseline。對這個資料設定來說，避開 KG 污染，比強行融合 KG 更有價值。
+這也是為什麼在我們的設定裡，LightGCN 反而會贏。因為 LightGCN 只看 user-item interaction，不會碰到那條不可靠的 KG branch，所以它保留了一個乾淨又安全的 baseline。對這個資料設定來說，保留一條可控的 no-KG 路徑，比把 KG 一律強行融合進去更有彈性。
 
 ## Slide 6 — Research Question
 
