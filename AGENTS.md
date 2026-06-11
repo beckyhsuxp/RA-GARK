@@ -58,3 +58,4 @@ Pull requests should describe the changed experiment, paper section, or artifact
 ## Agent-Specific Instructions
 
 Do not overwrite generated best-run ledgers or checkpoints unless the task explicitly requires rerunning experiments. Preserve archived negative results in `Code/relation_init/`. When editing thesis content, prefer updating notes and source `.tex` files over generated auxiliary files.
+If you make any repository changes, commit and push them before handing the task back unless the user explicitly says not to.
