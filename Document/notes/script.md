@@ -24,21 +24,21 @@
 
 這個結果不是說那些方法不好，而是說當 KG 稀疏又不穩定的時候，把 KG 直接融進 scoring pipeline，很可能會把雜訊一起帶進去，最後拖累原本乾淨的 collaborative signal。
 
-## Slide 4 — Why Sparse KG
-
-先看一個很重要的問題：既然 KG 不夠好，那為什麼不直接把 KG 補完整？
-
-答案是，稀疏 KG 其實是現實世界的常態，不是例外。像 review-derived KG，本來就只會在使用者真的提到某些 aspect 的時候才出現邊，所以邊密度會受評論內容限制。再來是 cold-start、niche domain、長尾商品，這些場景本來就沒有足夠的外部知識來源。還有一些像醫療、金融這種隱私敏感領域，能用的關係訊號也會刻意被限縮。至於 KG completion，它本身會引入新的噪音，而且通常還需要 seed signal，並不是無痛解法。
-
-所以這篇工作的重點不是去解決「KG 太少」本身，而是去解決「當 KG 不可信時，模型要怎麼穩健地做推薦」。如果要從實用角度看，模型在 KG 不可信時的穩健性，比 KG 豐富時的峰值更有意義。
-
-## Slide 5 — KG Construction
+## Slide 4 — KG Construction
 
 接著看資料集和 KG 建構。這個資料集的基本規模是 905 個 user、1,399 個 item、22,265 筆互動、3,370 條 KG 邊，以及 2,098 個 unique aspect。
 
 這裡的 KG 是 review-aspect KG，建構流程大致上是先把 review 和 image 相關內容整理成比較乾淨的 item 描述，再從中抽取 aspect，最後建立 item-has-aspect 的邊，並過濾掉太泛用或太吵的 aspect。
 
 我要強調的是，這個 KG 建構管線不是本文主要貢獻。它比較像是我們面對的資料條件。真正重要的是，最後得到的 KG 很稀疏，平均每個 item 只有大約 2.4 條 aspect 邊，而這正好形成我們的方法壓力測試。
+
+## Slide 5 — Why Sparse KG
+
+先看一個很重要的問題：既然 KG 不夠好，那為什麼不直接把 KG 補完整？
+
+答案是，稀疏 KG 其實是現實世界的常態，不是例外。像 review-derived KG，本來就只會在使用者真的提到某些 aspect 的時候才出現邊，所以邊密度會受評論內容限制。再來是 cold-start、niche domain、長尾商品，這些場景本來就沒有足夠的外部知識來源。還有一些像醫療、金融這種隱私敏感領域，能用的關係訊號也會刻意被限縮。至於 KG completion，它本身會引入新的噪音，而且通常還需要 seed signal，並不是無痛解法。
+
+所以這篇工作的重點不是去解決「KG 太少」本身，而是去解決「當 KG 不可信時，模型要怎麼穩健地做推薦」。如果要從實用角度看，模型在 KG 不可信時的穩健性，比 KG 豐富時的峰值更有意義。
 
 ## Slide 6 — Failure Mode
 

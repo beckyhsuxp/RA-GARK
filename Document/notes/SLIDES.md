@@ -65,7 +65,23 @@ On this sparse KG, every KG-aware baseline loses to pure LightGCN.
 
 ---
 
-## Slide 4 — Why Sparse KG
+## Slide 4 — KG Construction
+
+**Review-aspect KG pipeline**
+
+1. Summarize review/image content
+2. Extract aspects
+3. Build item-has-aspect edges
+4. Filter generic or noisy aspects
+
+**Important**
+
+- Average KG degree is only about 2.4 edges per item
+- The KG is sparse by design, not by accident
+
+---
+
+## Slide 5 — Why Sparse KG
 
 **Sparse KG is the default, not an edge case**
 
@@ -82,22 +98,6 @@ On this sparse KG, every KG-aware baseline loses to pure LightGCN.
 - 22,265 interactions
 - 3,370 KG edges
 - 2,098 aspects
-
----
-
-## Slide 5 — KG Construction
-
-**Review-aspect KG pipeline**
-
-1. Summarize review/image content
-2. Extract aspects
-3. Build item-has-aspect edges
-4. Filter generic or noisy aspects
-
-**Important**
-
-- Average KG degree is only about 2.4 edges per item
-- The KG is sparse by design, not by accident
 
 ---
 
