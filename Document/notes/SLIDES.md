@@ -35,11 +35,11 @@ KG should be a gateable side channel, not a mandatory scoring path.
 
 **30 分鐘配置**
 
-- Motivation
+- Introduction
 - Related Work
 - Methodology
 - Experiments
-- Conclusion
+- Conclusion & future work
 
 **Focus**
 

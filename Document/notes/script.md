@@ -1,331 +1,267 @@
 # RA-GARK 口語逐字稿
 
----
+## Slide 1 — Title
 
-## Slide 1 — 封面
+大家好，我今天要報告的題目是 RA-GARK，完整名稱是 Product Recommendation via Rationale-Aware Gating over Sparse Review-Aspect Knowledge Graphs，也就是基於理由感知門控與稀疏評論面向知識圖譜之產品推薦。
 
-大家好，我今天要報告的題目是 RA-GARK。
+這個工作的核心想法很直接：在稀疏的 knowledge graph 下，KG 不應該被硬塞進推薦模型的主路徑，而應該是一條可以被 gate 控制的 side channel。換句話說，KG 有用的時候就讓它進來，KG 不可靠的時候就把它關掉。
 
-這個工作的核心概念是雙視角推薦——一邊用傳統的 collaborative filtering，一邊用 KG 的語意資訊，然後用一個可以動態調控的閘門把兩邊融合起來。
+今天的報告我會先講動機，再講相關研究，接著進入方法細節，最後看實驗結果和結論。
 
-我們接下來會先講為什麼要做這件事，再講我們怎麼做，最後看結果。
+## Slide 2 — Roadmap
 
----
+這份報告大約分成五個部分。
 
-## Slide 2 — Motivation
+第一部分是 introduction，我會先說明為什麼稀疏 KG 會讓現有 KG-aware 方法失效。第二部分是 related work，我會快速定位 RA-GARK 跟 LightGCN、KGAT、KGCL、MCCLK、KGRec 以及 gating 方法的關係。第三部分是 methodology，這會是整份報告最重要的部分，我會詳細說 local view、KG-SVD、softmax rationale masking，以及 fusion gate。第四部分是 experiments，會看主結果和 ablation。最後是 conclusion & future work，整理貢獻、限制和後續方向。
 
-先來講研究動機。
+## Slide 3 — Motivation
 
-推薦系統這幾年最主流的方向是用 GNN 做 collaborative filtering。其中最具代表性的是 LightGCN——它把 GNN 裡面比較複雜的部分都拿掉，只保留最基本的線性鄰域聚合，結果反而在很多資料集上比更複雜的方法更好。這告訴我們，在推薦場景裡，乾淨的 collaborative signal 其實很重要。
+先講動機。
 
-另一條研究線是 KG-aware 推薦。這類方法的想法是：如果我們能把 knowledge graph 上的 item 語意——比如一本書的題材、風格、主題——引入推薦模型，應該可以讓預測更準確，也更可解釋。KGAT、KGCL、MCCLK、KGRec 都是這條線的代表，在 KG 比較豐富的資料集上確實有很好的表現。
+推薦系統近年很主流的一條線是用 GNN 做 collaborative filtering，最代表性的就是 LightGCN。LightGCN 的重點是把 GNN 裡比較複雜的 nonlinear transformation 拿掉，只保留線性的鄰居聚合，結果反而在很多資料集上表現很好。這告訴我們，在推薦裡面，乾淨的 collaborative signal 其實非常重要。
 
-但是，我們在自己的實驗設定下發現了一個很有趣的現象。我們用的是 Amazon Books 的子集，knowledge graph 是從書評自動抽取的 aspect，過濾之後每本書平均只有 2.4 條邊，算是相當稀疏。在這個設定下，我們把幾個主流方法都跑了一遍，結果你看——MCCLK、KGCL、KGAT、KGRec，全部都輸給了完全不用 knowledge graph 的純 LightGCN，純 LightGCN 的 NDCG@20 是 0.1179，贏過了所有 KG-aware 方法。
+另一條線是 KG-aware recommendation。這類方法的想法是，如果能把 item 的語意資訊，像是題材、風格、主題，從 knowledge graph 引進來，理論上應該可以讓推薦更準，也更可解釋。KGAT、KGCL、MCCLK、KGRec 都是這一線的代表，在 KG 比較豐富的資料集上也確實有很好的表現。
 
-這個結果並不是說這些方法本身不好——它們在原論文的資料集上都有很強的表現——但這個觀察提示了一個問題：當 KG 比較稀疏、雜訊比較多的時候，把 KG 訊號直接融進 pipeline，反而可能把雜訊一起帶進去，拖累了原本乾淨的 collaborative signal。
+但是我們在自己的設定裡看到一個很反直覺的現象。我們用的是 Amazon Books 的子集，而且 knowledge graph 是從書評抽出的 aspect，所以本來就很稀疏。過濾後平均每本書只有 2.4 條 KG 邊。在這個設定下，我們把幾個主流 KG-aware 方法都跑了一遍，結果全部都輸給純 LightGCN。LightGCN 的 NDCG@20 是 0.1179，反而高於 KGAT、KGCL、MCCLK 和 KGRec。
 
----
+這個結果不是說那些方法不好，而是說當 KG 稀疏又不穩定的時候，把 KG 直接融進 scoring pipeline，很可能會把雜訊一起帶進去，最後拖累原本乾淨的 collaborative signal。
 
-## Slide 3 — Motivation: Why Sparse KG Is the Default
+## Slide 4 — Why Sparse KG
 
-在進入研究問題之前，我想先回答一個讀者很可能會問的問題——既然 KG 不夠好，為什麼不直接去做 KG completion 把它補完整？或者乾脆找一個 KG 豐富的場景來研究？
+接下來我想回答一個很自然的問題：既然 KG 不夠好，那為什麼不直接把 KG 補完整？
 
-答案是，稀疏 KG 其實是真實世界的常態而非例外。我們這個資料集是從用戶評論抽取的 review-derived KG，邊密度天生受限於用戶寫了什麼題材；新興領域、小眾類別、利基商品的 KG 必然稀疏，因為沒有 Freebase 或 Wikidata 這類成熟的知識來源可以倚賴；醫療、金融這類隱私敏感領域，能用的關係訊號也會被刻意限縮。至於 KG completion，它本身就會引入新的雜訊，而且通常需要種子訊號才能訓練，並不是無痛的替代方案。
+答案是，稀疏 KG 其實是現實世界的常態，不是例外。像 review-derived KG，本來就只會在使用者真的提到某些 aspect 的時候才出現邊，所以邊密度會受評論內容限制。再來是 cold-start、niche domain、長尾商品，這些場景本來就沒有足夠的外部知識來源。還有一些像醫療、金融這種隱私敏感領域，能用的關係訊號也會刻意被限縮。至於 KG completion，它本身會引入新的噪音，而且通常還需要 seed signal，並不是無痛解法。
 
-所以這個工作的定位是——不去解決「KG 太少」的問題，而是去解決「當 KG 不可信時，模型該怎麼穩健」這個問題。從實用角度看，模型在 KG 不可信時的穩健性，其實比 KG 豐富時的峰值更具實用價值。
+所以這篇工作的重點不是去解決「KG 太少」本身，而是去解決「當 KG 不可信時，模型要怎麼穩健地做推薦」。如果要從實用角度看，模型在 KG 不可信時的穩健性，比 KG 豐富時的峰值更有意義。
 
----
+## Slide 5 — KG Construction
 
-## Slide 4 — Research Question
+這個資料集的基本規模是 905 個 user、1,399 個 item、22,265 筆互動、3,370 條 KG 邊，以及 2,098 個 unique aspect。
 
-這個觀察帶出了兩個問題。
+這裡的 KG 是 review-aspect KG，建構流程大致上是先把 review 和 image 相關內容整理成比較乾淨的 item 描述，再從中抽取 aspect，最後建立 item-has-aspect 的邊，並過濾掉太泛用或太吵的 aspect。
 
-第一個是「為什麼」——為什麼 KG-aware 方法在稀疏 knowledge graph 上反而輸給了純 LightGCN？它們的失敗模式是什麼？
+我要強調的是，這個 KG 建構管線不是本文主要貢獻。它比較像是我們面對的資料條件。真正重要的是，最後得到的 KG 很稀疏，平均每個 item 只有大約 2.4 條 aspect 邊，而這正好形成我們的方法壓力測試。
 
-第二個是「怎麼辦」——什麼樣的設計原則，能讓 KG 訊號在有用的時候被充分利用、在充滿雜訊的時候不去汙染 collaborative filtering？
+## Slide 6 — Failure Mode
 
-我們的主張是：knowledge graph 不應該是 scoring pipeline 裡的必經成分——就像 KGAT 那樣深度融入——而應該是一條可以被明確閘控的 side channel。
+這裡我先把現有 KG-aware 方法的失敗模式講清楚。
 
-這個主張具體落地在三個設計上：softmax aspect 挑選、KG-SVD 初始化、local-biased fusion gate。
+大多數 KG-aware recommenders 都有一個共通問題：KG entity embedding 會直接進入 message passing，user 和 item 的表示是在一條包含 KG 的路徑上學出來的。這表示只要 KG 本身有問題，雜訊就會一起進到 scoring representation 裡，沒有辦法把 KG 關掉。
 
-我們接下來會說明這三個設計是怎麼做的，並且用實驗結果來說明，這個原則確實能讓 KG 整合在稀疏設定下從原本的負效益，翻轉成 13.1% 的提升。
+這也是為什麼在我們的設定裡，LightGCN 反而會贏。因為 LightGCN 只看 user-item interaction，不會碰到那條不可靠的 KG branch，所以它保留了一個乾淨又安全的 baseline。對這個資料設定來說，避開 KG 污染，比強行融合 KG 更有價值。
 
----
+## Slide 7 — Research Question
 
-## Slide 5 — Related Work: Foundations — LightGCN & KGAT
+基於剛才的現象，我們提出兩個問題。
 
-在進入方法前，先回顧兩個基礎工作。
+第一個是 diagnosis，也就是為什麼 KG-aware 模型會輸給純 LightGCN。第二個是 prescription，也就是什麼樣的設計原則，才能讓 KG 在有用時發揮作用，在不可靠時不污染協同過濾。
 
-第一個是 LightGCN，He 等人 2020 年的工作，也是我們 local view 的直接基礎。它把 GNN 的非線性激活和特徵轉換都拿掉，只保留線性鄰域聚合，反而在多個資料集上超越了更複雜的 NGCF。我們的做法是直接沿用，傳播兩層，不做任何修改——讓 local view 保持 collaborative signal 的純淨。選 LightGCN 的原因很直接，它在我們的設定下就達到 0.1179，是很強的基準，這就是我們設計上一直強調「至少不能比 LightGCN 更差」的硬性底線。
+我們的答案是：KG 不應該是 scoring pipeline 裡的必經成分，而應該是一條可以被 gate 控制的 side channel。這個想法後面會具體落地在三個設計上，分別是 KG-SVD initialization、softmax rationale masking 和 local-biased fusion gate。
 
-第二個是 KGAT，Wang 等人 2019 年的奠基工作，代表的是 KG 深度融合的範式。它把 user–item graph 跟 knowledge graph 合併成一個大圖，KG entity embedding 直接參與 user/item 表示的形成。這在 KG 豐富時很有效，但問題就在這裡——當 KG 比較稀疏、雜訊比較多的時候，深度融合也會把雜訊一併帶進去。在我們的設定下 KGAT 只有 0.1079，輸給了純 LightGCN。
+## Slide 8 — Related Work I
 
-所以我們的設計選擇是反過來——不合併兩張圖，讓 KG 走獨立的 side channel，再透過 fusion gate 在後期合併。collaborative signal 的梯度就不會直接受到 KG 影響，KG 品質比較差時容錯性會更強。
+先講最基礎的兩個方法。
 
----
+LightGCN 是純 CF 的強基準。它移除了複雜的 feature transformation 和 nonlinear activation，只保留線性的鄰居聚合和 layer-wise average。對我們來說，它不是普通 baseline，而是 safe default，所以 local view 直接沿用 LightGCN。
 
-## Slide 6 — Related Work: Contrastive KG Methods — KGCL & MCCLK
+KGAT 則代表 KG 深度融合的典型範式。它把 user-item graph 和 KG 合併成一張 collaborative knowledge graph，再透過 entity propagation 來學 user 和 item 表示。這種方法在 KG 豐富時很有效，但在 sparse KG 下，噪音也會一起被傳進去。
 
-接下來是兩個 contrastive learning 相關的方法。
+所以我們的立場很明確：local view 要保留 LightGCN 的乾淨性，KG 不要進 local propagation。
 
-KGCL 是 Yang 等人 2022 年的工作，它對 knowledge graph 做隨機的結構擾動，生成增強視角，然後做跨視角的 contrastive learning。在 KG 豐富的資料集上大幅超越了 KGAT。但在 KG 稀疏的情境下，擾動之後剩餘的結構可能不足以提供有效的監督訊號。我們的設定下是 0.1073。
+## Slide 9 — Related Work II
 
-MCCLK 是 Zou 等人 2022 年的工作，更進一步，建立了協同、語意、結構三個視角，在所有視角的兩兩組合之間互相對齊。在多個資料集上達到當時的最高水準。我們的設定下是 0.1067。
+接下來是 contrastive KG methods。
 
-我們的做法也有用跨視角 contrastive learning，但角色完全不一樣。我們的 contrastive learning 損失只是作為輔助的幾何對齊，權重非常小，只有 0.005，目的是讓本地和全域兩個 embedding 空間的幾何結構不要差太多。而且我們在 KG 那側做了 stop-gradient，避免 contrastive learning 的梯度去破壞 SVD 初始化保留下來的語意幾何。
+KGCL 會對 KG 結構做擾動，然後對 original view 和 perturbed view 做 contrastive learning。MCCLK 則更進一步，建立 collaborative、semantic、structural 三個視角，彼此做對齊。這些方法在 KG 比較豐富時都很強，但在 sparse KG 下，擾動後剩下的 signal 可能太弱，反而讓對比學習變成在對齊雜訊。
 
----
+所以我們雖然也有用 contrastive learning，但它只是輔助，權重很小，目的是幫 local 和 global 的幾何空間做輕量對齊，而不是主導融合。
 
-## Slide 7 — Related Work: Rationale-aware Methods — KGRec
+## Slide 10 — Related Work III
 
-KGRec 是跟我們最直接相關的工作，Yang 等人 2023 年。
+KGRec 是跟我們最直接相關的工作。
 
-KGRec 首次在 KG-aware 推薦裡明確提出了「理由感知」這個概念——並不是所有 KG edge 對推薦的重要性都一樣，我們應該明確地學習哪些訊號才是支持預測的理由。具體做法是在每條邊上算一個 attention 重要性分數，然後隨機把高分的邊移除，強迫模型不要過度依賴少數幾條主導邊，再透過原圖和刪減圖之間的 contrastive learning 讓表示更穩健。整個架構是建立在 KGAT 的聚合器上面的。在我們的設定下，KGRec 是 0.1095，同樣輸給了 LightGCN。
+KGRec 的核心觀察是：不是所有 KG edge 都同樣重要，所以要學 rationale。它做法是對每條 KG edge 算 attention 分數，再用 Bernoulli dropout 去隨機移除高分邊，強迫模型不要過度依賴少數幾條主導邊，之後再用 contrastive learning 強化穩健性。這確實是 rationale-aware recommendation 的代表。
 
-KGRec 是跟我們最直接相關的工作，下一張我會專門講我們跟它的範式關係。
+但 KGRec 的假設是，KG 裡面至少有一些 useful edges 可以挑出來。RA-GARK 的前提更保守：我們不假設整個 KG 都可信，所以不是只挑邊，而是把整條 KG channel 變成可閘控的 side channel。
 
----
+## Slide 11 — Related Work IV
 
-## Slide 8 — Related Work: Rationale Paradigm — Shared vs Diverged
+這裡我想補充 gating 的脈絡。
 
-KGRec 跟我們的關係其實有點微妙——表面上看 RA-GARK 像是 KGRec 的延伸，但底層的設計哲學其實是相反的。我們承襲了 KGRec 的核心觀察「並不是所有 KG 邊同等重要」，但具體的設計選擇反映了**對 KG 信任度的不同前提**。
+Highway Networks 很早就提出一個很重要的概念：用 gate 把變換路徑和 identity path 做加權，而且 gate 的 bias 可以初始化成偏向安全路徑，讓模型一開始接近 identity，再慢慢學要不要打開變換。MMoE 和 PLE 則是在多任務推薦裡，用 gate 在多個 expert tower 之間做選擇。
 
-KGRec 的隱含假設是「有用的邊存在，挑出來即可」。它在 KGAT aggregator 內部用 edge-level 的 Bernoulli dropout 加上 contrastive learning，意思是 KG 整體還是可以信任的，只是某些邊比其他邊更重要——挑出可信的部分繼續用就好。
+但這些方法和我們不一樣的地方有兩個。第一，它們的 expert 多半是同質候選，不是像我們這樣把 CF 和 KG 當成兩條異質訊號管線。第二，它們沒有特別針對「某條管線可能不可信」這件事做安全初始化。
 
-我們的前提不一樣。在我們稀疏 KG 的設定下，KG 整體可能就是不可信的，所以我們的設計是讓**整條 KG 管線都可以被閘門關掉**。這個前提差異決定了四個具體的設計分歧。
+所以在 KG-aware recommendation 領域裡，還是缺少一個 bias-initialized fusion gate。
 
-第一，理由挑選的粒度從邊的層級提升到 item 的 aspect slot，每個 item 維護四個 aspect slot，挑選結果可以直接對應「這個 item 最突出的面向是哪幾個」，比較容易解讀。
+## Slide 12 — Design Principle
 
-第二，機制從離散隨機丟棄改成可微分的 softmax attention，方便端對端訓練，推論時也可以匯出權重觀察。
+這裡把我們的方法原則講成一句話。
 
-第三，作用位置從 KGAT aggregator 內部移到後期融合的獨立側通道，這樣 collaborative signal 不會被 KG 雜訊滲透。
+KG 應該是 gateable side channel，而不是 mandatory scoring component。
 
-第四，最關鍵的——對 KG 整體信任度的處理。KGRec 沒有「關掉 KG」的機制，我們有 fusion gate 提供這個結構性開關。
+這個原則帶來三個後果。第一，我們要把 local view 和 global view 分開，避免 KG 污染 CF。第二，融合要晚，等兩邊的 representation 都先學好再決定要不要混。第三，gate 的初始化要偏向 LightGCN，讓模型一開始就站在安全的一邊。
 
-所以 RA-GARK 不是 KGRec 的工程改良，而是基於不同 KG 信任前提的獨立設計。具體的效能對比結果，我們留到實驗章節再看。
+## Slide 13 — Overview
 
----
+接下來是整體架構。
 
-## Slide 9 — Related Work: Gating for Heterogeneous View Fusion
+左邊是 local view，也就是 LightGCN，在 user-item graph 上做線性 propagation。右邊是 global view，它先用 KG-SVD 初始化 aspect slot，再用 softmax rationale masking 動態選出對當前 user-item pair 最有用的 aspect。最右邊是 fusion gate，把 local 和 global 的表示融合起來。最後的訓練損失是 BPR，再加上一個很小的 contrastive regularization。
 
-這邊我想多說一下我們的 fusion gate 跟既有方法的關係，因為這是這個工作的核心設計選擇。
+這張圖最重要的地方是，local 和 global 兩條路線在前面是完全分開的，只有到最後的 scoring stage 才透過 gate 合起來。
 
-順帶提一下，現有的雙視角方法像 SGL、DCCF 大多是建立同一張圖的不同擾動視角，本質上還在同一個訊號空間裡。但我們的兩個視角是根本異質的——local 是 user–item graph 上的協同訊號，global 是 KG 上的語意訊號，不是同圖的變形。異質程度這麼高，單純靠 contrastive learning 隱式對齊是不夠的，我們需要一個明確的 fusion gate 來控制混合比例。
+## Slide 14 — Problem Setup
 
-跟我們最直接相關的兩個先例。第一個是 Highway Networks，Srivastava 在 2015 年提出，原本是為了解決深層網路訓練困難的問題。它的核心是一個 gate，把 transformation 跟 identity skip 加權合起來，關鍵在於 gate 的 bias 初始化為負值，讓網路一開始接近恆等映射，後續訓練再慢慢學要不要做變換。我們的 bias 初始化為正五的設計，本質上就是把這個「保守起點 + 漸進開啟」的概念，從深層網路內部 skip 移植到雙視角融合的場景。
+我們的任務是 implicit top-K recommendation。對每個 user，要把沒看過的 item 做排序，讓真正互動過的 item 排在前面。訓練時使用正樣本和 sampled negative pairs。
 
-第二個先例是 MMoE 跟 PLE 這類 mixture-of-experts 在多任務推薦的應用。它們也是用 gate 從多個管線中選擇，但兩個重要差異是：那邊的 expert 都是同質的候選，沒有「哪個比較不可信」的問題；而且它們的 gate 沒有特別的初始化偏置，是對稱起點。
+最終分數就是 `u_final` 跟 `i_final` 的內積。`u_final` 和 `i_final` 則是 local 表示和 global 表示的加權和，權重分別由 `alpha_u` 和 `alpha_i` 決定。
 
-簡單講，gate 機制本身在深度學習裡很成熟，但既有的用法都沒有針對「異質訊號源 + 不確定其是否可信」這種情境。下一張我們看 KG-aware 推薦領域裡是不是也有類似的設計。
+這裡有一個重要的 convention：`alpha` 越接近 1，就越偏 local、越像純 CF；`alpha` 越接近 0，就越偏 global、越依賴 KG。
 
----
+## Slide 15 — Local View
 
-## Slide 10 — Related Work: Gating Gap in KG-aware Recommendation
+local view 我們直接用純 LightGCN。
 
-至於在 KG-aware 推薦領域本身，我們檢視過的方法都沒有用 fusion gate 作為融合機制。KGAT 是 entity 嵌入直接傳遞，KGCL 跟 MCCLK 用 contrastive learning 做隱式對齊，KGRec 雖然有 rationale dropout 但仍然走 KGAT 風格的 aggregator。CKAN、MKR、KGIN 這些近年比較有代表性的方法分別用的是 attention、cross-feature unit、意圖分解，都不是後期融合 gate。它們共同的隱含假設是「KG 至少不會是負訊號」——但我們在 Slide 2 看到，這個假設在稀疏 KG 下並不成立。
+這個選擇沒有特別花俏，但非常重要。因為在我們的 setting 裡，LightGCN 本來就已經比所有 KG-aware baseline 還好，所以它是我們必須守住的 safe default。Local view 完全不接觸 KG，這樣就可以保證 collaborative signal 的純淨性。
 
-我這邊想很小心地措辭：我們不敢說自己是「第一個」用 gate 做融合的，因為 KG-aware 推薦的文獻很大，很難窮盡。但更可辯護的講法是——在我們檢視過的這些主流 KG-aware 方法裡，沒有一個用 bias-initialized 的 gate 來提供架構層面的安全退化機制，而這個結構選擇正是我們在稀疏 KG 設定下能夠贏過 LightGCN 的關鍵。
+換句話說，local branch 的職責只有一個，就是把 user-item interaction graph 的訊號學好，其他都不要碰。
 
-至於我們架構裡同時用了 attention 跟 gate，但分層使用——aspect 選擇那一層用 attention，因為四個 slot 是同質候選互相競爭；視角融合那一層用 gate，因為本地和全域是異質管線需要的是「要不要採用」的開關決策——這個分層方式是我們刻意的設計。
+## Slide 16 — Local Propagation
 
----
+local propagation 的部分就是標準 LightGCN。
 
-## Slide 11 — Related Work: Summary
+我們只在 user-item bipartite graph 上做傳播，而且只用 training interactions。沒有 KG edges，也沒有任何額外的 nonlinear transformation。每一層就是 normalized adjacency 乘上 embedding，最後把第 0 層到第 K 層做平均，這裡 K 設成 2。
 
-把我們剛才講的這些方法整理成一張表。
+這個 branch 的輸出就是 `u_loc` 和 `i_loc`，完全是純 collaborative representation。
 
-從本地聚合器來看，我們和 LightGCN 一樣，用的是純粹的線性傳播，其他方法都是用 KGAT 的雙互動聚合器或者多視角聚合。
+## Slide 17 — Global View
 
-從 KG 整合方式來看，KGAT 是直接傳遞，KGCL 是傳遞加 contrastive learning，MCCLK 是多視角 contrastive learning，KGRec 是傳遞加隨機丟棄，我們是閘控後期融合。
+global view 的重點是 latent aspect slots。
 
-從理由挑選的層級來看，只有 KGRec 和 RA-GARK 有做主動的挑選，KGRec 在邊的層級，我們在 aspect 的層級。
+為什麼不直接把 KG triples 拿來傳播？因為我們的 KG 太稀疏了，直接傳播很容易對缺失邊或噪音邊敏感。相反地，我們把每個 item 的 KG 語意壓縮成四個 latent aspect slots，讓模型在一個比較低維、比較穩定的空間裡處理 KG。
 
-從 NDCG@20 來看，在我們的稀疏設定下，其他方法全部低於 LightGCN 的 0.1179，我們是 0.1238。
+這裡的 `A=4` 不是說每個 item 只有四個真實 aspect，而是說我們用四個 latent basis 去表示 item 的 KG semantics。
 
-我想強調一點：RA-GARK 並不是在說這些既有方法不好，而是在「保守 KG 整合」這個比較少被探索的設計方向上做了一個嘗試。我們的優勢在稀疏 knowledge graph 設定下比較明顯；如果 knowledge graph 很豐富，深度融合方式仍然可能是更好的選擇。
+## Slide 18 — KG-SVD Step 1
 
----
+KG-SVD 的第一步是先建 item-aspect matrix。
 
-## Slide 12 — Model Overview
+如果 item 有某個 aspect，就把對應位置設成 1。接著做 IDF weighting，公式就是把每個 aspect 乘上它的 IDF。這樣做的原因很簡單：太常出現的 aspect 往往太泛用，不夠有辨識力；比較少見、比較有語意特色的 aspect 應該被保留更高的權重。
 
-好，接下來進入我們方法的部分。
+所以這一步的目的，就是先把比較有意義的 KG 結構凸顯出來，減少後面 SVD 被 generic aspect 主導。
 
-RA-GARK 由四個模組組成。
+## Slide 19 — KG-SVD Step 2
 
-第一個是 local view，就是標準的 LightGCN，在 user–item graph 上做兩層線性傳播，輸出的是純 collaborative signal 的 user 和 item 表示，完全不接觸 knowledge graph。
+這張圖對應的是 KG-SVD 的第二步。
 
-第二個是 global view，我們為每個 item 維護四個 aspect slot，用 SVD 從 KG 初始化，然後透過 softmax aspect attention，根據每個 user–item pair 的情況動態選出最突出的 aspect 組合，輸出帶有 KG 語意的 user 和 item 表示。
+我們對 IDF-weighted matrix 做 truncated SVD，然後把結果投影成 `E_KG = U sqrt(Sigma)`。接著把 flat vector reshape 成每個 item 的四個 aspect slot，每個 slot 維度是 128。最後再把整個 tensor 的 scale 調回跟 Xavier 初始化相容的範圍。
 
-第三個是 local-biased fusion gate，把兩個視角的表示融合起來。融合是本地表示和全域表示的加權和，gate 值決定兩邊的比例。關鍵的設計是 gate 的 bias 初始化為正五，讓訓練起點的 gate 值接近 0.993，幾乎等同純 LightGCN，只有在梯度顯示 global view 有益的時候，gate 才會逐漸打開。
+這樣做的目的，是讓 global view 在訓練一開始就有一個有意義的語意幾何，而不是從亂數開始。這也是為什麼隨機初始化會掉分。
 
-第四個是計分和損失函數，最終分數是兩個最終表示的內積，用 BPR loss 訓練，再加上一個很小的跨視角 contrastive learning 正則化，權重只有 0.005。
+## Slide 20 — KG-SVD Ablation
 
-這三個核心設計——KG-SVD 初始化、softmax aspect attention、local-biased fusion gate 初始化——都有消融實驗的支撐，等一下會看到。
+如果把 KG-SVD 初始化改成 random initialization，NDCG@20 會從 0.1238 掉到 0.1173，降幅是 5.3%。
 
----
+這個結果說明 KG-SVD 不是單純的 preprocessing 小技巧，而是讓 global view 真的能夠在 sparse KG 下站得起來的關鍵。
 
-## Slide 13 — Preliminaries
+## Slide 21 — Softmax Masking
 
-在深入各個模組之前，先定義一下符號。
+global view 的第二個核心是 softmax rationale masking。
 
-user 集合有 905 個人，item 集合有 1,399 個 item，觀測到的正向互動總共 22,265 筆，用 user–item graph 來表示。
+對每個 user-item pair，我們會用 user 的 global embedding 去條件化 item 的每個 aspect slot，先算出每個 slot 的 logit，然後用 softmax 加上 temperature 得到權重，最後把四個 slot 加權求和成 `i_glo`。
 
-knowledge graph 是一個 item 跟 aspect 之間的二部圖，邊就是每個 item 連到它對應的 aspect，總共有 2,098 個獨立的 aspect。
+這樣做的意思是：同一本書對不同 user 可能有不同的推薦理由。有人重視 genre，有人重視 writing style，有人重視 emotional tone，所以 rationale 必須是 user-conditioned 的。
 
-我們的目標是學一個評分函數，使得真正有互動的正樣本得分高於未觀測的負樣本。
+## Slide 22 — Softmax vs Sigmoid
 
-主要的超參數：embedding 維度 128，aspect slot 數 4，傳播層數 2，學習率 0.001，批次大小 128。
+這裡我們特別強調 softmax 而不是 sigmoid。
 
----
+如果用 sigmoid，每個 slot 是獨立啟動的，容易所有 slot 都偏高，最後退化成平均。softmax 則會讓 slot 之間互相競爭，在固定總量下做選擇。這不只是讓 attention 更 sharp，更重要的是它控制了 `i_glo` 的 magnitude。
 
-## Slide 14 — Local View: LightGCN Propagation
+這點很重要，因為 global KG channel 本來就是被 gate throttled 的，如果 attention 本身再讓 magnitude 飄掉，整個 gate 的校準就會失真。
 
-local view 沿用標準 LightGCN，傳播兩層，不做任何修改。
+## Slide 23 — Softmax Ablation
 
-這邊沒有什麼特別的設計，就是最乾淨的 LightGCN。我們有意讓 local view 完全不接觸 knowledge graph，目的是保持 collaborative signal 的純淨。所有跟 knowledge graph 相關的操作都在後面的 global view 和 fusion gate 裡面做。
+這張 sensitivity 圖直接對應我們的 ablation 觀察。
 
-這個選擇的背後邏輯是：在我們的設定下，純 LightGCN 已經是 0.1179，高於所有 KG-aware 方法。所以我們一直強調的設計約束是，RA-GARK 至少不能比 LightGCN 更差。
+把 softmax 換成 sigmoid 之後，NDCG@20 會掉到 0.1151，降幅是 7.0%。這是全文單一元件影響最大的改變。
 
----
+我這裡要小心地說，不是主張 softmax 在所有情況下都比 sigmoid 好，而是說在我們這個「被 gate 控制的 sparse KG side channel」裡，normalization 的選擇會直接影響穩定性和 magnitude control。
 
-## Slide 15 — Global View: KG-SVD Initialization
+## Slide 24 — Fusion Gate
 
-global view 這邊，我們為每個 item 維護四個 aspect slot，把 KG 語意展開成多個槽而不是壓縮成一個向量，是為了讓後面的 attention 模組有選擇的空間——每次計分的時候可以根據 user 的偏好動態選出最突出的那幾個 aspect。
+接下來是 fusion gate。
 
-初始化的部分，我們用了 KG-SVD。步驟是這樣的：先建一個用 IDF 加權的矩陣，矩陣的每個元素代表 item 有沒有某個 aspect，再乘以那個 aspect 的 IDF。然後對這個矩陣做截斷 SVD，取前面的奇異值和奇異向量，投影之後重塑成 item 數乘以 aspect slot 數乘以 embedding 維度的三維張量，縮放到合理的初始化範圍。
+`alpha_u` 和 `alpha_i` 是用小型 MLP 算出來的，然後把 local 和 global 的表示做加權和。這一層的任務不是挑 aspect，而是決定這條異質視角管線到底要用多少 KG。
 
-這樣做的好處是，訓練起點就已經保留了 KG 原本的語意結構——在 KG 上比較接近的 item，在 embedding 空間裡也比較近，後面的訓練只需要在這個基礎上微調就好了。
+這也是為什麼我們前面說，aspect selection 用 attention，view fusion 用 gate。因為它們處理的是兩種不同層次的選擇問題。
 
-消融實驗顯示，如果改成隨機初始化，NDCG@20 會下降 5.3%。
+## Slide 25 — Gate Bias
 
-簡單講一句話就是：我們手上有 item × aspect 的 KG 對照表，直接對它做 SVD 找出主要的主題方向，用這些方向當 `item_kg_aspects` 的起點——這樣模型一開始就知道哪些書在語意上相近，不用從零學起。拿掉會掉 5.3% NDCG。
+fusion gate 最關鍵的設計是 bias initialization。
 
----
+我們把最後一層 bias 設成 +5，所以一開始 `alpha_0` 大約是 0.993。這代表模型訓練一開始幾乎就是純 LightGCN，global view 只佔很小比例。
 
-## Slide 16 — Global View: Softmax Aspect-Saliency Attention
+這個設計不是為了保守而保守，而是因為 sparse KG 本來就不可靠。讓模型一開始站在安全的一邊，可以避免 global branch 的不成熟表示干擾 local branch。
 
-接下來是 aspect 選擇的 attention 機制。
+## Slide 26 — Graceful Degradation
 
-對每個 user–item pair，我們先把 user 的 global embedding 和 item 的 aspect 矩陣拼接起來，丟進一個兩層的 feed-forward network，得到每個 aspect 的重要性分數。然後用帶溫度縮放的 softmax，溫度設定為 0.5，算出 attention weight，最後用這個權重對各個 aspect 做加權和，得到 item 的全域表示。
+這一頁想強調的是 graceful degradation。
 
-關鍵設計是用 softmax 而不是 sigmoid。如果用 sigmoid，各個 aspect 的權重是獨立算的，訓練過程中傾向飽和到接近一，等於沒有做選擇，退化成取平均。改成 softmax，因為所有權重加總必須等於一，各個 aspect 之間互相競爭，才能產生有鑑別力的加權。這個差距在我們的資料集上達到 7 個百分點，是全文消融裡單項影響最大的——後面 Discussion 還會更完整討論這個觀察。
+如果 KG 沒有提供有用訊號，gate 可以一直維持在接近 1 的位置，模型就會自然退化成接近 LightGCN 的行為。這是一個架構層級的 fallback，不是靠運氣。
 
-溫度 0.5 的選擇也很重要。feed-forward network 輸出的分數動態範圍比較小，溫度設為一的話 softmax 輸出幾乎是均勻分佈，放大不了差異。0.5 可以把差異放大，產生比較清晰的 aspect 偏好。我們掃描了幾個溫度值，0.5 在 NDCG 上取得最好的平衡。
+消融結果也支持這件事。把 gate bias 改成 0 之後，NDCG@20 會降到 0.1173，掉 5.3%。這說明 local-biased initialization 不是訓練小技巧，而是保護 CF backbone 的機制。
 
----
+## Slide 27 — Contrastive Regularization
 
-## Slide 17 — Local-Biased Fusion Gate
+除了主要的 BPR loss，我們還加了兩個很小的 contrastive regularization。
 
-融合閘把本地和全域兩個視角的表示融合起來。
+第一個是 aspect-level 的對比損失，第二個是 user cross-view 的對比損失。這兩個都只是輔助對齊 local 和 global 的幾何空間，不是主要的融合機制。
 
-做法是：先把 user 的 local 和 global 表示拼接，丟進一個小型 feed-forward network，輸出一個介於零和一之間的 gate 值，然後最終表示等於 gate 值乘以本地表示加上一減 gate 值乘以全域表示。item 那側也有一個獨立的閘門，結構一樣。
+我們的設計很保守：權重只有 0.005，而且 KG 側做了 stop-gradient，避免對比學習把 SVD 保留下來的語意幾何拉壞。再加上 projection head，讓 CL 的梯度不要直接影響 scoring space。
 
-最重要的設計是偏置初始化。我們把 feed-forward network 最後一層的偏置直接初始化為正五，讓訓練起點的 gate 值接近 0.993，幾乎完全依賴 local view，等同純 LightGCN。
+## Slide 28 — Training and Evaluation
 
-為什麼要這樣做？因為訓練初期 global view 的 embedding 還沒有學好，如果 gate 從 0.5 起步，就有一半的計分訊號來自不可靠的全域表示，這些梯度可能會干擾到 local view 的訓練。保守起步可以讓 local view 先把 collaborative signal 學好，之後如果梯度顯示打開閘門有助於降低損失，gate 才會慢慢打開。
+訓練設定是 Adam，learning rate 0.001，batch size 128，最多 80 個 epoch，用 validation NDCG@20 做 early stopping，patience 是 10。
 
-這個設計更深層的意義是提供了一個結構上的安全退化保證。如果 global view 最終沒辦法提供有用的訊號，gate 就會一直維持在接近一，模型退化為接近純 LightGCN，不至於比 LightGCN 更差。
+評估時採 full-ranking，會排除訓練集裡已經互動過的 item，最後看 HR、Precision、Recall、F1、MAP 和 NDCG，這些都取 @20。
 
-消融顯示把偏置初始化改為零，NDCG@20 下降 5.3%。
+從效能來看，我們每個 epoch 大概 1.5 秒，跟 KGRec 差不多，所以這個設計沒有讓成本爆炸。
 
----
+## Slide 29 — Main Results
 
-## Slide 18 — Cross-View Contrastive Regularization
+先看主結果。
 
-除了主要的 BPR loss，我們還加了兩個輕量的跨視角 contrastive learning 損失。
+MCCLK、KGCL、KGAT、KGRec 在這個 sparse KG 設定下都低於 LightGCN。LightGCN 是 0.1179，而 RA-GARK 是 0.1238。
 
-第一個是 aspect 層級的 contrastive learning。對每個 aspect slot，計算本地 item 表示跟這個 aspectembedding 的相似度損失，取四個 aspect 的平均。這個損失讓本地 item 表示在幾何上往各個 aspect 的方向靠近。
+這表示兩件事。第一，我們的設計確實把 KG 從原本的 net-negative 變成 net-positive。第二，跟 KGRec 相比，我們在同樣稀疏 KG 的條件下，還能再提升 13.1%。
 
-第二個是 user 跨視角 contrastive learning，把 user 的 local 和 global embedding 互相拉近，讓兩個視角的幾何結構保持一致。
+這個結果其實直接支持了我們最一開始的設計原則：KG 不是必經管線，而是可被 gate 控制的 side channel。
 
-設計上有三個保守的選擇。第一，KG 那側做 stop-gradient，避免 contrastive learning 的梯度去破壞 SVD 初始化保留下來的語意幾何。第二，用一個小的 projection head，讓 contrastive learning 的梯度只作用在投影空間，不直接影響 fusion gate 的參數。第三，這兩個損失的總權重只有 0.005，非常小，只是做輔助的幾何對齊，不主導表示的學習。
+## Slide 30 — Ablation Summary
 
-總損失就是 BPR loss 加上 0.005 乘以這兩個 contrastive learning 損失的和。
+再看 ablation。
 
----
+如果拿掉 softmax，NDCG@20 會掉到 0.1151。拿掉 local-biased gate init，會掉到 0.1173。拿掉 KG-SVD init，也會掉到 0.1173。
 
-## Slide 19 — Training Setup & Complexity
+這三個結果一起告訴我們，RA-GARK 的增益不是來自「加了 KG」這件事本身，而是來自 KG 的初始化、selection 和 gating 這三個設計一起合作。
 
-訓練設定這邊，優化器用 Adam，學習率 0.001，批次大小 128，最多跑 80 個 epoch，用驗證集的 NDCG@20 做早停，耐心值是 10。
+## Slide 31 — Case Study and Takeaways
 
-複雜度方面，LightGCN 傳播的複雜度跟標準 LightGCN 一樣；aspect attention 因為 aspect slot 數固定是四，這項相對可以忽略；fusion gate 是兩個小 feed-forward network 的運算；推論時全排序是計算成本最高的部分，跟現有的 KG-aware 方法差不多。
+這張 heatmap 是 case study。
 
-實際跑起來，每個 epoch 大概 1.5 秒，跟 KGRec 相近，加了 fusion gate 和 aspect attention 並沒有顯著增加計算負擔。
+你可以看到不同 item 會對不同 aspect slot 給出不同的權重，表示 rationale masking 不是固定平均，而是真的有在對不同 item 使用不同的語意路徑。這也是這個模型可解釋性的來源之一。
 
-評估協議是全排序，對每個 user 排除訓練集裡已經互動過的 item，指標用命中率、精確率、召回率、F1、平均精確率和 NDCG，都取前二十。
+從方法論角度看，這個 case study 也支持一件事：模型不只是準確，還能告訴我們「它到底用了哪個 slot 來做判斷」。
 
----
+## Slide 32 — Conclusion
 
-## Slide 20 — Dataset & KG Construction
+最後總結一下。
 
-資料集用的是 Amazon Books 的一個子集，905 個 user，1,399 本書，22,265 筆正向互動，按 user 分層切成訓練七成、驗證一成半、測試一成半。
+在 sparse KG recommendation 裡，關鍵不是把 KG 硬塞進模型，而是給模型一個可靠的方式去忽略 KG，當 KG 不可靠的時候能退回到安全的 collaborative filtering，當 KG 有用的時候再把它打開。
 
-KG 建構 pipeline 沿用的是學姊何宜霓等 2024 年的工作，不是本文的貢獻，我們在這裡簡單介紹一下。管線分四步：第一步用視覺模型為每本書的封面影像生成描述；第二步用語言模型把書評摘要成統一格式的文本；第三步從摘要裡面抽取 item 跟 aspect 之間的關係，建立二部 knowledge graph；第四步做前處理，移除頻率最高百分之二的 aspect——這些通常是沒有區辨力的通用讚美詞，加上一組手動定義的停用詞。
+這篇工作的主要貢獻有四個：第一，提出 gateable KG side channel；第二，提出 KG-SVD initialization；第三，提出 softmax rationale masking；第四，提出 local-biased fusion gate。
 
-過濾之後，原本的一萬三千多條邊剩下 3,370 條，刪掉了大約四分之三，有 2,098 個獨立的 aspect，平均每本書 2.4 條邊。這個稀疏度就是我們前面一直說的稀疏 knowledge graph 設定。
+限制也很清楚：我們目前只在一個 sparse review-aspect KG dataset 上驗證，KG construction pipeline 不是本文的主貢獻，另外在 dense KG setting 下，深度融合方法仍然可能更強。也就是說，RA-GARK 的定位不是要取代所有 KG-aware 方法，而是要補上 sparse KG 這個常被忽略、但很現實的場景。
 
----
-
-## Slide 21 — Experimental Results
-
-來看結果。
-
-這張表把所有方法的 NDCG@20 以及跟 KGRec 和 LightGCN 的比較都列出來了。MCCLK 0.1067，KGCL 0.1073，KGAT 0.1079，KGRec 0.1095，純 LightGCN 0.1179，RA-GARK 是 0.1238。
-
-有兩個數字我特別想強調。
-
-第一個是跟 KGRec 相比高了 13.1%。在完全相同的稀疏 knowledge graph 設定下，RA-GARK 顯著優於現有最強的 KG-aware 方法。
-
-第二個我認為更重要，是跟純 LightGCN 相比高了 5%。這個數字的意義是：KG 訊號在這個稀疏的設定下，從「難以帶來正向貢獻」變成了「能帶來適度的正向貢獻」。RA-GARK 成功讓稀疏 knowledge graph 發揮了作用，而不是像其他方法一樣反而拖累了結果。這也回答了我們在 Slide 4 提出的那個問題——正確的設計原則確實能讓 KG 整合從負效益翻轉為正效益。
-
-計算成本方面，每個 epoch 約 1.5 秒，跟 KGRec 相當，沒有顯著增加負擔。
-
----
-
-## Slide 22 — Ablation Study
-
-消融實驗這邊，我們驗證了三個核心設計各自的貢獻。
-
-完整的 RA-GARK 是 0.1238。
-
-第一個，把 softmax aspect attention 改回 sigmoid，NDCG 掉到 0.1151，下降了 7%。這幾乎等同於說「用了 knowledge graph 反而變差了」，因為 0.1151 比純 LightGCN 的 0.1179 還低。這個結果支持了我們的觀察——在 aspect 選擇的語意下，歸一化方式的選擇至關重要——下一張 Methodological Insight 會更完整地討論。
-
-第二個，把 local-biased 初始化的偏置改為零，也就是讓 gate 從 0.5 起步，NDCG 掉到 0.1173，下降 5.3%。這個設計的貢獻是讓訓練起點更穩定，讓 global view 的訊號能夠更有效地被利用。
-
-第三個，把 KG-SVD 初始化改成隨機初始化，NDCG 也掉到 0.1173，同樣下降 5.3%。SVD 初始化保留了 KG 語意幾何，提供了一個好的訓練起點。
-
-三個設計缺少任何一個，RA-GARK 都無法超越純 LightGCN 的 0.1179。這說明三者是互補的，需要同時使用才能達到最好的效果。
-
----
-
-## Slide 23 — Methodological Insight: Attention Normalization
-
-除了主要的效能結果，這邊想額外提一個值得注意的觀察，但我會很小心地措辭，避免過度索取。
-
-先說一下文獻背景。在既有 attention 模組裡，DIN 用 sigmoid 對歷史行為做 attention，NAIS 跟 AFM 則用 softmax，文獻並沒有統一的選擇——通常是看語意假設來決定。
-
-而我們在實驗中觀察到，在 aspect 選擇這個場景，理由感知模組的 attention normalization 方式造成了 7 個百分點的 NDCG 差距，遠超一般調參的影響範圍。
-
-這張表整理了兩種方式的比較。Sigmoid 的語意假設是各元素獨立評估重要性，訓練行為傾向飽和均勻；softmax 的語意假設是少數選項互相競爭勝出，訓練行為產生具鑑別力的加權。
-
-我想強調的是，這個觀察**不是在說 softmax 一定比 sigmoid 好**。DIN 用 sigmoid 對歷史行為做 attention 是完全合理的，因為那個場景的語意是各個歷史行為獨立評估跟目標的相關性。問題在於——在 aspect 選擇這個場景，語意是「少數幾個 aspect 主導了這個 item 被推薦的原因」，這個語意下 softmax 更符合需求。
-
-所以我們的暫定觀察是：歸一化方式應該和理由挑選的語意假設對齊。
-
-但這邊我必須誠實地說——這個結論目前**只有單一資料集的支持**，我不敢把它當成通用的方法論定論。要把它升格為一般性的 methodological claim，至少需要在兩三個不同的資料集、不同的任務上重複驗證。所以本文把這個觀察列為一個**值得後續研究檢驗的假說**，而不是定論。即便如此，7 個百分點這個差距在我們的設定下足夠大，至少在這個範圍內值得被認真看待。
-
----
-
-## Slide 24 — Conclusion
-
-最後來總結。
-
-主要成果：RA-GARK 在 Amazon Books 稀疏 knowledge graph 設定下達到 NDCG@20 = 0.1238，比 KGRec 高了 13.1%，比純 LightGCN 高了 5%。後者更關鍵，它說明我們的設計讓 KG 訊號在稀疏設定下從無益轉為有益。
-
-三項核心設計各自都有清楚的貢獻：softmax aspect attention 貢獻 7%，local-biased fusion gate 初始化和 KG-SVD 初始化各貢獻 5.3%，三者缺一都無法超越純 LightGCN。
-
-方法論上，attention normalization 方式在理由感知設計中的影響值得後續研究關注。哪種設計最適合哪類 knowledge graph，是一個值得持續探索的開放問題。
-
-最後說一下局限性。我們只在單一稀疏資料集上做了驗證，KG 建構 pipeline 也不是本文的貢獻；實驗部分還有幾個章節目前在補齊中；在 KG 豐富的資料集上，我們的方法能否保持優勢，也有待進一步驗證。
-
-以上就是我們的報告，謝謝大家。
+以上，謝謝大家。
