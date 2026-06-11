@@ -212,6 +212,12 @@ fusion gate 最關鍵的設計是 bias initialization。
 
 ## Slide 27 — Training and Evaluation
 
+這裡先補一下資料規模，讓後面的實驗結果有背景。
+
+我們的資料集有 905 個 user、1,399 個 item、22,265 筆互動、3,370 條 KG 邊，以及 2,098 個 unique aspect。
+
+這些數字的重點不是規模很大，而是它再次說明這個 KG 本來就很 sparse，所以我們的實驗是在一個比較嚴格的 setting 下做的。
+
 訓練設定是 Adam，learning rate 0.001，batch size 128，最多 80 個 epoch，用 validation NDCG@20 做 early stopping，patience 是 10。
 
 評估時採 full-ranking，會排除訓練集裡已經互動過的 item，最後看 HR、Precision、Recall、F1、MAP 和 NDCG，這些都取 @20。
