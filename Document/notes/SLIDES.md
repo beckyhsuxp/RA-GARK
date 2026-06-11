@@ -7,11 +7,11 @@
 
 | 圖檔 | 頁面 |
 |---|---|
-| `thesis/img/architecture.png` | Slide 13 |
-| `thesis/img/kg_svd.png` | Slide 19 |
-| `thesis/img/gate.png` | Slides 24-26 |
-| `thesis/img/sensitivity_2x2.png` | Slide 23 |
-| `thesis/img/case_study_heatmap.png` | Slide 31 |
+| `thesis/img/architecture.png` | Slide 12 |
+| `thesis/img/kg_svd.png` | Slide 18 |
+| `thesis/img/gate.png` | Slides 23-25 |
+| `thesis/img/sensitivity_2x2.png` | Slide 22 |
+| `thesis/img/case_study_heatmap.png` | Slide 30 |
 
 ---
 
@@ -65,23 +65,7 @@ On this sparse KG, every KG-aware baseline loses to pure LightGCN.
 
 ---
 
-## Slide 4 — KG Construction
-
-**Review-aspect KG pipeline**
-
-1. Summarize review/image content
-2. Extract aspects
-3. Build item-has-aspect edges
-4. Filter generic or noisy aspects
-
-**Important**
-
-- Average KG degree is only about 2.4 edges per item
-- The KG is sparse by design, not by accident
-
----
-
-## Slide 5 — Why Sparse KG
+## Slide 4 — Why Sparse KG
 
 **Sparse KG is the default, not an edge case**
 
@@ -101,7 +85,7 @@ On this sparse KG, every KG-aware baseline loses to pure LightGCN.
 
 ---
 
-## Slide 6 — Failure Mode
+## Slide 5 — Failure Mode
 
 **Why prior KG-aware methods fail**
 
@@ -117,7 +101,7 @@ On this sparse KG, every KG-aware baseline loses to pure LightGCN.
 
 ---
 
-## Slide 7 — Research Question
+## Slide 6 — Research Question
 
 **Research question**
 
@@ -129,7 +113,7 @@ KG should be a gateable side channel.
 
 ---
 
-## Slide 8 — Related Work I
+## Slide 7 — Related Work I
 
 **Pure CF**
 
@@ -146,7 +130,7 @@ KG should be a gateable side channel.
 
 ---
 
-## Slide 9 — Related Work II
+## Slide 8 — Related Work II
 
 **Contrastive KG methods**
 
@@ -163,7 +147,7 @@ KG should be a gateable side channel.
 
 ---
 
-## Slide 10 — Related Work III
+## Slide 9 — Related Work III
 
 **KGRec vs RA-GARK**
 
@@ -180,7 +164,7 @@ KGRec assumes useful edges exist; RA-GARK assumes the whole KG channel may be un
 
 ---
 
-## Slide 11 — Related Work IV
+## Slide 10 — Related Work IV
 
 **Gating gap**
 
@@ -195,7 +179,7 @@ KGRec assumes useful edges exist; RA-GARK assumes the whole KG channel may be un
 
 ---
 
-## Slide 12 — Design Principle
+## Slide 11 — Design Principle
 
 **RA-GARK principle**
 
@@ -209,7 +193,7 @@ KG should be a gateable side channel, not a mandatory scoring component.
 
 ---
 
-## Slide 13 — Overview
+## Slide 12 — Overview
 
 **圖片**
 
@@ -226,7 +210,7 @@ KG should be a gateable side channel, not a mandatory scoring component.
 
 ---
 
-## Slide 14 — Problem Setup
+## Slide 13 — Problem Setup
 
 **Implicit top-K recommendation**
 
@@ -248,7 +232,7 @@ i_final = alpha_i * i_loc + (1 - alpha_i) * i_glo
 
 ---
 
-## Slide 15 — Local View
+## Slide 14 — Local View
 
 **Pure LightGCN**
 
@@ -263,7 +247,7 @@ i_final = alpha_i * i_loc + (1 - alpha_i) * i_glo
 
 ---
 
-## Slide 16 — Local Propagation
+## Slide 15 — Local Propagation
 
 **Graph**
 
@@ -284,7 +268,7 @@ E_loc = average(E^(0), E^(1), ..., E^(K))
 
 ---
 
-## Slide 17 — Global View
+## Slide 16 — Global View
 
 **Why latent aspect slots**
 
@@ -302,7 +286,7 @@ d = 128
 
 ---
 
-## Slide 18 — KG-SVD Step 1
+## Slide 17 — KG-SVD Step 1
 
 **Build item-aspect matrix**
 
@@ -324,7 +308,7 @@ idf(a) = log(N_items / support(a) + 1) + 1
 
 ---
 
-## Slide 19 — KG-SVD Step 2
+## Slide 18 — KG-SVD Step 2
 
 **圖片**
 
@@ -350,7 +334,7 @@ E_KG[i] -> item_kg_aspects[i] in R^(4 x 128)
 
 ---
 
-## Slide 20 — KG-SVD Ablation
+## Slide 19 — KG-SVD Ablation
 
 | Variant | NDCG@20 |
 |---|---:|
@@ -363,7 +347,7 @@ E_KG[i] -> item_kg_aspects[i] in R^(4 x 128)
 
 ---
 
-## Slide 21 — Softmax Masking
+## Slide 20 — Softmax Masking
 
 **Goal**
 
@@ -383,7 +367,7 @@ i_glo = sum_k w_k * aspect_slot_i,k
 
 ---
 
-## Slide 22 — Softmax vs Sigmoid
+## Slide 21 — Softmax vs Sigmoid
 
 **Normalization assumption**
 
@@ -399,7 +383,7 @@ i_glo = sum_k w_k * aspect_slot_i,k
 
 ---
 
-## Slide 23 — Softmax Ablation
+## Slide 22 — Softmax Ablation
 
 **圖片**
 
@@ -416,7 +400,7 @@ i_glo = sum_k w_k * aspect_slot_i,k
 
 ---
 
-## Slide 24 — Fusion Gate
+## Slide 23 — Fusion Gate
 
 **圖片**
 
@@ -438,7 +422,7 @@ i_final = alpha_i * i_loc + (1 - alpha_i) * i_glo
 
 ---
 
-## Slide 25 — Gate Bias
+## Slide 24 — Gate Bias
 
 **Bias initialization**
 
@@ -454,7 +438,7 @@ alpha_0 = sigmoid(+5) ~= 0.993
 
 ---
 
-## Slide 26 — Graceful Degradation
+## Slide 25 — Graceful Degradation
 
 **Graceful degradation**
 
@@ -473,7 +457,7 @@ If KG is not useful, RA-GARK falls back to LightGCN.
 
 ---
 
-## Slide 27 — Contrastive Regularization
+## Slide 26 — Contrastive Regularization
 
 **Main objective**
 
@@ -496,7 +480,7 @@ lambda_CL = 0.005
 
 ---
 
-## Slide 28 — Training and Evaluation
+## Slide 27 — Training and Evaluation
 
 **Training**
 
@@ -513,7 +497,7 @@ lambda_CL = 0.005
 
 ---
 
-## Slide 29 — Main Results
+## Slide 28 — Main Results
 
 | Model | NDCG@20 | vs KGRec | vs LightGCN |
 |---|---:|---:|---:|
@@ -527,7 +511,7 @@ lambda_CL = 0.005
 
 ---
 
-## Slide 30 — Ablation Summary
+## Slide 29 — Ablation Summary
 
 | Setting | NDCG@20 |
 |---|---:|
@@ -542,7 +526,7 @@ lambda_CL = 0.005
 
 ---
 
-## Slide 31 — Case Study and Takeaways
+## Slide 30 — Case Study and Takeaways
 
 **圖片**
 
@@ -556,7 +540,7 @@ lambda_CL = 0.005
 
 ---
 
-## Slide 32 — Conclusion
+## Slide 31 — Conclusion
 
 **Conclusion**
 
