@@ -210,7 +210,7 @@ fusion gate 最關鍵的設計是 bias initialization。
 
 我們的設計很保守：權重只有 0.005，而且 KG 側做了 stop-gradient，避免對比學習把 SVD 保留下來的語意幾何拉壞。再加上 projection head，讓 CL 的梯度不要直接影響 scoring space。
 
-## Slide 27 — Training and Evaluation
+## Slide 27 — Training Setup
 
 這裡先補一下資料規模，讓後面的實驗結果有背景。
 
@@ -220,11 +220,15 @@ fusion gate 最關鍵的設計是 bias initialization。
 
 訓練設定是 Adam，learning rate 0.001，batch size 128，最多 80 個 epoch，用 validation NDCG@20 做 early stopping，patience 是 10。
 
+---
+
+## Slide 28 — Evaluation Setup
+
 評估時採 full-ranking，會排除訓練集裡已經互動過的 item，最後看 HR、Precision、Recall、F1、MAP 和 NDCG，這些都取 @20。
 
 從效能來看，我們每個 epoch 大概 1.5 秒，跟 KGRec 差不多，所以這個設計沒有讓成本爆炸。
 
-## Slide 28 — Main Results
+## Slide 29 — Main Results
 
 先看主結果。
 
@@ -234,7 +238,7 @@ MCCLK、KGCL、KGAT、KGRec 在這個 sparse KG 設定下都低於 LightGCN。Li
 
 這個結果其實直接支持了我們最一開始的設計原則：KG 不是必經管線，而是可被 gate 控制的 side channel。
 
-## Slide 29 — Ablation Summary
+## Slide 30 — Ablation Summary
 
 再看 ablation。
 
@@ -242,7 +246,7 @@ MCCLK、KGCL、KGAT、KGRec 在這個 sparse KG 設定下都低於 LightGCN。Li
 
 這三個結果一起告訴我們，RA-GARK 的增益不是來自「加了 KG」這件事本身，而是來自 KG 的初始化、selection 和 gating 這三個設計一起合作。
 
-## Slide 30 — Case Study and Takeaways
+## Slide 31 — Case Study and Takeaways
 
 這張 heatmap 是 case study。
 
@@ -250,7 +254,7 @@ MCCLK、KGCL、KGAT、KGRec 在這個 sparse KG 設定下都低於 LightGCN。Li
 
 從方法論角度看，這個 case study 也支持一件事：模型不只是準確，還能告訴我們「它到底用了哪個 slot 來做判斷」。
 
-## Slide 31 — Conclusion
+## Slide 32 — Conclusion
 
 最後總結一下。
 
