@@ -81,6 +81,12 @@ On this sparse KG, every KG-aware baseline loses to pure LightGCN.
 - more KG is not always better if the signal is noisy
 - the model needs a safe fallback path
 
+**What this implies**
+
+- the benchmark is a stress test, not a best-case setting
+- the design goal should be robustness, not only peak accuracy
+- later slides need an explicit mechanism to downweight KG
+
 ---
 
 ## Slide 5 — Design Challenge
