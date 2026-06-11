@@ -75,6 +75,12 @@ On this sparse KG, every KG-aware baseline loses to pure LightGCN.
 - Privacy-limited domains
 - KG completion may add noise
 
+**Why this matters**
+
+- sparse KG makes deep fusion fragile
+- more KG is not always better if the signal is noisy
+- the model needs a safe fallback path
+
 ---
 
 ## Slide 5 — Failure Mode
