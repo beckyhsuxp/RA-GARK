@@ -51,13 +51,13 @@ Methodology is the main part; related work is only for positioning.
 
 **Sparse KG breaks KG-aware recommendation**
 
-| Model | NDCG@20 |
-|---|---:|
-| MCCLK | 0.1067 |
-| KGCL | 0.1073 |
-| KGAT | 0.1079 |
-| KGRec | 0.1095 |
-| LightGCN | 0.1179 |
+| Method | Year | NDCG@20 |
+|---|---:|---:|
+| MCCLK | 2022 | 0.1067 |
+| KGCL | 2022 | 0.1073 |
+| KGAT | 2019 | 0.1079 |
+| KGRec | 2023 | 0.1095 |
+| Pure LightGCN | — | 0.1179 |
 
 **Key point**
 
@@ -322,7 +322,7 @@ E_KG[i] -> item_kg_aspects[i] in R^(4 x 128)
 **Why**
 
 - give KG a semantic starting geometry
-- better than random initialization
+- preserve the aspect co-occurrence structure before training
 
 ---
 
@@ -330,12 +330,12 @@ E_KG[i] -> item_kg_aspects[i] in R^(4 x 128)
 
 | Variant | NDCG@20 |
 |---|---:|
-| full RA-GARK | 0.1238 |
-| random KG init | 0.1173 |
+| full RA-GARK | 0.1243 |
+| random KG init | 0.1171 |
 
-**Drop**
+**Observation**
 
--5.3%
+- random initialization is weaker on this benchmark
 
 ---
 
@@ -383,12 +383,12 @@ i_glo = sum_k w_k * aspect_slot_i,k
 
 | Variant | NDCG@20 |
 |---|---:|
-| full RA-GARK | 0.1238 |
-| sigmoid rationale | 0.1151 |
+| full RA-GARK | 0.1243 |
+| sigmoid rationale | 0.1005 |
 
-**Drop**
+**Observation**
 
--7.0%
+- sigmoid weakens the rationale module on this benchmark
 
 ---
 
@@ -440,12 +440,12 @@ If KG is not useful, RA-GARK falls back to LightGCN.
 
 | Variant | NDCG@20 |
 |---|---:|
-| full RA-GARK | 0.1238 |
-| gate bias = 0 | 0.1173 |
+| full RA-GARK | 0.1243 |
+| gate bias = 0 | 0.1194 |
 
-**Drop**
+**Observation**
 
--5.3%
+- local-biased init gives a safer starting point
 
 ---
 
@@ -509,15 +509,18 @@ lambda_CL = 0.005
 
 ## Slide 29 — Main Results
 
-| Model | NDCG@20 | vs KGRec | vs LightGCN |
-|---|---:|---:|---:|
-| KGRec | 0.1095 | -- | -7.1% |
-| LightGCN | 0.1179 | +7.7% | -- |
-| RA-GARK | 0.1238 | +13.1% | +5.0% |
+| Model | NDCG@20 | HR@20 | Recall@20 | MAP@20 |
+|---|---:|---:|---:|---:|
+| MCCLK | 0.1067 | 0.4530 | 0.1720 | 0.0497 |
+| KGCL | 0.1073 | 0.4696 | 0.1827 | 0.0479 |
+| KGAT | 0.1079 | 0.4773 | 0.1807 | 0.0491 |
+| KGRec | 0.1095 | 0.4729 | 0.1834 | 0.0500 |
+| LightGCN | 0.1179 | 0.4917 | 0.1937 | 0.0555 |
+| RA-GARK | 0.1243 | 0.4972 | 0.2020 | 0.0594 |
 
 **Key point**
 
-- RA-GARK turns KG from net-negative to net-positive in this sparse setting.
+- RA-GARK is the best model on all four reported ranking metrics.
 
 ---
 
@@ -525,14 +528,14 @@ lambda_CL = 0.005
 
 | Setting | NDCG@20 |
 |---|---:|
-| full RA-GARK | 0.1238 |
-| w/o Softmax | 0.1151 |
-| w/o gate init | 0.1173 |
-| w/o KG-SVD | 0.1173 |
+| full RA-GARK | 0.1243 |
+| w/o Softmax | 0.1005 |
+| w/o gate init | 0.1194 |
+| w/o KG-SVD | 0.1171 |
 
 **Takeaway**
 
-- gain comes from initialization, selection, and gating together
+- the core architecture components all matter
 
 ---
 

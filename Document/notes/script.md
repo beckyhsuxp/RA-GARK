@@ -146,13 +146,11 @@ KG-SVD 的第一步是先建 item-aspect matrix。
 
 我們對 IDF-weighted matrix 做 truncated SVD，然後把結果投影成 `E_KG = U sqrt(Sigma)`。接著把 flat vector reshape 成每個 item 的四個 aspect slot，每個 slot 維度是 128。最後再把整個 tensor 的 scale 調回跟 Xavier 初始化相容的範圍。
 
-這樣做的目的，是讓 global view 在訓練一開始就有一個有意義的語意幾何，而不是從亂數開始。這也是為什麼隨機初始化會掉分。
+這樣做的目的，是讓 global view 在訓練一開始就有一個有意義的語意幾何，而不是從亂數開始。
 
 ## Slide 19 — KG-SVD Ablation
 
-如果把 KG-SVD 初始化改成 random initialization，NDCG@20 會從 0.1238 掉到 0.1173，降幅是 5.3%。
-
-這個結果說明 KG-SVD 不是單純的 preprocessing 小技巧，而是讓 global view 真的能夠在 sparse KG 下站得起來的關鍵。
+如果把 KG-SVD 初始化改成 random initialization，NDCG@20 會從 0.1243 降到 0.1171。這裡的重點是，我們不是先假定 global view 會自己學出好幾何，而是把它放在一個合理的起點上，再交給訓練去微調。
 
 ## Slide 20 — Softmax Masking
 
@@ -172,11 +170,7 @@ global view 的第二個核心是 softmax rationale masking。
 
 ## Slide 22 — Softmax Ablation
 
-這張 sensitivity 圖直接對應我們的 ablation 觀察。
-
-把 softmax 換成 sigmoid 之後，NDCG@20 會掉到 0.1151，降幅是 7.0%。這是全文單一元件影響最大的改變。
-
-我這裡要小心地說，不是主張 softmax 在所有情況下都比 sigmoid 好，而是說在我們這個「被 gate 控制的 sparse KG side channel」裡，normalization 的選擇會直接影響穩定性和 magnitude control。
+這張 sensitivity 圖是在驗證前一頁的設計直覺。把 softmax 換成 sigmoid 之後，NDCG@20 會降到 0.1005。這不是在說 softmax 在所有情況下都比較好，而是在我們這個「被 gate 控制的 sparse KG side channel」裡，normalization 的選擇會直接影響穩定性和 magnitude control。
 
 ## Slide 23 — Fusion Gate
 
@@ -192,7 +186,7 @@ fusion gate 最關鍵的設計是 bias initialization。
 
 我們把最後一層 bias 設成 +5，所以一開始 `alpha_0` 大約是 0.993。這代表模型訓練一開始幾乎就是純 LightGCN，global view 只佔很小比例。
 
-這個設計不是為了保守而保守，而是因為 sparse KG 本來就不可靠。讓模型一開始站在安全的一邊，可以避免 global branch 的不成熟表示干擾 local branch。
+這個設計不是為了保守而保守，而是把「安全預設」寫進架構裡。讓模型一開始站在 local side，可以避免 global branch 的不成熟表示干擾 local branch。
 
 ## Slide 25 — Graceful Degradation
 
@@ -200,7 +194,7 @@ fusion gate 最關鍵的設計是 bias initialization。
 
 如果 KG 沒有提供有用訊號，gate 可以一直維持在接近 1 的位置，模型就會自然退化成接近 LightGCN 的行為。這是一個架構層級的 fallback，不是靠運氣。
 
-消融結果也支持這件事。把 gate bias 改成 0 之後，NDCG@20 會降到 0.1173，掉 5.3%。這說明 local-biased initialization 不是訓練小技巧，而是保護 CF backbone 的機制。
+這一頁的 ablation 只是檢查這個安全預設是否真的有作用。把 gate bias 改成 0 之後，NDCG@20 會降到 0.1194。這表示 local-biased initialization 不是裝飾性的設定，而是架構的一部分。
 
 ## Slide 26 — Contrastive Regularization
 
@@ -232,19 +226,17 @@ fusion gate 最關鍵的設計是 bias initialization。
 
 先看主結果。
 
-MCCLK、KGCL、KGAT、KGRec 在這個 sparse KG 設定下都低於 LightGCN。LightGCN 是 0.1179，而 RA-GARK 是 0.1238。
+這張表和論文裡的版本一致，把 NDCG@20、HR@20、Recall@20、MAP@20 一起列出來。RA-GARK 在 NDCG@20 來到 0.1243，HR@20 是 0.4972，Recall@20 是 0.2020，MAP@20 是 0.0594。
 
-這表示兩件事。第一，我們的設計確實把 KG 從原本的 net-negative 變成 net-positive。第二，跟 KGRec 相比，我們在同樣稀疏 KG 的條件下，還能再提升 13.1%。
-
-這個結果其實直接支持了我們最一開始的設計原則：KG 不是必經管線，而是可被 gate 控制的 side channel。
+更重要的是，它比 KGRec 高 13.5%，也比純 LightGCN 高 5.4%。這說明在這個 sparse KG 設定下，KG 不再只是負擔，而是被我們的 gate 機制轉成了可用的輔助訊號。
 
 ## Slide 30 — Ablation Summary
 
 再看 ablation。
 
-如果拿掉 softmax，NDCG@20 會掉到 0.1151。拿掉 local-biased gate init，會掉到 0.1173。拿掉 KG-SVD init，也會掉到 0.1173。
+如果拿掉 softmax，NDCG@20 會掉到 0.1005。拿掉 local-biased gate init，會掉到 0.1194。拿掉 KG-SVD init，也會掉到 0.1171。
 
-這三個結果一起告訴我們，RA-GARK 的增益不是來自「加了 KG」這件事本身，而是來自 KG 的初始化、selection 和 gating 這三個設計一起合作。
+這一頁的用途是驗證前面那三個設計元件都不是可有可無的裝飾，而是這個架構能穩定工作的必要組成。
 
 ## Slide 31 — Case Study and Takeaways
 
