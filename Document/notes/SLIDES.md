@@ -83,13 +83,13 @@ On this sparse KG, every KG-aware baseline loses to pure LightGCN.
 
 ---
 
-## Slide 5 — Failure Mode
+## Slide 5 — Design Challenge
 
-**Why prior KG-aware methods fail**
+**Observed tension in prior KG-aware methods**
 
 - KG is wired into the scoring path
-- KG noise enters user/item representations
-- The model cannot turn KG off
+- KG signal and KG noise are propagated together
+- the model has limited ability to reduce KG influence when it is unreliable
 
 **Why LightGCN wins**
 
