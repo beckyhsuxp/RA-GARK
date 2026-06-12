@@ -38,9 +38,11 @@
 
 這裡我先把現有 KG-aware 方法面臨的設計挑戰講清楚。
 
-大多數 KG-aware recommenders 的共同點是：KG entity embedding 會直接進入 message passing，user 和 item 的表示是在一條包含 KG 的路徑上學出來的。這表示只要 KG 本身有問題，雜訊就會一起進到 scoring representation 裡，模型也比較難動態降低 KG 的影響。
+大多數 KG-aware recommenders 的共同點是：KG entity embeddings 會直接進入 message passing，user 和 item 的表示是在一條包含 KG 的路徑上學出來的。這背後的隱含假設是，KG 可以在它出現的地方都注入有用訊號；但在 sparse KG 下，這個假設會失效。
 
-這也是為什麼在我們的設定裡，LightGCN 反而會贏。因為 LightGCN 只看 user-item interaction，不會碰到那條不可靠的 KG branch，所以它保留了一個乾淨又安全的 baseline。對這個資料設定來說，保留一條可控的 no-KG 路徑，比把 KG 一律強行融合進去更有彈性。
+這也是為什麼在我們的設定裡，LightGCN 反而會贏。因為 LightGCN 只看 user-item interaction，不會碰到那條不可靠的 KG branch，所以它保留了一個乾淨又安全的 baseline。
+
+我們的回應不是把 KG 完全拿掉，而是把它改成一條 dedicated side channel，讓模型可以在 KG 不可靠時把它 attenuate，甚至完全 disengage。
 
 ## Slide 6 — Research Question
 
