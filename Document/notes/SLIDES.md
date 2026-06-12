@@ -69,15 +69,16 @@ On this sparse KG, every KG-aware baseline loses to pure LightGCN.
 
 **Where sparse KG comes from**
 
-- review-derived KG is sparse by construction
-- cold-start, niche, and privacy-limited domains
-- KG completion can add noise instead of signal
+- review-derived KGs inherit their density from whatever users happened to mention
+- cold-start and emerging domains rarely have a curated KG
+- privacy-constrained domains deliberately restrict relational signals
+- aggressive KG completion introduces its own noise and needs seed signal
 
 **What this means**
 
-- the issue is unreliable KG, not just missing KG
-- the design goal should be graceful fallback
-- this leads directly to the next question: how to use KG without forcing it
+- sparse KG is the more common practical setting
+- robustness under unreliable KG signal deserves dedicated study
+- the primary design objective is robustness, not only peak performance
 
 **Takeaway**
 

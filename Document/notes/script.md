@@ -28,11 +28,11 @@
 
 接著說明為什麼這種 KG 會這麼稀疏。
 
-答案是，稀疏 KG 其實是現實世界的常態，不是例外。像 review-derived KG，本來就只會在使用者真的提到某些 aspect 的時候才出現邊，所以邊密度會受評論內容限制。再來是 cold-start、niche domain、長尾商品，還有醫療、金融這種隱私敏感領域，能用的關係訊號本來就有限。至於 KG completion，它本身會引入新的噪音，而且通常還需要 seed signal，不是無痛解法。
+答案是，稀疏 KG 在實務上其實很常見，不是例外。review-derived KG 的密度會繼承自使用者實際提到的主題，所以覆蓋本來就不均勻。cold-start 和 emerging domains 通常也沒有像 Freebase 或 Wikidata 那樣的 curated source。再來是 privacy-constrained domains，像 medical 或 financial recommendation，會刻意限制可暴露的 relational signal。最後，aggressive KG completion 也不是無痛解法，因為它會引入新的 noise，而且通常還需要足夠的 seed signal。
 
-所以這篇工作的重點不是去解決「KG 太少」本身，而是去解決「當 KG 不可信時，模型要怎麼穩健地做推薦」。
+所以這篇工作的重點不是去解決「KG 太少」本身，而是去解決「當 KG 不可靠時，模型要怎麼穩健地做推薦」。
 
-這也就是為什麼我們後面會強調 safe fallback 和 gateable side channel。換句話說，這個 benchmark 測的不是模型在理想 KG 下能跑多高，而是當 KG 變弱、變雜訊時，模型還能不能維持穩定。
+這也就是為什麼我們後面會強調 safe fallback 和 gateable side channel。這個 benchmark 看的是 robustness，而不只是 dense KG 下的 peak performance。
 
 ## Slide 5 — Design Challenge
 
