@@ -121,18 +121,20 @@ KG should be a gateable side channel.
 
 ## Slide 7 — Related Work I
 
-**Pure CF**
+**LightGCN**
 
-- LightGCN is the strongest safe baseline
+- immediate predecessor of our local view
+- strong non-KG anchor on sparse review KG
 
-**Deep KG fusion**
+**KGAT**
 
-- KGAT propagates KG entities into user/item embeddings
+- canonical deep-fusion approach
+- KG entities participate directly in propagation
 
 **Position of RA-GARK**
 
-- keep LightGCN as local view
-- avoid mandatory KG propagation
+- adopt LightGCN verbatim as local view
+- isolate KG signal into a separate global view
 
 ---
 
@@ -145,11 +147,13 @@ KG should be a gateable side channel.
 
 **Assumption**
 
-- multiple KG views are still informative
+- KG structure remains informative under perturbation
+- collaborative, semantic, and structural views can be aligned
 
 **Sparse-KG issue**
 
 - sparse or perturbed KG gives weak supervision
+- contrastive alignment may become noise-dominated
 
 ---
 
@@ -174,14 +178,14 @@ KGRec assumes useful edges exist; RA-GARK assumes the whole KG channel may be un
 
 **Gating gap**
 
-- Highway Networks: safe identity path
+- Highway Networks: bias toward a safe identity path
 - MMoE / PLE: gate over expert towers
 - SGL / DCCF: alignment over views from the same graph
 
 **Gap in KG-aware recommendation**
 
 - no bias-initialized fusion gate
-- no architectural fallback to pure CF
+- no architectural graceful degradation under sparse or unreliable KG
 
 ---
 
@@ -597,7 +601,7 @@ lambda_CL = 0.005
 
 **Conclusion**
 
-In sparse KG recommendation, the key is not to force KG into the model, but to give the model a reliable way to ignore it.
+When the KG is unreliable, what an architecture most needs is not a better KG aggregator but a structural switch by which the KG can be opted out of.
 
 **Contributions**
 

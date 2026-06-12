@@ -56,19 +56,19 @@
 
 先講最基礎的兩個方法。
 
-LightGCN 是純 CF 的強基準。它移除了複雜的 feature transformation 和 nonlinear activation，只保留線性的鄰居聚合和 layer-wise average。對我們來說，它不是普通 baseline，而是 safe default，所以 local view 直接沿用 LightGCN。
+LightGCN 是我們 local view 的直接前身。它的重點是把 GCN 裡比較複雜的 feature transformation 拿掉，只保留線性的鄰居聚合和 layer-wise average，所以在 sparse review KG 上，它是最強的 non-KG anchor。
 
-KGAT 則代表 KG 深度融合的典型範式。它把 user-item graph 和 KG 合併成一張 collaborative knowledge graph，再透過 entity propagation 來學 user 和 item 表示。這種方法在 KG 豐富時很有效，但在 sparse KG 下，噪音也會一起被傳進去。
+KGAT 則代表典型的 deep fusion。它把 user-item graph 和 KG 合併成一張 collaborative knowledge graph，KG entities 會直接參與 propagation，這在 KG dense 且高品質時通常有效。
 
-所以我們的立場很明確：local view 要保留 LightGCN 的乾淨性，KG 不要進 local propagation。
+所以我們的做法是直接把 LightGCN 原封不動地拿來當 local view，然後把 KG signal 隔離到另一條 global view。
 
 ## Slide 8 — Related Work II
 
 接下來是 contrastive KG methods。
 
-KGCL 會對 KG 結構做擾動，然後對 original view 和 perturbed view 做 contrastive learning。MCCLK 則更進一步，建立 collaborative、semantic、structural 三個視角，彼此做對齊。這些方法在 KG 比較豐富時都很強，但在 sparse KG 下，擾動後剩下的 signal 可能太弱，反而讓對比學習變成在對齊雜訊。
+KGCL 會對 KG 結構做擾動，然後對 original view 和 perturbed view 做 contrastive learning。MCCLK 則建立 collaborative、semantic、structural 三個視角，彼此做多重對齊。這些方法在 KG 比較豐富時都很強，但它們仍然假設 KG 結構本身夠有資訊。
 
-所以我們雖然也有用 contrastive learning，但它只是輔助，權重很小，目的是幫 local 和 global 的幾何空間做輕量對齊，而不是主導融合。
+所以我們也有用 contrastive learning，但它只是輔助，權重很小，目的是幫 local 和 global 的幾何空間做輕量對齊，而不是主導融合。
 
 ## Slide 9 — Related Work III
 
@@ -86,7 +86,7 @@ Highway Networks 很早就提出一個很重要的概念：用 gate 把變換路
 
 但這些方法和我們不一樣的地方有兩個。第一，它們的 expert 多半是同質候選，不是像我們這樣把 CF 和 KG 當成兩條異質訊號管線。第二，它們沒有特別針對「某條管線可能不可信」這件事做安全初始化。
 
-所以在 KG-aware recommendation 領域裡，還是缺少一個 bias-initialized fusion gate。
+所以在 KG-aware recommendation 領域裡，還是缺少一個 bias-initialized fusion gate，也缺少一個在 sparse or unreliable KG 下能提供 graceful degradation 的架構。
 
 ## Slide 11 — Design Principle
 
@@ -254,7 +254,7 @@ fusion gate 最關鍵的設計是 bias initialization。
 
 最後總結一下。
 
-在 sparse KG recommendation 裡，關鍵不是把 KG 硬塞進模型，而是給模型一個可靠的方式去忽略 KG，當 KG 不可靠的時候能退回到安全的 collaborative filtering，當 KG 有用的時候再把它打開。
+當 KG 不可靠時，架構最需要的不是一個更強的 KG aggregator，而是一個能把 KG opt out 的 structural switch。
 
 這篇工作的主要貢獻有四個：第一，提出 gateable KG side channel；第二，提出 KG-SVD initialization；第三，提出 softmax rationale masking；第四，提出 local-biased fusion gate。
 
