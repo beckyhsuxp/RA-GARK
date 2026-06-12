@@ -152,7 +152,7 @@ KG-SVD 的第一步是先建 item-aspect matrix。
 
 ## Slide 19 — KG-SVD Ablation
 
-如果把 KG-SVD 初始化改成 random initialization，NDCG@20 會從 0.1243 降到 0.1171。這裡的重點是，我們不是先假定 global view 會自己學出好幾何，而是把它放在一個合理的起點上，再交給訓練去微調。
+這張表對應論文裡的 Top-20 ablation：RA-GARK full 是 0.1243 / 0.0594，拿掉 KG-SVD init 之後是 0.1171 / 0.0545。這裡的重點是，我們不是先假定 global view 會自己學出好幾何，而是把它放在一個合理的起點上，再交給訓練去微調。
 
 ## Slide 20 — Softmax Masking
 
@@ -172,7 +172,7 @@ global view 的第二個核心是 softmax rationale masking。
 
 ## Slide 22 — Softmax Ablation
 
-這張 sensitivity 圖是在驗證前一頁的設計直覺。把 softmax 換成 sigmoid 之後，NDCG@20 會降到 0.1005。這不是在說 softmax 在所有情況下都比較好，而是在我們這個「被 gate 控制的 sparse KG side channel」裡，normalization 的選擇會直接影響穩定性和 magnitude control。
+這張 sensitivity 圖對應論文裡的 w/o-softmax row。Top-20 是 0.1005 / 0.0451，Top-10 是 0.0785 / 0.0397。這不是在說 softmax 在所有情況下都比較好，而是在我們這個「被 gate 控制的 sparse KG side channel」裡，normalization 的選擇會直接影響穩定性和 magnitude control。
 
 ## Slide 23 — Fusion Gate
 
@@ -196,7 +196,7 @@ fusion gate 最關鍵的設計是 bias initialization。
 
 如果 KG 沒有提供有用訊號，gate 可以一直維持在接近 1 的位置，模型就會自然退化成接近 LightGCN 的行為。這是一個架構層級的 fallback，不是靠運氣。
 
-這一頁的 ablation 只是檢查這個安全預設是否真的有作用。把 gate bias 改成 0 之後，NDCG@20 會降到 0.1194。這表示 local-biased initialization 不是裝飾性的設定，而是架構的一部分。
+這一頁的 ablation 只是檢查這個安全預設是否真的有作用。論文裡 Top-20 的 w/o fusion-gate bias 是 0.1194 / 0.0555，Top-10 是 0.0923 / 0.0482。這表示 local-biased initialization 不是裝飾性的設定，而是架構的一部分。
 
 ## Slide 26 — Contrastive Regularization
 
@@ -228,15 +228,15 @@ fusion gate 最關鍵的設計是 bias initialization。
 
 先看主結果。
 
-這張表和論文裡的版本一致，把 NDCG@20、HR@20、Recall@20、MAP@20 一起列出來。RA-GARK 在 NDCG@20 來到 0.1243，HR@20 是 0.4972，Recall@20 是 0.2020，MAP@20 是 0.0594。
+這張表和論文裡的版本一致，分成 Top-20 和 Top-10 兩個 cutoff。Top-20 時，RA-GARK 的 NDCG 是 0.1243，較 KGRec 高 13.5%，較純 LightGCN 高 5.4%。Top-10 時，RA-GARK 的 NDCG 是 0.0966，較 KGRec 高 10.5%，較純 LightGCN 高 6.4%。
 
-更重要的是，它比 KGRec 高 13.5%，也比純 LightGCN 高 5.4%。這說明在這個 sparse KG 設定下，KG 不再只是負擔，而是被我們的 gate 機制轉成了可用的輔助訊號。
+更重要的是，兩個 cutoff 下的 HR、Recall、MAP 也都保持同樣排序，說明這不是單一指標的偶然。
 
 ## Slide 30 — Ablation Summary
 
 再看 ablation。
 
-如果拿掉 softmax，NDCG@20 會掉到 0.1005。拿掉 local-biased gate init，會掉到 0.1194。拿掉 KG-SVD init，也會掉到 0.1171。
+這張表和論文裡的 Top-20 / Top-10 ablation 版本一致。Top-20 時，softmax head 是最大的變化，0.1243 降到 0.1005；KG-SVD 是 0.1171；fusion-gate bias 是 0.1194；MLP gate 是 0.1180。Top-10 也維持相同排序。
 
 這一頁的用途是驗證前面那三個設計元件都不是可有可無的裝飾，而是這個架構能穩定工作的必要組成。
 
