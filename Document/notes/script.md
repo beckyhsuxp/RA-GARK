@@ -10,7 +10,7 @@
 
 今天的報告我會先講動機，再講相關研究，接著進入方法細節，最後看實驗結果和結論。
 
-第一部分是 introduction，我會先說明為什麼稀疏 KG 會讓現有 KG-aware 方法失效。第二部分是 related work，我會快速定位幾個代表性的 baseline，包括純 CF、KG 深度融合、contrastive KG、rationale-aware KG，還有 gating 相關方法。第三部分是 methodology，這會是整份報告最重要的部分，我會詳細說 local view、KG-SVD、softmax rationale masking，以及 fusion gate。第四部分是 experiments，會看主結果和 ablation。最後是 conclusion & future work，整理貢獻、限制和後續方向。
+第一部分是 introduction，我會先說明為什麼稀疏 KG 會讓現有 KG-aware recommendation 失效。第二部分是 related work，我會快速定位幾個代表性的 baseline，包括純 CF、KG-aware recommendation，以及 gating 相關方法。第三部分是 methodology，這會是整份報告最重要的部分，我會詳細說 local view、KG-SVD、softmax rationale masking，以及 fusion gate。第四部分是 experiments，會看主結果和 ablation。最後是 conclusion & future work，整理貢獻、限制和後續方向。
 
 ## Slide 3 — Motivation
 
