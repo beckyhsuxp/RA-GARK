@@ -28,7 +28,7 @@
 
 接著說明為什麼這種 KG 會這麼稀疏。
 
-答案是，稀疏 KG 在實務上其實很常見，不是例外。review-derived KG 的密度會繼承自使用者實際提到的主題，所以覆蓋本來就不均勻。cold-start 和 emerging domains 通常也沒有像 Freebase 或 Wikidata 那樣的 curated source。再來是 privacy-constrained domains，像 medical 或 financial recommendation，會刻意限制可暴露的 relational signal。最後，aggressive KG completion 也不是無痛解法，因為它會引入新的 noise，而且通常還需要足夠的 seed signal。
+答案是，稀疏 KG 在實務上很常見，不是例外。review-derived KG 本來就只會覆蓋使用者提到過的主題，所以密度自然不均勻。cold-start 和 emerging domains 通常也缺少像 Freebase 或 Wikidata 那樣完整的 curated source。再加上 medical、financial 這類 privacy-constrained domains，能用的 relational signal 也會被刻意限制。最後，KG completion 也不是無痛解法，因為它會引入新的 noise，而且通常還需要 seed signal。
 
 所以這篇工作的重點不是去解決「KG 太少」本身，而是去解決「當 KG 不可靠時，模型要怎麼穩健地做推薦」。
 
