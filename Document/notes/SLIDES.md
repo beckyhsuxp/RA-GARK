@@ -51,13 +51,13 @@ Methodology is the main part; related work is only for positioning.
 
 **Sparse KG breaks KG-aware recommendation**
 
-| Method | Year | NDCG@20 |
-|---|---:|---:|
-| MCCLK | 2022 | 0.1067 |
-| KGCL | 2022 | 0.1073 |
-| KGAT | 2019 | 0.1079 |
-| KGRec | 2023 | 0.1095 |
-| Pure LightGCN | — | 0.1179 |
+| Method | NDCG@20 |
+|---|---:|
+| MCCLK | 0.1067 |
+| KGCL | 0.1073 |
+| KGAT | 0.1079 |
+| KGRec | 0.1095 |
+| Pure LightGCN | 0.1179 |
 
 **Key point**
 
@@ -336,14 +336,14 @@ E_KG[i] -> item_kg_aspects[i] in R^(4 x 128)
 
 ## Slide 19 — KG-SVD Ablation
 
-| Variant | NDCG@20 |
-|---|---:|
-| full RA-GARK | 0.1243 |
-| random KG init | 0.1171 |
+| Model | NDCG@20 | MAP@20 |
+|---|---:|---:|
+| RA-GARK (full) | 0.1243 | 0.0594 |
+| w/o KG-SVD init | 0.1171 | 0.0545 |
 
 **Observation**
 
-- random initialization is weaker on this benchmark
+- KG-SVD preserves the initial semantic geometry
 
 ---
 
@@ -389,14 +389,14 @@ i_glo = sum_k w_k * aspect_slot_i,k
 
 `thesis/img/sensitivity_2x2.png`
 
-| Variant | NDCG@20 |
-|---|---:|
-| full RA-GARK | 0.1243 |
-| sigmoid rationale | 0.1005 |
+| Model | NDCG@20 | MAP@20 |
+|---|---:|---:|
+| RA-GARK (full) | 0.1243 | 0.0594 |
+| w/o softmax head | 0.1005 | 0.0451 |
 
 **Observation**
 
-- sigmoid weakens the rationale module on this benchmark
+- softmax is the thesis-normalized rationale operator
 
 ---
 
@@ -446,14 +446,14 @@ If KG is not useful, RA-GARK falls back to LightGCN.
 
 **Ablation**
 
-| Variant | NDCG@20 |
-|---|---:|
-| full RA-GARK | 0.1243 |
-| gate bias = 0 | 0.1194 |
+| Model | NDCG@20 | MAP@20 |
+|---|---:|---:|
+| RA-GARK (full) | 0.1243 | 0.0594 |
+| w/o fusion-gate bias | 0.1194 | 0.0555 |
 
 **Observation**
 
-- local-biased init gives a safer starting point
+- the bias initialization is part of the architecture, not a tuning trick
 
 ---
 
@@ -526,24 +526,50 @@ lambda_CL = 0.005
 | LightGCN | 0.1179 | 0.4917 | 0.1937 | 0.0555 |
 | RA-GARK | 0.1243 | 0.4972 | 0.2020 | 0.0594 |
 
+| Model | NDCG@10 | HR@10 | Recall@10 | MAP@10 |
+|---|---:|---:|---:|---:|
+| MCCLK | 0.0804 | 0.3182 | 0.1047 | 0.0416 |
+| KGCL | 0.0809 | 0.3260 | 0.1096 | 0.0410 |
+| KGAT | 0.0786 | 0.3215 | 0.1102 | 0.0388 |
+| KGRec | 0.0874 | 0.3249 | 0.1155 | 0.0465 |
+| LightGCN | 0.0908 | 0.3436 | 0.1201 | 0.0483 |
+| RA-GARK | 0.0966 | 0.3558 | 0.1265 | 0.0520 |
+
 **Key point**
 
-- RA-GARK is the best model on all four reported ranking metrics.
+- RA-GARK is best at both Top-20 and Top-10.
 
 ---
 
 ## Slide 30 — Ablation Summary
 
-| Setting | NDCG@20 |
-|---|---:|
-| full RA-GARK | 0.1243 |
-| w/o Softmax | 0.1005 |
-| w/o gate init | 0.1194 |
-| w/o KG-SVD | 0.1171 |
+| Model | NDCG@20 | MAP@20 |
+|---|---:|---:|
+| RA-GARK (full) | 0.1243 | 0.0594 |
+| w/o softmax head | 0.1005 | 0.0451 |
+| w/o KG-SVD init | 0.1171 | 0.0545 |
+| w/o fusion-gate bias | 0.1194 | 0.0555 |
+| w/o MLP gate | 0.1180 | 0.0552 |
+| w/o user CL ($\mathcal{L}_{\mathrm{uCL}}$) | 0.1192 | 0.0563 |
+| w/o aspect CL ($\mathcal{L}_{\mathrm{aCL}}$) | 0.1200 | 0.0570 |
+| w/o rationale-enabled selection | 0.1213 | 0.0568 |
+| w/o global view (CL-only dual view) | 0.1219 | 0.0575 |
+
+| Model | NDCG@10 | MAP@10 |
+|---|---:|---:|
+| RA-GARK (full) | 0.0960 | 0.0519 |
+| w/o softmax head | 0.0785 | 0.0397 |
+| w/o KG-SVD init | 0.0922 | 0.0479 |
+| w/o fusion-gate bias | 0.0923 | 0.0482 |
+| w/o MLP gate | 0.0926 | 0.0484 |
+| w/o user CL ($\mathcal{L}_{\mathrm{uCL}}$) | 0.0924 | 0.0492 |
+| w/o aspect CL ($\mathcal{L}_{\mathrm{aCL}}$) | 0.0940 | 0.0502 |
+| w/o rationale-enabled selection | 0.0943 | 0.0495 |
+| w/o global view (CL-only dual view) | 0.0949 | 0.0504 |
 
 **Takeaway**
 
-- the core architecture components all matter
+- the core architecture rows dominate the ranking loss
 
 ---
 
