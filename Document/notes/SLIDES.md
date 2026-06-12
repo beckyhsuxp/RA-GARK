@@ -90,15 +90,20 @@ On this sparse KG, every KG-aware baseline loses to pure LightGCN.
 
 **Observed tension in prior KG-aware methods**
 
-- KG is wired into the scoring path
-- KG signal and KG noise are propagated together
-- the model has limited ability to reduce KG influence when it is unreliable
+- KG entity embeddings participate directly in message passing
+- the implicit assumption is that KG can inject useful signal everywhere it appears
+- under sparse KG, that assumption breaks down
 
 **Why LightGCN wins**
 
 - It uses only user-item interactions
 - No KG contamination
 - Strong safe default
+
+**Our response**
+
+- route KG signal through a dedicated side channel
+- let the model attenuate or fully disengage KG when unreliable
 
 ---
 
