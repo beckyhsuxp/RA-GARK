@@ -226,19 +226,16 @@ KG should be a gateable side channel, not a mandatory scoring component.
 
 **Score**
 
-\[
-\hat{y}(u, i) = \langle u_{\mathrm{final}}, i_{\mathrm{final}} \rangle
-\]
+```text
+y_hat(u, i) = <u_final, i_final>
+```
 
 **Fusion**
 
-\[
-u_{\mathrm{final}} = \alpha_u u_{\mathrm{loc}} + (1 - \alpha_u) u_{\mathrm{glo}}
-\]
-
-\[
-i_{\mathrm{final}} = \alpha_i i_{\mathrm{loc}} + (1 - \alpha_i) i_{\mathrm{glo}}
-\]
+```text
+u_final = alpha_u * u_loc + (1 - alpha_u) * u_glo
+i_final = alpha_i * i_loc + (1 - alpha_i) * i_glo
+```
 
 **Why two gates**
 
@@ -292,13 +289,10 @@ Maximize ranking quality on held-out items.
 
 **Propagation**
 
-\[
-E^{(l+1)} = A_{\mathrm{norm}} E^{(l)}
-\]
-
-\[
-E_{\mathrm{loc}} = \operatorname{average}(E^{(0)}, E^{(1)}, \dots, E^{(K)})
-\]
+```text
+E^(l+1) = A_norm E^(l)
+E_loc = average(E^(0), E^(1), ..., E^(K))
+```
 
 **Setting**
 
@@ -317,13 +311,11 @@ E_{\mathrm{loc}} = \operatorname{average}(E^{(0)}, E^{(1)}, \dots, E^{(K)})
 
 **Representation**
 
-\[
-\text{item\_kg\_aspects}[i] \in \mathbb{R}^{A \times d}
-\]
-
-\[
-A = 4, \qquad d = 128
-\]
+```text
+item_kg_aspects[i] in R^(A x d)
+A = 4
+d = 128
+```
 
 ---
 
@@ -346,23 +338,16 @@ A = 4, \qquad d = 128
 
 **Build item-aspect matrix**
 
-\[
-M[i, a] =
-\begin{cases}
-1, & \text{if item } i \text{ has aspect } a \\
-0, & \text{otherwise}
-\end{cases}
-\]
+```text
+M[i, a] = 1 if item i has aspect a
+```
 
 **IDF weighting**
 
-\[
-\tilde{M}[i, a] = M[i, a] \cdot \mathrm{idf}(a)
-\]
-
-\[
-\mathrm{idf}(a) = \log\!\left(\frac{N_{\mathrm{items}}}{\mathrm{support}(a)} + 1\right) + 1
-\]
+```text
+M_tilde[i, a] = M[i, a] * idf(a)
+idf(a) = log(N_items / support(a) + 1) + 1
+```
 
 **Purpose**
 
@@ -379,19 +364,16 @@ M[i, a] =
 
 **Truncated SVD**
 
-\[
-\tilde{M} \approx U \Sigma V^{\top}
-\]
-
-\[
-E_{\mathrm{KG}} = U \Sigma^{1/2}
-\]
+```text
+M_tilde ~= U Sigma V^T
+E_KG = U sqrt(Sigma)
+```
 
 **Reshape**
 
-\[
-E_{\mathrm{KG}}[i] \rightarrow \text{item\_kg\_aspects}[i] \in \mathbb{R}^{4 \times 128}
-\]
+```text
+E_KG[i] -> item_kg_aspects[i] in R^(4 x 128)
+```
 
 **Why it helps**
 
@@ -433,17 +415,11 @@ Select which aspect slot should represent the item for a given user-item pair.
 
 **Computation**
 
-\[
-\mathrm{logit}_k = \operatorname{MLP}\bigl([u_{\mathrm{glo}} \Vert \mathrm{aspect\_slot}_{i,k}]\bigr)
-\]
-
-\[
-w_k = \operatorname{softmax}\!\left(\frac{\mathrm{logit}_k}{\tau}\right)
-\]
-
-\[
-i_{\mathrm{glo}} = \sum_k w_k \, \mathrm{aspect\_slot}_{i,k}
-\]
+```text
+logit_k = MLP([u_glo || aspect_slot_i,k])
+w_k = softmax(logit_k / tau)
+i_glo = sum_k w_k * aspect_slot_i,k
+```
 
 **Result**
 
@@ -509,23 +485,17 @@ NDCG@20 0.1005, MAP@20 0.0451.
 
 **Gate**
 
-\[
-\alpha_u = \operatorname{sigmoid}\bigl(\operatorname{MLP}_{\mathrm{gate}}([u_{\mathrm{loc}} \Vert u_{\mathrm{glo}}])\bigr)
-\]
-
-\[
-\alpha_i = \operatorname{sigmoid}\bigl(\operatorname{MLP}_{\mathrm{gate}}([i_{\mathrm{loc}} \Vert i_{\mathrm{glo}}])\bigr)
-\]
+```text
+alpha_u = sigmoid(MLP_gate([u_loc || u_glo]))
+alpha_i = sigmoid(MLP_gate([i_loc || i_glo]))
+```
 
 **Fusion**
 
-\[
-u_{\mathrm{final}} = \alpha_u u_{\mathrm{loc}} + (1 - \alpha_u) u_{\mathrm{glo}}
-\]
-
-\[
-i_{\mathrm{final}} = \alpha_i i_{\mathrm{loc}} + (1 - \alpha_i) i_{\mathrm{glo}}
-\]
+```text
+u_final = alpha_u * u_loc + (1 - alpha_u) * u_glo
+i_final = alpha_i * i_loc + (1 - alpha_i) * i_glo
+```
 
 ---
 
@@ -533,13 +503,10 @@ i_{\mathrm{final}} = \alpha_i i_{\mathrm{loc}} + (1 - \alpha_i) i_{\mathrm{glo}}
 
 **Bias initialization**
 
-\[
+```text
 b = +5
-\]
-
-\[
-\alpha_0 = \operatorname{sigmoid}(+5) \approx 0.993
-\]
+alpha_0 = sigmoid(+5) ~= 0.993
+```
 
 **Meaning**
 
@@ -557,13 +524,11 @@ b = +5
 
 **Main objective**
 
-\[
-L = L_{\mathrm{BPR}} + \lambda_{\mathrm{CL}} \bigl( L_{\mathrm{aCL}} + L_{\mathrm{uCL}} \bigr)
-\]
-
-\[
-\lambda_{\mathrm{CL}} = 0.005, \qquad \tau_{\mathrm{CL}} = 0.2
-\]
+```text
+L = L_BPR + lambda_CL * (L_aCL + L_uCL)
+lambda_CL = 0.005
+tau_CL = 0.2
+```
 
 **Role**
 
@@ -581,9 +546,9 @@ L = L_{\mathrm{BPR}} + \lambda_{\mathrm{CL}} \bigl( L_{\mathrm{aCL}} + L_{\mathr
 
 **BPR**
 
-\[
-L_{\mathrm{BPR}} = -\log \sigma\bigl(y(u, i^+) - y(u, i^-)\bigr)
-\]
+```text
+L_BPR = -log sigma(y(u, i+) - y(u, i-))
+```
 
 **Sampling**
 
