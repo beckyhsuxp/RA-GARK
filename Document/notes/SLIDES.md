@@ -252,24 +252,7 @@ KG should be a gateable side channel, not a mandatory scoring component.
 
 ---
 
-## Slide 15 — Notation
-
-**Notation**
-
-- `U`, `I`: users and items
-- `R`: observed interactions
-- `G_KG`: item-aspect KG
-- `A = 4`, `d = 128`, `K = 2`
-
-**Embeddings**
-
-- `u_loc`, `i_loc`: local-view embeddings
-- `u_glo`, `i_glo`: global-view embeddings
-- `alpha_u`, `alpha_i`: fusion gates
-
----
-
-## Slide 16 — Local View
+## Slide 15 — Local View
 
 **Pure LightGCN**
 
@@ -284,7 +267,7 @@ KG should be a gateable side channel, not a mandatory scoring component.
 
 ---
 
-## Slide 17 — Local Propagation
+## Slide 16 — Local Propagation
 
 **Graph**
 
@@ -305,7 +288,7 @@ E_loc = average(E^(0), E^(1), ..., E^(K))
 
 ---
 
-## Slide 18 — Global View
+## Slide 17 — Global View
 
 **Why latent aspect slots**
 
@@ -323,7 +306,7 @@ d = 128
 
 ---
 
-## Slide 19 — KG-SVD Motivation
+## Slide 18 — KG-SVD Motivation
 
 **Why KG-SVD**
 
@@ -338,7 +321,7 @@ d = 128
 
 ---
 
-## Slide 20 — KG-SVD Construction
+## Slide 19 — KG-SVD Construction
 
 **Build item-aspect matrix**
 
@@ -360,7 +343,7 @@ idf(a) = log(N_items / support(a) + 1) + 1
 
 ---
 
-## Slide 21 — KG-SVD SVD and Reshape
+## Slide 20 — KG-SVD SVD and Reshape
 
 **圖片**
 
@@ -386,7 +369,7 @@ E_KG[i] -> item_kg_aspects[i] in R^(4 x 128)
 
 ---
 
-## Slide 22 — KG-SVD Effect
+## Slide 21 — KG-SVD Effect
 
 **Full model**
 
@@ -402,7 +385,7 @@ NDCG@20 0.1171, MAP@20 0.0545.
 
 ---
 
-## Slide 23 — Softmax Masking Motivation
+## Slide 22 — Softmax Masking Motivation
 
 **Goal**
 
@@ -415,7 +398,7 @@ Select which aspect slot should represent the item for a given user-item pair.
 
 ---
 
-## Slide 24 — Softmax Masking Computation
+## Slide 23 — Softmax Masking Computation
 
 **Computation**
 
@@ -431,7 +414,7 @@ i_glo = sum_k w_k * aspect_slot_i,k
 
 ---
 
-## Slide 25 — Softmax Normalization
+## Slide 24 — Softmax Normalization
 
 **Normalization choice**
 
@@ -447,7 +430,7 @@ i_glo = sum_k w_k * aspect_slot_i,k
 
 ---
 
-## Slide 26 — Softmax vs Sigmoid
+## Slide 25 — Softmax vs Sigmoid
 
 **Why softmax**
 
@@ -461,7 +444,7 @@ It matches the throttled KG channel.
 
 ---
 
-## Slide 27 — Softmax Ablation
+## Slide 26 — Softmax Ablation
 
 **Figure**
 
@@ -481,7 +464,7 @@ NDCG@20 0.1005, MAP@20 0.0451.
 
 ---
 
-## Slide 28 — Fusion Gate Structure
+## Slide 27 — Fusion Gate Structure
 
 **圖片**
 
@@ -503,7 +486,7 @@ i_final = alpha_i * i_loc + (1 - alpha_i) * i_glo
 
 ---
 
-## Slide 29 — Gate Bias and Graceful Degradation
+## Slide 28 — Gate Bias and Graceful Degradation
 
 **Bias initialization**
 
@@ -524,7 +507,7 @@ alpha_0 = sigmoid(+5) ~= 0.993
 
 ---
 
-## Slide 30 — Contrastive Regularization
+## Slide 29 — Contrastive Regularization
 
 **Main objective**
 
@@ -546,7 +529,7 @@ tau_CL = 0.2
 
 ---
 
-## Slide 31 — Training Objective
+## Slide 30 — Training Objective
 
 **BPR**
 
@@ -566,7 +549,7 @@ L_BPR = -log sigma(y(u, i+) - y(u, i-))
 
 ---
 
-## Slide 32 — Dataset and Optimization
+## Slide 31 — Dataset and Optimization
 
 **Dataset**
 
@@ -590,7 +573,7 @@ L_BPR = -log sigma(y(u, i+) - y(u, i-))
 
 ---
 
-## Slide 33 — Inference and Complexity
+## Slide 32 — Inference and Complexity
 
 **Inference**
 
@@ -610,7 +593,7 @@ L_BPR = -log sigma(y(u, i+) - y(u, i-))
 
 ---
 
-## Slide 34 — Main Results
+## Slide 33 — Main Results
 
 **Top-20**
 
@@ -626,7 +609,7 @@ L_BPR = -log sigma(y(u, i+) - y(u, i-))
 - beats pure LightGCN by 6.4% on NDCG@10
 - beats KGRec by 10.5% on NDCG@10
 
-## Slide 35 — Ablation Summary
+## Slide 34 — Ablation Summary
 
 **Largest drop**
 
@@ -646,7 +629,7 @@ L_BPR = -log sigma(y(u, i+) - y(u, i-))
 
 ---
 
-## Slide 36 — Case Study and Takeaways
+## Slide 35 — Case Study and Takeaways
 
 **圖片**
 
@@ -660,7 +643,7 @@ L_BPR = -log sigma(y(u, i+) - y(u, i-))
 
 ---
 
-## Slide 37 — Conclusion
+## Slide 36 — Conclusion
 
 **Conclusion**
 
