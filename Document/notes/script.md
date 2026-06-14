@@ -110,13 +110,13 @@ KG 應該是可閘控的側通道，而不是必經 scoring component。
 
 我們的任務是隱式回饋的 top-K 推薦。對每個 user，我們要把候選 item 排序，讓真實互動過的 item 排在前面。訓練時使用正樣本和抽樣得到的負樣本配對。
 
-最終分數是 `y_hat(u, i)`，也就是 `u_final` 跟 `i_final` 的內積。這裡先把分數定義清楚，`u_final` 和 `i_final` 的構成放到下一頁。
+最終分數是 `y_hat(u, i)`，也就是 `u_final` 跟 `i_final` 的內積。`y_hat(u, i)` 表示模型對 user `u` 和 item `i` 的預測分數，分數越高代表越推薦。這裡先把分數定義清楚，`u_final` 和 `i_final` 的構成放到下一頁。
 
 ## Slide 14 — Problem Setup II
 
 這一頁補 fusion 和 gate 的角色。
 
-`u_final` 和 `i_final` 都是 local 表示和 global 表示的加權和，權重分別由 `alpha_u` 和 `alpha_i` 決定。`alpha` 越接近 1，就越偏 local、越像純 CF；`alpha` 越接近 0，就越偏 global、越依賴 KG。
+`u_final` 和 `i_final` 都是 local 表示和 global 表示的加權和，權重分別由 `alpha_u` 和 `alpha_i` 決定。這裡的 `alpha` 介於 0 和 1 之間：越接近 1，就越偏 local、越像純 CF；越接近 0，就越偏 global、越依賴 KG。
 
 這裡用兩個 gate，是因為 user-side 和 item-side 的 KG usefulness 不完全一樣，所以不適合共用同一組參數。
 
@@ -130,7 +130,7 @@ local view 我們直接用純 LightGCN，先保住一條乾淨的 collaborative 
 
 local propagation 的部分就是標準 LightGCN。
 
-我們只在 user-item bipartite graph 上做傳播，而且只用 training interactions。沒有 KG edges，也沒有額外的 nonlinear transformation。最後把第 0 層到第 K 層做平均，這裡 K 設成 2。
+我們只在 user-item bipartite graph 上做傳播，而且只用 training interactions。`A_norm` 是 normalized adjacency matrix，表示每一層都把鄰居的 embedding 做一次線性聚合；`E^(l)` 是第 `l` 層的 embedding。沒有 KG edges，也沒有額外的 nonlinear transformation。最後把第 0 層到第 K 層做平均，得到 `E_loc`，這裡 K 設成 2。
 
 ## Slide 17 — Global View
 
@@ -148,13 +148,13 @@ KG-SVD 的出發點很簡單：raw item-aspect matrix 很 sparse，而且太泛�
 
 這一步先建 item-aspect matrix。
 
-如果 item 有某個 aspect，就把對應位置設成 1；接著乘上 aspect 的 IDF，讓常見但沒辨識力的 aspect 影響變小。
+如果 item 有某個 aspect，就把對應位置設成 1；接著乘上 aspect 的 IDF，讓常見但沒辨識力的 aspect 影響變小。這裡的 `idf(a)` 會根據 aspect `a` 在多少 item 裡出現來降權，`support(a)` 就是這個 aspect 出現過的 item 數。
 
 ## Slide 20 — KG-SVD SVD and Reshape
 
 這張圖對應 KG-SVD 的第二步。
 
-我們對 IDF-weighted matrix 做 truncated SVD，`U` 是左 singular vectors，`Sigma` 是 singular values 的對角矩陣，然後把結果投影成 `E_KG = U sqrt(Sigma)`。接著把 flat vector reshape 成每個 item 的四個 aspect slot，每個 slot 維度是 128。
+我們對 IDF-weighted matrix 做 truncated SVD，`U` 是左 singular vectors，`Sigma` 是 singular values 的對角矩陣，`V^T` 是右 singular vectors 的轉置。接著把結果投影成 `E_KG = U sqrt(Sigma)`，這樣就得到每個 item 的初始 KG 表示。最後再把 flat vector reshape 成每個 item 的四個 aspect slot，每個 slot 維度是 128。
 
 ## Slide 21 — KG-SVD Effect
 
@@ -174,13 +174,13 @@ global view 的第二個核心是 softmax rationale masking。
 
 這一頁就是具體計算。
 
-`MLP` 是一個小型 feed-forward network。`logit_k` 來自 `MLP([u_glo || aspect_slot_i,k])`，再經過 `softmax(logit_k / tau)` 變成 slot 權重，其中 `tau` 是 softmax temperature，最後把四個 slot 加權求和成 `i_glo`。
+`MLP` 是一個小型 feed-forward network。`logit_k` 來自 `MLP([u_glo || aspect_slot_i,k])`，表示第 `k` 個 aspect slot 對這個 user-item pair 的相對重要性；再經過 `softmax(logit_k / tau)` 變成 slot 權重，其中 `tau` 是 softmax temperature，控制分佈有多尖銳；最後把四個 slot 加權求和成 `i_glo`。
 
 ## Slide 24 — Softmax Normalization
 
 這裡我們特別強調 softmax 而不是 sigmoid。
 
-softmax 會讓 slot 之間互相競爭，在固定總量下做選擇；這不只是讓 attention 更 sharp，更重要的是它控制了 `i_glo` 的 magnitude。
+softmax 會讓 slot 之間互相競爭，在固定總量下做選擇，所以四個權重加起來會等於 1。這不只是讓 attention 更 sharp，更重要的是它控制了 `i_glo` 的 magnitude，讓 global channel 不會自己膨脹。
 
 ## Slide 25 — Softmax vs Sigmoid
 
@@ -198,13 +198,13 @@ Top-20 是 0.1005 / 0.0451，Top-10 是 0.0785 / 0.0397。這說明 normalizatio
 
 這一頁先講 fusion gate。
 
-`alpha_u` 和 `alpha_i` 是用小型 MLP 算出來的，分別控制 user-side 和 item-side 的 local/global 混合比例。`u_final` 和 `i_final` 則是 local 與 global 表示的加權和。
+`alpha_u` 和 `alpha_i` 是用小型 MLP 算出來的，分別控制 user-side 和 item-side 的 local/global 混合比例。它們也都介於 0 和 1 之間，所以 `u_final` 和 `i_final` 就是 local 與 global 表示的加權和。
 
 ## Slide 28 — Gate Bias and Graceful Degradation
 
 這一頁講 gate 的初始化。
 
-我們把 gate bias 設成 +5，所以一開始 `alpha` 幾乎是 0.993，也就是模型剛開始幾乎等同於 LightGCN。
+我們把 gate bias 設成 +5，所以一開始 `alpha` 幾乎是 0.993，也就是模型剛開始幾乎等同於 LightGCN。`b` 就是 gate 的 bias，`alpha_0 = sigmoid(+5)` 是初始化時的 gate 值。
 
 這樣做的目的是讓系統先站在安全預設上。如果 KG 不可靠，gate 就維持偏關閉；如果 KG 有幫助，訓練才慢慢把它打開。
 
@@ -218,7 +218,7 @@ Top-20 是 0.1005 / 0.0451，Top-10 是 0.0785 / 0.0397。這說明 normalizatio
 
 這一頁補 BPR 的訓練目標。
 
-`BPR` 是 pairwise ranking loss。`sigma` 是 sigmoid function。我們用正樣本和 sampled negative pairs 來訓練，目標是把真正互動過的 item 排在未互動 item 前面。BPR 負責 ranking signal，gate 和 CL 負責把表示調穩定。
+`BPR` 是 pairwise ranking loss。`sigma` 是 sigmoid function。公式裡的 `i+` 是正樣本，也就是使用者真的互動過的 item；`i-` 是負樣本，也就是抽樣出來、使用者沒互動過的 item。我們用正樣本和 sampled negative pairs 來訓練，目標是把真正互動過的 item 排在未互動 item 前面。BPR 負責 ranking signal，gate 和 CL 負責把表示調穩定。
 
 ## Slide 31 — Dataset and Optimization
 
