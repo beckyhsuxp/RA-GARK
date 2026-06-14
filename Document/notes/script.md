@@ -4,7 +4,7 @@
 
 大家好，我今天要報告的題目是 RA-GARK，完整名稱是 Product Recommendation via Rationale-Aware Gating over Sparse Review-Aspect Knowledge Graphs，也就是基於理由感知門控與稀疏評論面向知識圖譜之產品推薦。
 
-## Slide 2 — 大綱
+## Slide 2 — Roadmap
 
 這份報告大約分成五個部分。
 
@@ -12,7 +12,7 @@
 
 第一部分是導論，我會先說明為什麼稀疏 KG 會讓現有 KG-aware recommendation 失效。第二部分是相關研究，我會快速定位幾個代表性的基線，包括純 CF、KG-aware recommendation，以及 gate 相關方法。第三部分是方法章，這會是整份報告最重要的部分，我會詳細說 local view、KG-SVD、softmax rationale masking，以及 fusion gate。第四部分是實驗，會看主結果和 ablation。最後是結論與未來工作，整理貢獻、限制和後續方向。
 
-## Slide 3 — 動機
+## Slide 3 — Motivation
 
 先講動機。
 
@@ -52,7 +52,7 @@
 
 我們的答案是：KG 不應該是 scoring pipeline 裡的必經成分，而應該是一條可以被 gate 控制的側通道。這個想法後面會具體落地在三個設計上，分別是 KG-SVD 初始化、softmax rationale masking 和 local-biased fusion gate。
 
-## Slide 7 — 相關研究 I
+## Slide 7 — Related Work I
 
 先講最基礎的兩個方法。
 
@@ -62,7 +62,7 @@ KGAT 則代表典型的 deep fusion。它把 user-item graph 和 KG 合併成一
 
 所以我們的做法是直接把 LightGCN 原封不動地拿來當 local view，然後把 KG signal 隔離到另一條 global view。
 
-## Slide 8 — 相關研究 II
+## Slide 8 — Related Work II
 
 接下來是對比式 KG 方法。
 
@@ -70,7 +70,7 @@ KGCL 會對 KG 結構做擾動，然後對 original view 和 perturbed view 做�
 
 所以我們也有用對比學習，但它只是輔助，權重很小，目的是幫 local 和 global 的幾何空間做輕量對齊，而不是主導融合。
 
-## Slide 9 — 相關研究 III
+## Slide 9 — Related Work III
 
 KGRec 是跟我們最直接相關的工作。
 
@@ -78,7 +78,7 @@ KGRec 是跟我們最直接相關的工作。
 
 所以兩者最大的差別是：KGRec 還是預設 KG 裡面至少有一些有用的 edges 可以挑出來；RA-GARK 的前提更保守，直接把整條 KG channel 當成可能不可靠的側通道來處理。
 
-## Slide 10 — 相關研究 IV
+## Slide 10 — Related Work IV
 
 這裡我想補充 gating 的脈絡。
 
@@ -88,7 +88,7 @@ Highway Networks 很早就提出一個很重要的概念：用 gate 把變換路
 
 所以在 KG-aware recommendation 領域裡，還是缺少一個偏置初始化的 fusion gate，也缺少一個在稀疏或不可靠 KG 下能提供平滑退化的架構。
 
-## Slide 11 — 設計原則
+## Slide 11 — Design Principle
 
 這裡把我們的方法原則講成一句話。
 
@@ -96,7 +96,7 @@ KG 應該是可閘控的側通道，而不是必經 scoring component。
 
 這個原則帶來三個後果。第一，我們要把 local view 和 global view 分開，避免 KG 污染 CF。第二，融合要晚，等兩邊的 representation 都先學好再決定要不要混。第三，gate 的初始化要偏向 LightGCN，讓模型一開始就站在安全的一邊。
 
-## Slide 12 — 架構總覽
+## Slide 12 — Overview
 
 接下來是整體架構。
 
@@ -104,7 +104,7 @@ KG 應該是可閘控的側通道，而不是必經 scoring component。
 
 這張圖最重要的地方是，local 和 global 兩條路線在前面是完全分開的，只有到最後的 scoring stage 才透過 gate 合起來。
 
-## Slide 13 — 問題設定
+## Slide 13 — Problem Setup
 
 我們的任務是 implicit top-K recommendation。對每個 user，要把沒看過的 item 做排序，讓真正互動過的 item 排在前面。訓練時使用正樣本和 sampled negative pairs。
 
@@ -112,7 +112,7 @@ KG 應該是可閘控的側通道，而不是必經 scoring component。
 
 這裡有一個重要的 convention：`alpha` 越接近 1，就越偏 local、越像純 CF；`alpha` 越接近 0，就越偏 global、越依賴 KG。
 
-## Slide 14 — 符號說明
+## Slide 14 — Notation
 
 這一頁先把符號定義清楚。
 
@@ -138,31 +138,31 @@ global view 的重點是 latent aspect slots。
 
 為什麼不直接把 KG triples 拿來傳播？因為我們的 KG 太稀疏了，直接傳播很容易對缺失邊或噪音邊敏感。相反地，我們把每個 item 的 KG 語意壓縮成四個 latent aspect slots，讓模型在一個比較低維、比較穩定的空間裡處理 KG。
 
-## Slide 18 — KG-SVD 動機
+## Slide 18 — KG-SVD Motivation
 
 KG-SVD 的出發點很簡單：raw item-aspect matrix 很 sparse，而且太泛用的 aspect 不應該跟太具辨識度的 aspect 用同樣權重。
 
 所以我們先用 IDF weighting 把 generic aspects 壓下去，再用 SVD 去找一個有語意幾何的初始化。
 
-## Slide 19 — KG-SVD 建構
+## Slide 19 — KG-SVD Construction
 
 這一步先建 item-aspect matrix。
 
 如果 item 有某個 aspect，就把對應位置設成 1；接著乘上 aspect 的 IDF，讓常見但沒辨識力的 aspect 影響變小。
 
-## Slide 20 — KG-SVD 分解與重塑
+## Slide 20 — KG-SVD SVD and Reshape
 
 這張圖對應 KG-SVD 的第二步。
 
 我們對 IDF-weighted matrix 做 truncated SVD，然後把結果投影成 `E_KG = U sqrt(Sigma)`。接著把 flat vector reshape 成每個 item 的四個 aspect slot，每個 slot 維度是 128。
 
-## Slide 21 — KG-SVD 效果
+## Slide 21 — KG-SVD Effect
 
 這張 ablation 表想表達的是：KG-SVD 不是裝飾。
 
 RA-GARK full 是 0.1243 / 0.0594，拿掉 KG-SVD init 之後是 0.1171 / 0.0545。這表示如果沒有一個合理的起點，global view 很難在 sparse KG 下自己長出好的幾何。
 
-## Slide 22 — Softmax Masking 動機
+## Slide 22 — Softmax Masking Motivation
 
 global view 的第二個核心是 softmax rationale masking。
 
@@ -170,13 +170,13 @@ global view 的第二個核心是 softmax rationale masking。
 
 這樣做的意思是：同一本書對不同 user 可能有不同的推薦理由，所以 rationale 必須是 user-conditioned 的。
 
-## Slide 23 — Softmax Masking 計算
+## Slide 23 — Softmax Masking Computation
 
 這一頁就是具體計算。
 
 `logit_k` 來自 `MLP([u_glo || aspect_slot_i,k])`，再經過 `softmax(logit_k / tau)` 變成 slot 權重，最後把四個 slot 加權求和成 `i_glo`。
 
-## Slide 24 — Softmax 正規化
+## Slide 24 — Softmax Normalization
 
 這裡我們特別強調 softmax 而不是 sigmoid。
 
@@ -188,19 +188,19 @@ softmax 會讓 slot 之間互相競爭，在固定總量下做選擇；這不只
 
 所以在我們這個被 gate 控制的 sparse KG side channel 裡，softmax 比 sigmoid 更適合。
 
-## Slide 26 — Softmax 消融
+## Slide 26 — Softmax Ablation
 
 這張 sensitivity 圖對應 w/o-softmax row。
 
 Top-20 是 0.1005 / 0.0451，Top-10 是 0.0785 / 0.0397。這說明 normalization 的選擇會直接影響穩定性和 magnitude control。
 
-## Slide 27 — Fusion Gate 結構
+## Slide 27 — Fusion Gate Structure
 
 這一頁先講 fusion gate。
 
 `alpha_u` 和 `alpha_i` 是用小型 MLP 算出來的，分別控制 user-side 和 item-side 的 local/global 混合比例。`u_final` 和 `i_final` 則是 local 與 global 表示的加權和。
 
-## Slide 28 — Gate Bias 與平滑退化
+## Slide 28 — Gate Bias and Graceful Degradation
 
 這一頁講 gate 的初始化。
 
@@ -214,43 +214,43 @@ Top-20 是 0.1005 / 0.0451，Top-10 是 0.0785 / 0.0397。這說明 normalizatio
 
 一個是 aspect-level 的對比損失，另一個是 user cross-view 的對比損失。它們只是輔助對齊 local 和 global 的幾何空間，不是主融合機制。
 
-## Slide 30 — 訓練目標
+## Slide 30 — Training Objective
 
 這一頁補 BPR 的訓練目標。
 
 我們用正樣本和 sampled negative pairs 來訓練，目標是把真正互動過的 item 排在未互動 item 前面。BPR 負責 ranking signal，gate 和 CL 負責把表示調穩定。
 
-## Slide 31 — 資料與優化
+## Slide 31 — Dataset and Optimization
 
 這一頁補資料規模和訓練設定。
 
 我們的資料集有 905 個 user、1,399 個 item、22,265 筆互動、3,370 條 KG 邊，以及 2,098 個 aspect。訓練設定是 Adam，learning rate 0.001，batch size 128，最多 80 個 epoch，並且用 validation NDCG@20 做 early stopping。
 
-## Slide 32 — 推論與複雜度
+## Slide 32 — Inference and Complexity
 
 評估時採 full-ranking，會排除訓練集裡已經互動過的 item，最後看 HR、Precision、Recall、F1、MAP 和 NDCG，這些都取 @20。
 
 從效能來看，我們每個 epoch 大概 1.5 秒，跟 KGRec 差不多，所以這個設計沒有讓成本爆炸。
 
-## Slide 33 — 主結果
+## Slide 33 — Main Results
 
 先看主結果。
 
 Top-20 時，RA-GARK 的 NDCG@20 是 0.1243，較 KGRec 高 13.5%，較純 LightGCN 高 5.4%。Top-10 時，RA-GARK 的 NDCG@10 是 0.0966，較 KGRec 高 10.5%，較純 LightGCN 高 6.4%。
 
-## Slide 34 — 消融總結
+## Slide 34 — Ablation Summary
 
 再看 ablation。
 
 Top-20 時，softmax head 是最大的變化，0.1243 降到 0.1005；KG-SVD 是 0.1171；fusion-gate bias 是 0.1194；MLP gate 是 0.1180。Top-10 也維持相同排序。
 
-## Slide 35 — 案例分析與重點
+## Slide 35 — Case Study and Takeaways
 
 這張 heatmap 是 case study。
 
 你可以看到不同 item 會對不同 aspect slot 給出不同的權重，表示 rationale masking 不是固定平均，而是真的有在對不同 item 使用不同的語意路徑。
 
-## Slide 36 — 結論
+## Slide 36 — Conclusion
 
 最後總結一下。
 
