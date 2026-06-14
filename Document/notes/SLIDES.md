@@ -67,20 +67,12 @@ On this sparse KG, every KG-aware baseline loses to pure LightGCN.
 
 ## Slide 4 — Why Sparse KG
 
-**Where sparse KG comes from**
-
 - review-derived KGs are only as dense as user mentions
 - cold-start and emerging domains rarely have curated KGs
 - aggressive KG completion adds noise and still needs seed signal
-
-**What this means**
-
 - sparse KG is the practical default
 - robustness matters more than peak performance
 - unreliable KG deserves dedicated modeling
-
-**Takeaway**
-
 - sparse KG is the regime this thesis targets
 
 ---
