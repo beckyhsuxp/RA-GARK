@@ -226,7 +226,7 @@ KG should be a gateable side channel, not a mandatory scoring component.
 
 **Score**
 
-- `y_hat(u, i) = <u_final, i_final>`
+- `y(u, i) = <u_final, i_final>`
 
 **Readout**
 
