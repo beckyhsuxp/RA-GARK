@@ -74,7 +74,7 @@ KGCL 會對 KG 結構做擾動，然後對 original view 和 perturbed view 做 
 
 KGRec 是跟我們最直接相關的工作。
 
-這頁我把 KGRec 和 RA-GARK 放在同一張表裡對照。KGRec 的 rationale 是 edge-level 的，它用 Bernoulli dropout 加 contrastive learning 來挑比較重要的邊；RA-GARK 則把 rationale 放在 latent aspect-slot level，用 softmax attention 直接控制 global side channel 的輸出。
+這頁我把 KGRec 和 RA-GARK 拆成兩個小表來對照。KGRec 的 rationale 是 edge-level 的，它用 Bernoulli dropout 加 contrastive learning 來挑比較重要的邊；RA-GARK 則把 rationale 放在 latent aspect-slot level，用 softmax attention 直接控制 global side channel 的輸出。
 
 所以兩者最大的差別是：KGRec 還是預設 KG 裡面至少有一些 useful edges 可以挑出來；RA-GARK 的前提更保守，直接把整條 KG channel 當成可能不可靠的 side channel 來處理。
 
