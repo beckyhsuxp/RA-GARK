@@ -74,9 +74,11 @@ KGCL 會對 KG 結構做擾動，然後對 original view 和 perturbed view 做 
 
 KGRec 是跟我們最直接相關的工作。
 
-KGRec 的核心觀察是：不是所有 KG edge 都同樣重要，所以要學 rationale。它做法是對每條 KG edge 算 attention 分數，再用 Bernoulli dropout 去隨機移除高分邊，強迫模型不要過度依賴少數幾條主導邊，之後再用 contrastive learning 強化穩健性。這確實是 rationale-aware recommendation 的代表。
+KGRec 的核心觀察是：不是所有 KG edge 都同樣重要，所以要學 rationale。它的做法是把 rationale 放在 edge level，先對每條 KG edge 算 attention 分數，再用 Bernoulli dropout 去隨機移除高分邊，之後再用 contrastive learning 強化穩健性。
 
-但 KGRec 的假設是，KG 裡面至少有一些 useful edges 可以挑出來。RA-GARK 的前提更保守：我們不假設整個 KG 都可信，所以不是只挑邊，而是把整條 KG channel 變成可閘控的 side channel。
+RA-GARK 則把 rationale 放在 latent aspect-slot level。它不是只挑幾條 edge，而是先把 item 的 KG 語意放進 global side channel，再用 softmax attention 去選哪個 slot 最適合當下的 user-item pair。
+
+所以兩者最大的差別是：KGRec 還是預設 KG 裡面至少有一些 useful edges 可以挑出來；RA-GARK 的前提更保守，直接把整條 KG channel 當成可能不可靠的 side channel 來處理。
 
 ## Slide 10 — Related Work IV
 
