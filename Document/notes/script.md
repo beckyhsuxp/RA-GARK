@@ -208,56 +208,86 @@ fusion gate 最關鍵的設計是 bias initialization。
 
 我們的設計很保守：權重只有 0.005，而且 KG 側做了 stop-gradient，避免對比學習把 SVD 保留下來的語意幾何拉壞。再加上 projection head，讓 CL 的梯度不要直接影響 scoring space。
 
-## Slide 27 — Training Setup
+## Slide 27 — Fusion Gate Structure
 
-這裡先補一下資料規模，讓後面的實驗結果有背景。
+這一頁先講 fusion gate。
 
-我們的資料集有 905 個 user、1,399 個 item、22,265 筆互動、3,370 條 KG 邊，以及 2,098 個 unique aspect。
+`alpha_u` 和 `alpha_i` 是用小型 MLP 算出來的，分別控制 user-side 和 item-side 的 local/global 混合比例。`u_final` 和 `i_final` 則是 local 與 global 表示的加權和。
 
-這些數字的重點不是規模很大，而是它再次說明這個 KG 本來就很 sparse，所以我們的實驗是在一個比較嚴格的 setting 下做的。
+這裡的重點是，aspect selection 和 view fusion 是兩個不同層次的問題，所以我們把 attention 和 gate 分開做。
 
-訓練設定是 Adam，learning rate 0.001，batch size 128，最多 80 個 epoch，用 validation NDCG@20 做 early stopping，patience 是 10。
+## Slide 28 — Gate Bias and Graceful Degradation
 
----
+這一頁講 gate 的初始化。
 
-## Slide 28 — Evaluation Setup
+我們把 gate bias 設成 +5，所以一開始 `alpha` 幾乎是 0.993，也就是模型剛開始幾乎等同於 LightGCN。
+
+這樣做的目的是讓系統先站在安全預設上。如果 KG 不可靠，gate 就維持偏關閉；如果 KG 有幫助，訓練才慢慢把它打開。
+
+## Slide 29 — Contrastive Regularization
+
+除了 BPR，我們還加了兩個很小的 contrastive regularization。
+
+一個是 aspect-level 的對比損失，另一個是 user cross-view 的對比損失。它們只是輔助對齊 local 和 global 的幾何空間，不是主融合機制。
+
+我們把權重設得很小，而且 KG 側做 stop-gradient，避免對比學習把 SVD 保留下來的語意幾何破壞掉。
+
+## Slide 30 — Training Objective
+
+這一頁補 BPR 的訓練目標。
+
+我們用正樣本和 sampled negative pairs 來訓練，目標是把真正互動過的 item 排在未互動 item 前面。
+
+所以總體上，BPR 負責 ranking signal，gate 和 CL 負責把 local 與 global 的表示調得更穩定。
+
+## Slide 31 — Dataset and Optimization
+
+這一頁補資料規模和訓練設定。
+
+我們的資料集有 905 個 user、1,399 個 item、22,265 筆互動、3,370 條 KG 邊，以及 2,098 個 aspect。
+
+訓練設定是 Adam，learning rate 0.001，batch size 128，最多 80 個 epoch，並且用 validation NDCG@20 做 early stopping。
+
+這些數字的重點不是規模，而是再次說明我們是在一個很 sparse 的 KG setting 下做實驗。
+
+## Slide 32 — Inference and Complexity
 
 評估時採 full-ranking，會排除訓練集裡已經互動過的 item，最後看 HR、Precision、Recall、F1、MAP 和 NDCG，這些都取 @20。
 
 從效能來看，我們每個 epoch 大概 1.5 秒，跟 KGRec 差不多，所以這個設計沒有讓成本爆炸。
 
-## Slide 29 — Main Results
+## Slide 33 — Main Results
 
 先看主結果。
 
-這張表和論文裡的版本一致，分成 Top-20 和 Top-10 兩個 cutoff。Top-20 時，RA-GARK 的 NDCG 是 0.1243，較 KGRec 高 13.5%，較純 LightGCN 高 5.4%。Top-10 時，RA-GARK 的 NDCG 是 0.0966，較 KGRec 高 10.5%，較純 LightGCN 高 6.4%。
+Top-20 時，RA-GARK 的 NDCG@20 是 0.1243，較 KGRec 高 13.5%，較純 LightGCN 高 5.4%。Top-10 時，RA-GARK 的 NDCG@10 是 0.0966，較 KGRec 高 10.5%，較純 LightGCN 高 6.4%。
 
 更重要的是，兩個 cutoff 下的 HR、Recall、MAP 也都保持同樣排序，說明這不是單一指標的偶然。
 
-## Slide 30 — Ablation Summary
+## Slide 34 — Ablation Summary
 
 再看 ablation。
 
-這張表和論文裡的 Top-20 / Top-10 ablation 版本一致。Top-20 時，softmax head 是最大的變化，0.1243 降到 0.1005；KG-SVD 是 0.1171；fusion-gate bias 是 0.1194；MLP gate 是 0.1180。Top-10 也維持相同排序。
+Top-20 時，softmax head 是最大的變化，0.1243 降到 0.1005；KG-SVD 是 0.1171；fusion-gate bias 是 0.1194；MLP gate 是 0.1180。Top-10 也維持相同排序。
 
-這一頁的用途是驗證前面那三個設計元件都不是可有可無的裝飾，而是這個架構能穩定工作的必要組成。
+這一頁的用途是驗證前面那幾個設計元件都不是可有可無的裝飾，而是這個架構能穩定工作的必要組成。
 
-## Slide 31 — Case Study and Takeaways
+## Slide 35 — Case Study and Takeaways
 
 這張 heatmap 是 case study。
 
-你可以看到不同 item 會對不同 aspect slot 給出不同的權重，表示 rationale masking 不是固定平均，而是真的有在對不同 item 使用不同的語意路徑。這也是這個模型可解釋性的來源之一。
+你可以看到不同 item 會對不同 aspect slot 給出不同的權重，表示 rationale masking 不是固定平均，而是真的有在對不同 item 使用不同的語意路徑。
 
-從方法論角度看，這個 case study 也支持一件事：模型不只是準確，還能告訴我們「它到底用了哪個 slot 來做判斷」。
+這也支持一件事：模型不只是準確，還能告訴我們它到底用了哪個 slot 來做判斷。
 
-## Slide 32 — Conclusion
+## Slide 36 — Conclusion
 
 最後總結一下。
 
-當 KG 不可靠時，架構最需要的不是一個更強的 KG aggregator，而是一個能把 KG opt out 的 structural switch。
+當 KG 不可靠時，架構最需要的不是更強的 KG aggregator，而是一個能把 KG opt out 的 structural switch。
 
-這篇工作的主要貢獻有四個：第一，提出 gateable KG side channel；第二，提出 KG-SVD initialization；第三，提出 softmax rationale masking；第四，提出 local-biased fusion gate。
+這篇工作的主要貢獻有四個：gateable KG side channel、KG-SVD initialization、softmax rationale masking、local-biased fusion gate。
 
-限制也很清楚：我們目前只在一個 sparse review-aspect KG dataset 上驗證，KG construction pipeline 不是本文的主貢獻，另外在 dense KG setting 下，深度融合方法仍然可能更強。也就是說，RA-GARK 的定位不是要取代所有 KG-aware 方法，而是要補上 sparse KG 這個常被忽略、但很現實的場景。
+限制也很清楚：我們目前只在一個 sparse review-aspect KG dataset 上驗證，KG construction pipeline 不是本文的主貢獻，另外在 dense KG setting 下，深度融合方法仍然可能更強。
 
 以上，謝謝大家。

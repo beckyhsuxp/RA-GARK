@@ -8,10 +8,10 @@
 | 圖檔 | 頁面 |
 |---|---|
 | `thesis/img/architecture.png` | Slide 12 |
-| `thesis/img/kg_svd.png` | Slide 18 |
-| `thesis/img/gate.png` | Slides 23-25 |
-| `thesis/img/sensitivity_2x2.png` | Slide 22 |
-| `thesis/img/case_study_heatmap.png` | Slide 31 |
+| `thesis/img/kg_svd.png` | Slide 20 |
+| `thesis/img/gate.png` | Slide 27 |
+| `thesis/img/sensitivity_2x2.png` | Slide 26 |
+| `thesis/img/case_study_heatmap.png` | Slide 35 |
 
 ---
 
@@ -162,12 +162,14 @@ KG should be a gateable side channel.
 
 **KGRec vs RA-GARK**
 
-| Axis | KGRec | RA-GARK |
-|---|---|---|
-| Granularity | KG edge | latent aspect slot |
-| Selection | Bernoulli dropout + CL | softmax attention |
-| Integration | inside KGAT propagation | separate side channel |
-| KG trust | cannot disengage KG | can suppress KG |
+- KGRec works at the KG edge level.
+- RA-GARK works at the latent aspect-slot level.
+- KGRec uses Bernoulli dropout plus CL.
+- RA-GARK uses softmax attention.
+- KGRec stays inside KGAT propagation.
+- RA-GARK separates the side channel.
+- KGRec cannot disengage KG.
+- RA-GARK can suppress the whole KG.
 
 **Main difference**
 
@@ -212,18 +214,16 @@ KG should be a gateable side channel, not a mandatory scoring component.
 
 **Modules**
 
-| Module | Output |
-|---|---|
-| Local View | `u_loc`, `i_loc` |
-| Global View | `u_glo`, `i_glo` |
-| Fusion Gate | `u_final`, `i_final` |
-| Training Loss | ranking objective |
+- Local View -> `u_loc`, `i_loc`
+- Global View -> `u_glo`, `i_glo`
+- Fusion Gate -> `u_final`, `i_final`
+- Training Loss -> ranking objective
 
 ---
 
 ## Slide 13 — Problem Setup
 
-**Implicit top-K recommendation**
+**Task**
 
 - rank unseen items for each user
 - train with positive and sampled negative pairs
@@ -241,9 +241,35 @@ u_final = alpha_u * u_loc + (1 - alpha_u) * u_glo
 i_final = alpha_i * i_loc + (1 - alpha_i) * i_glo
 ```
 
+**Why two gates**
+
+- user-side and item-side KG usefulness differ
+- separate parameters work better than shared ones
+
+**Goal**
+
+Maximize ranking quality on held-out items.
+
 ---
 
-## Slide 14 — Local View
+## Slide 14 — Notation
+
+**Notation**
+
+- `U`, `I`: users and items
+- `R`: observed interactions
+- `G_KG`: item-aspect KG
+- `A = 4`, `d = 128`, `K = 2`
+
+**Embeddings**
+
+- `u_loc`, `i_loc`: local-view embeddings
+- `u_glo`, `i_glo`: global-view embeddings
+- `alpha_u`, `alpha_i`: fusion gates
+
+---
+
+## Slide 15 — Local View
 
 **Pure LightGCN**
 
@@ -258,7 +284,7 @@ i_final = alpha_i * i_loc + (1 - alpha_i) * i_glo
 
 ---
 
-## Slide 15 — Local Propagation
+## Slide 16 — Local Propagation
 
 **Graph**
 
@@ -279,7 +305,7 @@ E_loc = average(E^(0), E^(1), ..., E^(K))
 
 ---
 
-## Slide 16 — Global View
+## Slide 17 — Global View
 
 **Why latent aspect slots**
 
@@ -297,7 +323,22 @@ d = 128
 
 ---
 
-## Slide 17 — KG-SVD Step 1
+## Slide 18 — KG-SVD Motivation
+
+**Why KG-SVD**
+
+- the raw item-aspect matrix is sparse
+- generic aspects should count less
+- we want a semantic starting geometry
+
+**Key idea**
+
+- initialize latent slots from co-occurrence structure
+- keep the representation compact and stable
+
+---
+
+## Slide 19 — KG-SVD Construction
 
 **Build item-aspect matrix**
 
@@ -319,7 +360,7 @@ idf(a) = log(N_items / support(a) + 1) + 1
 
 ---
 
-## Slide 18 — KG-SVD Step 2
+## Slide 20 — KG-SVD SVD and Reshape
 
 **圖片**
 
@@ -338,19 +379,22 @@ E_KG = U sqrt(Sigma)
 E_KG[i] -> item_kg_aspects[i] in R^(4 x 128)
 ```
 
-**Why**
+**Why it helps**
 
 - give KG a semantic starting geometry
 - preserve the aspect co-occurrence structure before training
 
 ---
 
-## Slide 19 — KG-SVD Ablation
+## Slide 21 — KG-SVD Effect
 
-| Model | NDCG@20 | MAP@20 |
-|---|---:|---:|
-| RA-GARK (full) | 0.1243 | 0.0594 |
-| w/o KG-SVD init | 0.1171 | 0.0545 |
+**Full model**
+
+NDCG@20 0.1243, MAP@20 0.0594.
+
+**Without KG-SVD init**
+
+NDCG@20 0.1171, MAP@20 0.0545.
 
 **Observation**
 
@@ -358,11 +402,20 @@ E_KG[i] -> item_kg_aspects[i] in R^(4 x 128)
 
 ---
 
-## Slide 20 — Softmax Masking
+## Slide 22 — Softmax Masking Motivation
 
 **Goal**
 
 Select which aspect slot should represent the item for a given user-item pair.
+
+**Why user-conditioned**
+
+- different users care about different item aspects
+- the same item can have different rationales for different users
+
+---
+
+## Slide 23 — Softmax Masking Computation
 
 **Computation**
 
@@ -372,15 +425,15 @@ w_k = softmax(logit_k / tau)
 i_glo = sum_k w_k * aspect_slot_i,k
 ```
 
-**Why user-conditioned**
+**Result**
 
-- different users care about different item aspects
+- the item global vector is a weighted sum of slots
 
 ---
 
-## Slide 21 — Softmax vs Sigmoid
+## Slide 24 — Softmax Normalization
 
-**Normalization assumption**
+**Normalization choice**
 
 | Normalization | Assumption |
 |---|---|
@@ -389,21 +442,38 @@ i_glo = sum_k w_k * aspect_slot_i,k
 
 **In RA-GARK**
 
-- softmax controls both weight competition and output magnitude
-- this matters because the KG channel is intentionally throttled
+- softmax controls weight competition
+- softmax also controls output magnitude
 
 ---
 
-## Slide 22 — Softmax Ablation
+## Slide 25 — Softmax vs Sigmoid
 
-**圖片**
+**Why softmax**
+
+- sigmoid does not normalize across slots
+- softmax gives a bounded, competition-based mask
+- this matters because the KG channel is intentionally throttled
+
+**Takeaway**
+
+It matches the throttled KG channel.
+
+---
+
+## Slide 26 — Softmax Ablation
+
+**Figure**
 
 `thesis/img/sensitivity_2x2.png`
 
-| Model | NDCG@20 | MAP@20 |
-|---|---:|---:|
-| RA-GARK (full) | 0.1243 | 0.0594 |
-| w/o softmax head | 0.1005 | 0.0451 |
+**Full model**
+
+NDCG@20 0.1243, MAP@20 0.0594.
+
+**Without softmax head**
+
+NDCG@20 0.1005, MAP@20 0.0451.
 
 **Observation**
 
@@ -411,7 +481,7 @@ i_glo = sum_k w_k * aspect_slot_i,k
 
 ---
 
-## Slide 23 — Fusion Gate
+## Slide 27 — Fusion Gate Structure
 
 **圖片**
 
@@ -433,67 +503,72 @@ i_final = alpha_i * i_loc + (1 - alpha_i) * i_glo
 
 ---
 
-## Slide 24 — Gate Bias
+## Slide 28 — Gate Bias and Graceful Degradation
 
 **Bias initialization**
 
 ```text
-gate final bias = +5
+b = +5
 alpha_0 = sigmoid(+5) ~= 0.993
 ```
 
 **Meaning**
 
 - start almost as LightGCN
-- open KG only when useful
-
----
-
-## Slide 25 — Graceful Degradation
+- open the KG channel only when it helps
 
 **Graceful degradation**
 
-If KG is not useful, RA-GARK falls back to LightGCN.
-
-**Ablation**
-
-| Model | NDCG@20 | MAP@20 |
-|---|---:|---:|
-| RA-GARK (full) | 0.1243 | 0.0594 |
-| w/o fusion-gate bias | 0.1194 | 0.0555 |
-
-**Observation**
-
-- the bias initialization is part of the architecture, not a tuning trick
+- unreliable KG stays mostly closed
+- without this bias, NDCG@20 drops from 0.1243 to 0.1194
 
 ---
 
-## Slide 26 — Contrastive Regularization
+## Slide 29 — Contrastive Regularization
 
 **Main objective**
 
 ```text
-L = L_BPR + lambda_CL (L_aCL + L_uCL)
+L = L_BPR + lambda_CL * (L_aCL + L_uCL)
 lambda_CL = 0.005
+tau_CL = 0.2
 ```
 
 **Role**
 
-- auxiliary only
-- weak alignment
-- not the main fusion mechanism
+- auxiliary geometric alignment
+- not the main integration path
 
-**Conservative design**
+**Stability**
 
-- small weight
-- stop-gradient on KG side
-- projection head
+- stop-gradient on the KG side
+- projection head only on the local side
 
 ---
 
-## Slide 27 — Training Setup
+## Slide 30 — Training Objective
 
-**Dataset signal**
+**BPR**
+
+```text
+L_BPR = -log sigma(y(u, i+) - y(u, i-))
+```
+
+**Sampling**
+
+- positive pairs come from observed interactions
+- negatives are sampled from items the user has not interacted with
+
+**What it optimizes**
+
+- push held-out positives above negatives
+- let the gate and CL refine the representation
+
+---
+
+## Slide 31 — Dataset and Optimization
+
+**Dataset**
 
 - 905 users
 - 1,399 items
@@ -501,90 +576,77 @@ lambda_CL = 0.005
 - 3,370 KG edges
 - 2,098 aspects
 
-**Training**
+**Optimization**
 
 - Adam
 - learning rate 1e-3
 - batch size 128
-- 80 epochs with early stopping
+- up to 80 epochs with early stopping
+
+**Why it matters**
+
+- the benchmark is intentionally sparse
+- the method is tested under a strict KG setting
 
 ---
 
-## Slide 28 — Evaluation Setup
+## Slide 32 — Inference and Complexity
 
-**Evaluation**
+**Inference**
 
-- full ranking
+- full ranking over unseen items
 - exclude training interactions
-- metrics: HR, Precision, Recall, F1, MAP, NDCG @20
+- vectorized scoring over the full item set
 
-**Efficiency**
+**Cost profile**
 
-- about 1.5 seconds per epoch
-- comparable to KGRec
-- no extra training burden
-
----
-
-## Slide 29 — Main Results
-
-| Model | NDCG@20 | HR@20 | Recall@20 | MAP@20 |
-|---|---:|---:|---:|---:|
-| MCCLK | 0.1067 | 0.4530 | 0.1720 | 0.0497 |
-| KGCL | 0.1073 | 0.4696 | 0.1827 | 0.0479 |
-| KGAT | 0.1079 | 0.4773 | 0.1807 | 0.0491 |
-| KGRec | 0.1095 | 0.4729 | 0.1834 | 0.0500 |
-| LightGCN | 0.1179 | 0.4917 | 0.1937 | 0.0555 |
-| RA-GARK | 0.1243 | 0.4972 | 0.2020 | 0.0594 |
-
-| Model | NDCG@10 | HR@10 | Recall@10 | MAP@10 |
-|---|---:|---:|---:|---:|
-| MCCLK | 0.0804 | 0.3182 | 0.1047 | 0.0416 |
-| KGCL | 0.0809 | 0.3260 | 0.1096 | 0.0410 |
-| KGAT | 0.0786 | 0.3215 | 0.1102 | 0.0388 |
-| KGRec | 0.0874 | 0.3249 | 0.1155 | 0.0465 |
-| LightGCN | 0.0908 | 0.3436 | 0.1201 | 0.0483 |
-| RA-GARK | 0.0966 | 0.3558 | 0.1265 | 0.0520 |
-
-**Key point**
-
-- RA-GARK is best at both Top-20 and Top-10.
-
----
-
-## Slide 30 — Ablation Summary
-
-| Model | NDCG@20 | MAP@20 |
-|---|---:|---:|
-| RA-GARK (full) | 0.1243 | 0.0594 |
-| w/o softmax head | 0.1005 | 0.0451 |
-| w/o KG-SVD init | 0.1171 | 0.0545 |
-| w/o fusion-gate bias | 0.1194 | 0.0555 |
-| w/o MLP gate | 0.1180 | 0.0552 |
-| w/o user CL ($\mathcal{L}_{\mathrm{uCL}}$) | 0.1192 | 0.0563 |
-| w/o aspect CL ($\mathcal{L}_{\mathrm{aCL}}$) | 0.1200 | 0.0570 |
-| w/o rationale-enabled selection | 0.1213 | 0.0568 |
-| w/o global view (CL-only dual view) | 0.1219 | 0.0575 |
-
-| Model | NDCG@10 | MAP@10 |
-|---|---:|---:|
-| RA-GARK (full) | 0.0960 | 0.0519 |
-| w/o softmax head | 0.0785 | 0.0397 |
-| w/o KG-SVD init | 0.0922 | 0.0479 |
-| w/o fusion-gate bias | 0.0923 | 0.0482 |
-| w/o MLP gate | 0.0926 | 0.0484 |
-| w/o user CL ($\mathcal{L}_{\mathrm{uCL}}$) | 0.0924 | 0.0492 |
-| w/o aspect CL ($\mathcal{L}_{\mathrm{aCL}}$) | 0.0940 | 0.0502 |
-| w/o rationale-enabled selection | 0.0943 | 0.0495 |
-| w/o global view (CL-only dual view) | 0.0949 | 0.0504 |
+- LightGCN propagation dominates training cost
+- KG-side modules scale linearly in `A` and `d`
+- wall-clock is comparable to KGRec
 
 **Takeaway**
 
-- the core architecture rows dominate the ranking loss
+- the extra KG machinery does not blow up runtime
 
 ---
 
-## Slide 31 — Case Study and Takeaways
+## Slide 33 — Main Results
+
+**Top-20**
+
+- RA-GARK: NDCG@20 0.1243, HR@20 0.4972, Recall@20 0.2020, MAP@20 0.0594
+- best across all reported metrics
+- beats pure LightGCN by 5.4% on NDCG@20
+- beats KGRec by 13.5% on NDCG@20
+
+**Top-10**
+
+- RA-GARK: NDCG@10 0.0966, HR@10 0.3558, Recall@10 0.1265, MAP@10 0.0520
+- best across all reported metrics
+- beats pure LightGCN by 6.4% on NDCG@10
+- beats KGRec by 10.5% on NDCG@10
+
+## Slide 34 — Ablation Summary
+
+**Largest drop**
+
+- w/o softmax head hurts the most
+- it removes the rationale selection step
+
+**Other core pieces**
+
+- w/o KG-SVD init degrades the global view
+- w/o fusion-gate bias weakens the safe default
+- w/o MLP gate reduces fusion flexibility
+
+**Smaller but consistent**
+
+- w/o user CL and w/o aspect CL both drop performance
+- w/o rationale-enabled selection and w/o global view also underperform
+
+---
+
+## Slide 35 — Case Study and Takeaways
 
 **圖片**
 
@@ -594,15 +656,15 @@ lambda_CL = 0.005
 
 - different items activate different aspect slots
 - rationale masking gives interpretability
-- the model is not only accurate, it also shows which slot is used
+- the model shows which slot is used for a prediction
 
 ---
 
-## Slide 32 — Conclusion
+## Slide 36 — Conclusion
 
 **Conclusion**
 
-When the KG is unreliable, what an architecture most needs is not a better KG aggregator but a structural switch by which the KG can be opted out of.
+When the KG is unreliable, what the architecture needs is not a better KG aggregator but a structural switch that can opt the KG out.
 
 **Contributions**
 
@@ -614,5 +676,7 @@ When the KG is unreliable, what an architecture most needs is not a better KG ag
 **Limitations**
 
 - one sparse review-aspect KG dataset
-- KG construction pipeline is adopted
+- KG construction pipeline is adopted rather than proposed
 - dense-KG settings may still favor deep fusion
+
+以上，謝謝大家。
