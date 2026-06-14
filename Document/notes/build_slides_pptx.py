@@ -46,11 +46,16 @@ TOP_MARGIN = int(0.18 * EMU)
 BODY_TOP = int(1.12 * EMU)
 BODY_BOTTOM = int(0.45 * EMU)
 
-HEADER_FILL = "16324F"
-ACCENT_FILL = "2B8AA3"
+BG_FILL = "F4F1EA"
+HEADER_FILL = "102A43"
+ACCENT_FILL = "C89B3C"
+SOFT_ACCENT = "D9E4EC"
+CARD_FILL = "FFFFFF"
+CARD_LINE = "D7DEE6"
 TITLE_COLOR = "FFFFFF"
-BODY_COLOR = "1C2430"
-MUTED_COLOR = "6A7380"
+BODY_COLOR = "1F2933"
+MUTED_COLOR = "68737F"
+SECTION_COLOR = "AEB8C2"
 
 
 @dataclass
@@ -217,6 +222,54 @@ def add_rect(sp_tree: ET.Element, shape_id: int, name: str, x: int, y: int, w: i
     ET.SubElement(p, qn("a", "endParaRPr"))
 
 
+def add_line(sp_tree: ET.Element, shape_id: int, name: str, x: int, y: int, w: int, color: str, weight: int = 1200) -> None:
+    sp = ET.SubElement(sp_tree, qn("p", "sp"))
+    nv = ET.SubElement(sp, qn("p", "nvSpPr"))
+    ET.SubElement(nv, qn("p", "cNvPr"), id=str(shape_id), name=name)
+    ET.SubElement(nv, qn("p", "cNvSpPr"), txBox="1")
+    ET.SubElement(nv, qn("p", "nvPr"))
+    sp_pr = ET.SubElement(sp, qn("p", "spPr"))
+    xfrm = ET.SubElement(sp_pr, qn("a", "xfrm"))
+    ET.SubElement(xfrm, qn("a", "off"), x=str(x), y=str(y))
+    ET.SubElement(xfrm, qn("a", "ext"), cx=str(w), cy="0")
+    ln = ET.SubElement(sp_pr, qn("a", "ln"), w=str(weight))
+    solid = ET.SubElement(ln, qn("a", "solidFill"))
+    ET.SubElement(solid, qn("a", "srgbClr"), val=color)
+    ET.SubElement(ln, qn("a", "headEnd"), type="none")
+    ET.SubElement(ln, qn("a", "tailEnd"), type="none")
+
+
+def add_section_pill(sp_tree: ET.Element, shape_id: int, section: str, x: int, y: int) -> None:
+    width = max(emu(1.0), emu(0.12) * len(section) + emu(0.5))
+    add_rect(sp_tree, shape_id, f"Section{shape_id}", x, y, width, emu(0.28), SOFT_ACCENT, SOFT_ACCENT, radius=True)
+    add_textbox(
+        sp_tree,
+        shape_id + 1,
+        f"SectionText{shape_id}",
+        x + emu(0.12),
+        y + emu(0.02),
+        width - emu(0.24),
+        emu(0.22),
+        [Para(section.upper(), bold=True)],
+        default_size=11,
+        default_color=HEADER_FILL,
+    )
+
+
+def section_for_slide(number: int) -> str:
+    if number == 1:
+        return "Title"
+    if number <= 4:
+        return "Introduction"
+    if number <= 10:
+        return "Related Work"
+    if number <= 26:
+        return "Methodology"
+    if number <= 30:
+        return "Experiments"
+    return "Conclusion"
+
+
 def add_textbox(
     sp_tree: ET.Element,
     shape_id: int,
@@ -329,9 +382,9 @@ def make_title_slide(spec: SlideSpec) -> ET.Element:
     ET.SubElement(root, qn("p", "clrMapOvr"))
     root.find(qn("p", "clrMapOvr")).append(ET.Element(qn("a", "masterClrMapping")))
 
-    add_rect(sp_tree, 2, "Background", 0, 0, SLIDE_W, SLIDE_H, "F8F7F3")
-    add_rect(sp_tree, 3, "AccentBar", 0, 0, emu(0.48), SLIDE_H, HEADER_FILL)
-    add_rect(sp_tree, 4, "AccentBand", emu(1.0), emu(0.9), emu(10.8), emu(0.14), ACCENT_FILL)
+    add_rect(sp_tree, 2, "Background", 0, 0, SLIDE_W, SLIDE_H, HEADER_FILL)
+    add_rect(sp_tree, 3, "LeftStripe", 0, 0, emu(0.42), SLIDE_H, ACCENT_FILL)
+    add_rect(sp_tree, 4, "AccentBand", emu(0.9), emu(0.92), emu(11.1), emu(0.08), ACCENT_FILL)
 
     title_lines: list[Para] = []
     for p in spec.paras:
@@ -340,10 +393,10 @@ def make_title_slide(spec: SlideSpec) -> ET.Element:
 
     # Main title, subtitle, Chinese subtitle, tags, and main idea block.
     positions = [
-        (emu(1.0), emu(1.1), emu(11.0), emu(0.72), 34),
-        (emu(1.0), emu(1.9), emu(11.0), emu(0.42), 20),
-        (emu(1.0), emu(2.35), emu(11.0), emu(0.42), 20),
-        (emu(1.0), emu(3.0), emu(11.0), emu(0.32), 15),
+        (emu(0.95), emu(1.25), emu(11.3), emu(0.88), 36),
+        (emu(0.98), emu(2.15), emu(11.0), emu(0.42), 18),
+        (emu(0.98), emu(2.58), emu(11.0), emu(0.42), 18),
+        (emu(0.98), emu(3.18), emu(11.0), emu(0.32), 13),
     ]
     for idx, (x, y, w, h, size) in enumerate(positions):
         if idx >= len(title_lines):
@@ -358,24 +411,24 @@ def make_title_slide(spec: SlideSpec) -> ET.Element:
             h,
             [Para(title_lines[idx].text, bold=True if idx == 0 else False)],
             default_size=size,
-            default_color=HEADER_FILL if idx == 0 else BODY_COLOR,
+            default_color=TITLE_COLOR if idx == 0 else "EDF3F7",
         )
 
     if len(title_lines) > 4:
         # Group the remaining lines into a highlighted takeaway box.
         box_lines = [p for p in title_lines[4:]]
-        add_rect(sp_tree, 20, "TakeawayBox", emu(0.95), emu(4.05), emu(11.7), emu(1.1), "EAF3F5", "B7D8DF", radius=True)
+        add_rect(sp_tree, 20, "TakeawayBox", emu(0.95), emu(4.32), emu(11.45), emu(1.0), "16324F", "567189", radius=True)
         add_textbox(
             sp_tree,
             21,
             "TakeawayText",
             emu(1.2),
-            emu(4.22),
-            emu(11.1),
-            emu(0.75),
+            emu(4.48),
+            emu(11.0),
+            emu(0.58),
             box_lines,
-            default_size=18,
-            default_color=HEADER_FILL,
+            default_size=16,
+            default_color="FFFFFF",
             fit_to_box=True,
         )
 
@@ -395,13 +448,13 @@ def make_title_slide(spec: SlideSpec) -> ET.Element:
     r = ET.SubElement(p, qn("a", "r"))
     rPr = ET.SubElement(r, qn("a", "rPr"), sz="1050", lang="en-US")
     fill = ET.SubElement(rPr, qn("a", "solidFill"))
-    ET.SubElement(fill, qn("a", "srgbClr"), val=MUTED_COLOR)
+    ET.SubElement(fill, qn("a", "srgbClr"), val="D5DEE8")
     t = ET.SubElement(r, qn("a", "t"))
     t.text = f"{spec.number:02d}"
     ET.SubElement(p, qn("a", "endParaRPr"), sz="1050")
     # Position the footer via the shape transform.
     xfrm = ET.SubElement(sp_pr, qn("a", "xfrm"))
-    ET.SubElement(xfrm, qn("a", "off"), x=str(emu(12.1)), y=str(emu(6.85)))
+    ET.SubElement(xfrm, qn("a", "off"), x=str(emu(12.05)), y=str(emu(6.82)))
     ET.SubElement(xfrm, qn("a", "ext"), cx=str(emu(0.6)), cy=str(emu(0.24)))
 
     return root
@@ -415,33 +468,34 @@ def make_regular_slide(spec: SlideSpec, image_rel: Optional[str] = None) -> ET.E
     clr = ET.SubElement(root, qn("p", "clrMapOvr"))
     ET.SubElement(clr, qn("a", "masterClrMapping"))
 
-    add_rect(sp_tree, 2, "Header", 0, 0, SLIDE_W, HEADER_H, HEADER_FILL)
-    add_rect(sp_tree, 3, "HeaderAccent", 0, HEADER_H - emu(0.06), SLIDE_W, emu(0.06), ACCENT_FILL)
+    add_rect(sp_tree, 2, "Background", 0, 0, SLIDE_W, SLIDE_H, BG_FILL)
+    add_rect(sp_tree, 3, "Header", 0, 0, SLIDE_W, HEADER_H, HEADER_FILL)
+    add_rect(sp_tree, 4, "HeaderAccent", 0, HEADER_H - emu(0.06), SLIDE_W, emu(0.06), ACCENT_FILL)
+    add_line(sp_tree, 5, "HeaderLine", emu(0.62), HEADER_H + emu(0.28), emu(11.3), SECTION_COLOR, weight=900)
+    add_section_pill(sp_tree, 6, section_for_slide(spec.number), emu(0.64), emu(0.18))
 
     add_textbox(
         sp_tree,
-        4,
+        7,
         "SlideTitle",
-        LEFT_MARGIN,
-        TOP_MARGIN,
-        emu(11.5),
-        emu(0.46),
+        emu(0.66),
+        emu(0.55),
+        emu(11.6),
+        emu(0.42),
         [Para(spec.title, bold=True)],
-        default_size=24,
+        default_size=23,
         default_color=TITLE_COLOR,
     )
 
-    body_top = BODY_TOP
-    body_h = SLIDE_H - BODY_TOP - BODY_BOTTOM
+    card_x = emu(0.56)
+    card_w = emu(11.84)
+    body_top = emu(1.34)
+    body_h = emu(5.95)
     if image_rel is not None:
-        # Reserve space for the image in the upper half of the slide.
-        img_x = emu(0.9)
-        img_y = emu(1.22)
-        img_w = emu(11.5)
-        img_h = emu(3.35)
-        add_picture(sp_tree, 5, "SlideImage", image_rel, img_x, img_y, img_w, img_h)
-        body_top = emu(4.85)
-        body_h = SLIDE_H - body_top - BODY_BOTTOM
+        add_rect(sp_tree, 8, "ImageCard", emu(0.62), emu(1.45), emu(11.62), emu(2.98), CARD_FILL, CARD_LINE, radius=True)
+        add_picture(sp_tree, 9, "SlideImage", image_rel, emu(0.9), emu(1.66), emu(11.06), emu(2.56))
+        body_top = emu(4.62)
+        body_h = emu(1.92)
 
     font_size = choose_body_size(spec)
     if image_rel is not None:
@@ -450,20 +504,22 @@ def make_regular_slide(spec: SlideSpec, image_rel: Optional[str] = None) -> ET.E
     body_lines = spec.paras
     body_box = ET.SubElement(sp_tree, qn("p", "sp"))
     nv = ET.SubElement(body_box, qn("p", "nvSpPr"))
-    ET.SubElement(nv, qn("p", "cNvPr"), id="6", name="Body")
+    ET.SubElement(nv, qn("p", "cNvPr"), id="10", name="Body")
     ET.SubElement(nv, qn("p", "cNvSpPr"), txBox="1")
     ET.SubElement(nv, qn("p", "nvPr"))
     sp_pr = ET.SubElement(body_box, qn("p", "spPr"))
     xfrm = ET.SubElement(sp_pr, qn("a", "xfrm"))
-    ET.SubElement(xfrm, qn("a", "off"), x=str(LEFT_MARGIN), y=str(body_top))
-    ET.SubElement(xfrm, qn("a", "ext"), cx=str(emu(12.0) - LEFT_MARGIN - RIGHT_MARGIN), cy=str(body_h))
-    geom = ET.SubElement(sp_pr, qn("a", "prstGeom"), prst="rect")
+    ET.SubElement(xfrm, qn("a", "off"), x=str(card_x), y=str(body_top))
+    ET.SubElement(xfrm, qn("a", "ext"), cx=str(card_w), cy=str(body_h))
+    geom = ET.SubElement(sp_pr, qn("a", "prstGeom"), prst="roundRect")
     ET.SubElement(geom, qn("a", "avLst"))
-    ET.SubElement(sp_pr, qn("a", "noFill"))
+    fill = ET.SubElement(sp_pr, qn("a", "solidFill"))
+    ET.SubElement(fill, qn("a", "srgbClr"), val=CARD_FILL)
     ln = ET.SubElement(sp_pr, qn("a", "ln"))
-    ET.SubElement(ln, qn("a", "noFill"))
+    solid = ET.SubElement(ln, qn("a", "solidFill"))
+    ET.SubElement(solid, qn("a", "srgbClr"), val=CARD_LINE)
     tx = ET.SubElement(body_box, qn("p", "txBody"))
-    ET.SubElement(tx, qn("a", "bodyPr"), wrap="square", anchor="t", lIns="0", rIns="0", tIns="0", bIns="0")
+    ET.SubElement(tx, qn("a", "bodyPr"), wrap="square", anchor="t", lIns="30000", rIns="30000", tIns="24000", bIns="16000")
     ET.SubElement(tx, qn("a", "lstStyle"))
 
     for para in body_lines:
@@ -493,7 +549,7 @@ def make_regular_slide(spec: SlideSpec, image_rel: Optional[str] = None) -> ET.E
     ET.SubElement(nv, qn("p", "nvPr"))
     sp_pr = ET.SubElement(footer, qn("p", "spPr"))
     xfrm = ET.SubElement(sp_pr, qn("a", "xfrm"))
-    ET.SubElement(xfrm, qn("a", "off"), x=str(emu(12.1)), y=str(emu(6.86)))
+    ET.SubElement(xfrm, qn("a", "off"), x=str(emu(12.05)), y=str(emu(6.84)))
     ET.SubElement(xfrm, qn("a", "ext"), cx=str(emu(0.55)), cy=str(emu(0.22)))
     ET.SubElement(sp_pr, qn("a", "noFill"))
     ln = ET.SubElement(sp_pr, qn("a", "ln"))
@@ -505,7 +561,7 @@ def make_regular_slide(spec: SlideSpec, image_rel: Optional[str] = None) -> ET.E
     r = ET.SubElement(p, qn("a", "r"))
     rPr = ET.SubElement(r, qn("a", "rPr"), sz="900", lang="en-US")
     fill = ET.SubElement(rPr, qn("a", "solidFill"))
-    ET.SubElement(fill, qn("a", "srgbClr"), val="8A93A0")
+    ET.SubElement(fill, qn("a", "srgbClr"), val="94A0AC")
     t = ET.SubElement(r, qn("a", "t"))
     t.text = f"{spec.number:02d}"
     ET.SubElement(p, qn("a", "endParaRPr"), sz="900")
