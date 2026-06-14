@@ -10,25 +10,25 @@
 
 今天的報告我會先講動機，再講相關研究，接著進入方法細節，最後看實驗結果和結論。
 
-第一部分是 introduction，我會先說明為什麼稀疏 KG 會讓現有 KG-aware recommendation 失效。第二部分是 related work，我會快速定位幾個代表性的 baseline，包括純 CF、KG-aware recommendation，以及 gating 相關方法。第三部分是 methodology，這會是整份報告最重要的部分，我會詳細說 local view、KG-SVD、softmax rationale masking，以及 fusion gate。第四部分是 experiments，會看主結果和 ablation。最後是 conclusion & future work，整理貢獻、限制和後續方向。
+第一部分是導論，我會先說明為什麼稀疏 KG 會讓現有 KG-aware recommendation 失效。第二部分是相關研究，我會快速定位幾個代表性的基線，包括純 CF、KG-aware recommendation，以及 gate 相關方法。第三部分是方法章，這會是整份報告最重要的部分，我會詳細說 local view、KG-SVD、softmax rationale masking，以及 fusion gate。第四部分是實驗，會看主結果和 ablation。最後是結論與未來工作，整理貢獻、限制和後續方向。
 
 ## Slide 3 — Motivation
 
 先講動機。
 
-推薦系統近年很主流的一條線是用 GNN 做 collaborative filtering，最代表性的就是 LightGCN。LightGCN 的重點是把 GNN 裡比較複雜的 nonlinear transformation 拿掉，只保留線性的鄰居聚合，結果反而在很多資料集上表現很好。這告訴我們，在推薦裡面，乾淨的 collaborative signal 其實非常重要。
+推薦系統近年很主流的一條線是用 GNN 做協同過濾，最代表性的就是 LightGCN。LightGCN 的重點是把 GNN 裡比較複雜的非線性轉換拿掉，只保留線性的鄰居聚合，結果反而在很多資料集上表現很好。這告訴我們，在推薦裡面，乾淨的協同訊號其實非常重要。
 
-另一條線是 KG-aware recommendation。這類方法的想法是，如果能把 item 的語意資訊，像是題材、風格、主題，從 knowledge graph 引進來，理論上應該可以讓推薦更準，也更可解釋。KGAT、KGCL、MCCLK、KGRec 都是這一線的代表，在 KG 比較豐富的資料集上也確實有很好的表現。
+另一條線是 KG-aware recommendation。這類方法的想法是，如果能把 item 的語意資訊，像是題材、風格、主題，從知識圖譜引進來，理論上應該可以讓推薦更準，也更可解釋。KGAT、KGCL、MCCLK、KGRec 都是這一線的代表，在 KG 比較豐富的資料集上也確實有很好的表現。
 
 但是我們在自己的設定裡看到一個很反直覺的現象。我們用的是 Amazon Books 的子集，而且 knowledge graph 是從書評抽出的 aspect，所以本來就很稀疏。過濾後平均每本書只有 2.4 條 KG 邊。在這個設定下，我們把幾個主流 KG-aware 方法都跑了一遍，結果全部都輸給純 LightGCN。LightGCN 的 NDCG@20 是 0.1179，反而高於 KGAT、KGCL、MCCLK 和 KGRec。
 
-這個結果不是說那些方法不好，而是說當 KG 稀疏又不穩定的時候，把 KG 直接融進 scoring pipeline，很可能會把雜訊一起帶進去，最後拖累原本乾淨的 collaborative signal。
+這個結果不是說那些方法不好，而是說當 KG 稀疏又不穩定的時候，把 KG 直接融進 scoring pipeline，很可能會把雜訊一起帶進去，最後拖累原本乾淨的協同訊號。
 
 ## Slide 4 — Why Sparse KG
 
 接著說明為什麼這種 KG 會這麼稀疏。
 
-答案是，稀疏 KG 在實務上很常見，不是例外。review-derived KG 本來就只會覆蓋使用者提到過的主題，所以密度自然不均勻。cold-start 和 emerging domains 通常也缺少像 Freebase 或 Wikidata 那樣完整的 curated source。再加上 medical、financial 這類 privacy-constrained domains，能用的 relational signal 也會被刻意限制。最後，KG completion 也不是無痛解法，因為它會引入新的 noise，而且通常還需要 seed signal。
+答案是，稀疏 KG 在實務上很常見，不是例外。review-derived KG 本來就只會覆蓋使用者提到過的主題，所以密度自然不均勻。cold-start 和 emerging domains 通常也缺少像 Freebase 或 Wikidata 那樣完整的整理來源。再加上 medical、financial 這類 privacy-constrained domains，能用的關聯訊號也會被刻意限制。最後，KG completion 也不是無痛解法，因為它會引入新的噪音，而且通常還需要 seed signal。
 
 所以這篇工作的重點不是去解決「KG 太少」本身，而是去解決「當 KG 不可靠時，模型要怎麼穩健地做推薦」。
 
@@ -42,7 +42,7 @@
 
 這也是為什麼在我們的設定裡，LightGCN 反而會贏。因為 LightGCN 只看 user-item interaction，不會碰到那條不可靠的 KG branch，所以它保留了一個乾淨又安全的 baseline。
 
-我們的回應不是把 KG 完全拿掉，而是把它改成一條 dedicated side channel，讓模型可以在 KG 不可靠時把它 attenuate，甚至完全 disengage。
+我們的回應不是把 KG 完全拿掉，而是把它改成一條專門的側通道，讓模型可以在 KG 不可靠時把它削弱，甚至完全關掉。
 
 ## Slide 6 — Research Question
 
@@ -50,13 +50,13 @@
 
 第一個是 diagnosis，也就是為什麼 KG-aware 模型會在 sparse KG 下輸給純 LightGCN。第二個是 prescription，也就是什麼樣的設計原則，才能讓模型在 KG 有用時利用它，在 KG 不可靠時避免污染協同過濾。
 
-我們的答案是：KG 不應該是 scoring pipeline 裡的必經成分，而應該是一條可以被 gate 控制的 side channel。這個想法後面會具體落地在三個設計上，分別是 KG-SVD initialization、softmax rationale masking 和 local-biased fusion gate。
+我們的答案是：KG 不應該是 scoring pipeline 裡的必經成分，而應該是一條可以被 gate 控制的側通道。這個想法後面會具體落地在三個設計上，分別是 KG-SVD 初始化、softmax rationale masking 和 local-biased fusion gate。
 
 ## Slide 7 — Related Work I
 
 先講最基礎的兩個方法。
 
-LightGCN 是我們 local view 的直接前身。它的重點是把 GCN 裡比較複雜的 feature transformation 拿掉，只保留線性的鄰居聚合和 layer-wise average，所以在 sparse review KG 上，它是最強的 non-KG anchor。
+LightGCN 是我們 local view 的直接前身。它的重點是把 GCN 裡比較複雜的特徵轉換拿掉，只保留線性的鄰居聚合和 layer-wise average，所以在 sparse review KG 上，它是最強的 non-KG anchor。
 
 KGAT 則代表典型的 deep fusion。它把 user-item graph 和 KG 合併成一張 collaborative knowledge graph，KG entities 會直接參與 propagation，這在 KG dense 且高品質時通常有效。
 
@@ -64,11 +64,11 @@ KGAT 則代表典型的 deep fusion。它把 user-item graph 和 KG 合併成一
 
 ## Slide 8 — Related Work II
 
-接下來是 contrastive KG methods。
+接下來是對比式 KG 方法。
 
-KGCL 會對 KG 結構做擾動，然後對 original view 和 perturbed view 做 contrastive learning。MCCLK 則建立 collaborative、semantic、structural 三個視角，彼此做多重對齊。這些方法在 KG 比較豐富時都很強，但它們仍然假設 KG 結構本身夠有資訊。
+KGCL 會對 KG 結構做擾動，然後對 original view 和 perturbed view 做對比學習。MCCLK 則建立 collaborative、semantic、structural 三個視角，彼此做多重對齊。這些方法在 KG 比較豐富時都很強，但它們仍然假設 KG 結構本身夠有資訊。
 
-所以我們也有用 contrastive learning，但它只是輔助，權重很小，目的是幫 local 和 global 的幾何空間做輕量對齊，而不是主導融合。
+所以我們也有用對比學習，但它只是輔助，權重很小，目的是幫 local 和 global 的幾何空間做輕量對齊，而不是主導融合。
 
 ## Slide 9 — Related Work III
 
