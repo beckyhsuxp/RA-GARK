@@ -5,13 +5,11 @@
 
 **圖檔對應**
 
-| 圖檔 | 頁面 |
-|---|---|
-| `thesis/img/architecture.png` | Slide 12 |
-| `thesis/img/kg_svd.png` | Slide 18 |
-| `thesis/img/gate.png` | Slides 23-25 |
-| `thesis/img/sensitivity_2x2.png` | Slide 22 |
-| `thesis/img/case_study_heatmap.png` | Slide 31 |
+- `thesis/img/architecture.png` -> Slide 12
+- `thesis/img/kg_svd.png` -> Slide 18
+- `thesis/img/gate.png` -> Slides 23-25
+- `thesis/img/sensitivity_2x2.png` -> Slide 22
+- `thesis/img/case_study_heatmap.png` -> Slide 31
 
 ## Slide 1 — Title
 **RA-GARK**
