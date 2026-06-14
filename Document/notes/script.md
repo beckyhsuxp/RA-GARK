@@ -106,9 +106,9 @@ KG 應該是可閘控的側通道，而不是必經 scoring component。
 
 ## Slide 13 — Problem Setup I
 
-這一頁先講任務和 score。
+這一頁先講任務和分數。
 
-我們的任務是隱式回饋的 top-K recommendation。對每個 user，要把沒看過的 item 做排序，讓真正互動過的 item 排在前面。訓練時使用正樣本和 sampled negative pairs。
+我們的任務是隱式回饋的 top-K 推薦。對每個 user，要把沒看過的 item 做排序，讓真正互動過的 item 排在前面。訓練時使用正樣本和抽樣得到的負樣本配對。
 
 最終分數就是 `y_hat(u, i)`，也就是 `u_final` 跟 `i_final` 的內積。這裡只先把 score 的定義講清楚，`u_final` 和 `i_final` 的構成放到下一頁。
 
