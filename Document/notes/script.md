@@ -98,23 +98,23 @@ KG 應該是可閘控的側通道，而不是必經 scoring component。
 
 ## Slide 12 — Overview
 
-這一頁先看整體架構。RA-GARK 的重點不是把 KG 直接塞進 propagation，而是把 KG 放成一條獨立的 global side channel。
+這一頁我先直接看架構圖。
 
-左邊是 local view，也就是純 LightGCN。它只看 user-item graph，目的是保住穩定的 CF signal，讓模型先站在一個可靠的基準上。中間是 global view，它先用 KG-SVD 建好 aspect slot，再用 softmax rationale masking，針對當前 user-item pair 挑出比較有用的 aspect。最右邊是 fusion gate，只有到 scoring stage 才決定 local 和 global 要怎麼融合。
+左邊是 local view，也就是純 LightGCN。它只看 user-item graph，先保住穩定的 CF signal。中間是 global view，它先用 KG-SVD 建好 aspect slot，再用 softmax rationale masking，針對當前 user-item pair 挑出比較有用的 aspect。最右邊是 fusion gate，負責把兩邊在最後的 scoring stage 融合起來。
 
-所以這張圖的核心訊息是：前面先分開學，最後再決定要不要用 KG。訓練時主目標是 BPR，再加上一個很小的 contrastive regularization，讓 representation 更穩。接下來我會先拆 local view，再講 global view，最後說 gate 怎麼把兩邊接起來。
+這張圖的重點是：前面先分開學，最後再決定要不要用 KG。圖上的符號我會在第一次出現時順便講，例如 `u_loc`、`u_glo`、`u_final` 和 `y_hat(u, i)`。接下來我再把 local view、global view 和 gate 分開講。
 
 ## Slide 13 — Problem Setup I
 
-這一頁先講任務本身。
+這一頁先講任務和 score。
 
 我們的任務是 implicit top-K recommendation。對每個 user，要把沒看過的 item 做排序，讓真正互動過的 item 排在前面。訓練時使用正樣本和 sampled negative pairs。
 
-最終分數就是 `y_hat(u, i)`，也就是 `u_final` 跟 `i_final` 的內積。這代表後面所有表示，最後都會回到同一個 ranking score。
+最終分數就是 `y_hat(u, i)`，也就是 `u_final` 跟 `i_final` 的內積。這裡只先把 score 的定義講清楚，`u_final` 和 `i_final` 的構成放到下一頁。
 
 ## Slide 14 — Problem Setup II
 
-這一頁補 fusion 的部分。
+這一頁補 fusion 和 gate 的角色。
 
 `u_final` 和 `i_final` 都是 local 表示和 global 表示的加權和，權重分別由 `alpha_u` 和 `alpha_i` 決定。`alpha` 越接近 1，就越偏 local、越像純 CF；`alpha` 越接近 0，就越偏 global、越依賴 KG。
 
@@ -122,11 +122,11 @@ KG 應該是可閘控的側通道，而不是必經 scoring component。
 
 ## Slide 15 — Notation
 
-這一頁先把符號定義清楚。
+這一頁只做快速對照，不會停太久。
 
 `U`、`I` 是 users 和 items；`R` 是 observed interactions；`G_KG` 是 item-aspect KG。`A=4`、`d=128`、`K=2` 是我們後面會固定使用的設定。
 
-`u_loc`、`i_loc` 是 local-view embeddings；`u_glo`、`i_glo` 是 global-view embeddings；`alpha_u`、`alpha_i` 是 fusion gates。
+`u_loc`、`i_loc` 是 local-view embeddings；`u_glo`、`i_glo` 是 global-view embeddings；`alpha_u`、`alpha_i` 是 fusion gates。這些符號在前面圖和公式第一次出現時，我會直接帶過，不會另外長篇解釋。
 
 ## Slide 16 — Local View
 
