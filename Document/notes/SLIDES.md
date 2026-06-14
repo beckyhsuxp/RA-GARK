@@ -279,13 +279,13 @@ KG should be a gateable side channel, not a mandatory scoring component.
 
 ```text
 E^(l+1) = A_norm E^(l)
-E_loc = average(E^(0), E^(1), ..., E^(K))
+\bar{E} = (1 / (K + 1)) * sum_{l=0}^K E^(l)
 ```
 
 **Setting**
 
 - K = 2
-- output: `u_loc`, `i_loc`
+- output: `u_loc`, `i_loc` from `\bar{E}`
 
 ---
 
