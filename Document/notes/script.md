@@ -154,7 +154,7 @@ KG-SVD 的出發點很簡單：raw item-aspect matrix 很 sparse，而且太泛�
 
 這張圖對應 KG-SVD 的第二步。
 
-我們對 IDF-weighted matrix 做 truncated SVD，然後把結果投影成 `E_KG = U sqrt(Sigma)`。接著把 flat vector reshape 成每個 item 的四個 aspect slot，每個 slot 維度是 128。
+我們對 IDF-weighted matrix 做 truncated SVD，`U` 是左 singular vectors，`Sigma` 是 singular values 的對角矩陣，然後把結果投影成 `E_KG = U sqrt(Sigma)`。接著把 flat vector reshape 成每個 item 的四個 aspect slot，每個 slot 維度是 128。
 
 ## Slide 21 — KG-SVD Effect
 
@@ -174,7 +174,7 @@ global view 的第二個核心是 softmax rationale masking。
 
 這一頁就是具體計算。
 
-`logit_k` 來自 `MLP([u_glo || aspect_slot_i,k])`，再經過 `softmax(logit_k / tau)` 變成 slot 權重，最後把四個 slot 加權求和成 `i_glo`。
+`MLP` 是一個小型 feed-forward network。`logit_k` 來自 `MLP([u_glo || aspect_slot_i,k])`，再經過 `softmax(logit_k / tau)` 變成 slot 權重，其中 `tau` 是 softmax temperature，最後把四個 slot 加權求和成 `i_glo`。
 
 ## Slide 24 — Softmax Normalization
 
@@ -212,13 +212,13 @@ Top-20 是 0.1005 / 0.0451，Top-10 是 0.0785 / 0.0397。這說明 normalizatio
 
 除了 BPR，我們還加了兩個很小的 contrastive regularization。
 
-一個是 aspect-level 的對比損失，另一個是 user cross-view 的對比損失。它們只是輔助對齊 local 和 global 的幾何空間，不是主融合機制。
+`L_aCL` 是 aspect-level 的對比損失，`L_uCL` 是 user cross-view 的對比損失，`lambda_CL` 是這個輔助項的權重，`tau_CL` 是對比學習用的 temperature。它們只是輔助對齊 local 和 global 的幾何空間，不是主融合機制。
 
 ## Slide 30 — Training Objective
 
 這一頁補 BPR 的訓練目標。
 
-我們用正樣本和 sampled negative pairs 來訓練，目標是把真正互動過的 item 排在未互動 item 前面。BPR 負責 ranking signal，gate 和 CL 負責把表示調穩定。
+`BPR` 是 pairwise ranking loss。`sigma` 是 sigmoid function。我們用正樣本和 sampled negative pairs 來訓練，目標是把真正互動過的 item 排在未互動 item 前面。BPR 負責 ranking signal，gate 和 CL 負責把表示調穩定。
 
 ## Slide 31 — Dataset and Optimization
 
