@@ -110,7 +110,7 @@ KG 應該是可閘控的側通道，而不是必經 scoring component。
 
 我們的任務是 implicit top-K recommendation。對每個 user，要把沒看過的 item 做排序，讓真正互動過的 item 排在前面。訓練時使用正樣本和 sampled negative pairs。
 
-最終分數就是 `y(u, i)`，也就是 `u_final` 跟 `i_final` 的內積。這代表後面所有表示，最後都會回到同一個 ranking score。
+最終分數就是 `y_hat(u, i)`，也就是 `u_final` 跟 `i_final` 的內積。這代表後面所有表示，最後都會回到同一個 ranking score。
 
 ## Slide 14 — Problem Setup II
 
