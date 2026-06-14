@@ -154,7 +154,7 @@ KG-SVD 的出發點很簡單：raw item-aspect matrix 很 sparse，而且太泛�
 
 這張圖對應 KG-SVD 的第二步。
 
-我們對 IDF-weighted matrix 做 truncated SVD，`U` 是左 singular vectors，`Sigma` 是 singular values 的對角矩陣，`V^T` 是右 singular vectors 的轉置。接著把結果投影成 `E_KG = U sqrt(Sigma)`，這樣就得到每個 item 的初始 KG 表示。最後再把 flat vector reshape 成每個 item 的四個 aspect slot，每個 slot 維度是 128。
+我們對 IDF-weighted matrix 做 rank-`k` 的 truncated SVD，這裡 `k = A d`。`U_k` 是左 singular vectors，`Sigma_k` 是 singular values 的對角矩陣，`V_k^T` 是右 singular vectors 的轉置。接著把結果投影成 `E_KG = U_k Sigma_k^(1/2)`，這樣就得到每個 item 的初始 KG 表示。最後再把 flat vector reshape 成每個 item 的四個 aspect slot，每個 slot 維度是 128。
 
 ## Slide 21 — KG-SVD Effect
 

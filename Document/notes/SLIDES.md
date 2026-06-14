@@ -353,8 +353,8 @@ idf(a) = log(N_items / support(a) + 1) + 1
 **Truncated SVD**
 
 ```text
-M_tilde ~= U Sigma V^T
-E_KG = U sqrt(Sigma)
+M_tilde ~= U_k Sigma_k V_k^T
+E_KG = U_k Sigma_k^(1/2)
 ```
 
 **Reshape**
