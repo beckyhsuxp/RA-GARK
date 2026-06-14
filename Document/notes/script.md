@@ -98,9 +98,9 @@ KG 應該是可閘控的側通道，而不是必經 scoring component。
 
 ## Slide 12 — Overview
 
-這一頁我先直接看架構圖。
+這一頁先看架構圖。
 
-上半部是 local view，也就是純 LightGCN。它只看 user-item graph，先保住穩定的 CF signal。下半部是 global view，它先用 KG-SVD 建好 aspect slot，再用 softmax rationale masking，針對當前 user-item pair 挑出比較有用的 aspect。中間是 fusion gate，負責把兩邊在最後的 scoring stage 融合起來。
+上半部是 local view，也就是純 LightGCN，只看 user-item graph 來保住穩定的 CF signal。下半部是 global view，先用 KG-SVD 建好 aspect slot，再用 softmax rationale masking，針對當前 user-item pair 挑出比較有用的 aspect。中間是 fusion gate，負責在最後的 scoring stage 把兩邊融合起來。
 
 這張圖的重點是：local 和 global 先各自建模，最後再由 gate 決定 KG 佔多少比例。
 
