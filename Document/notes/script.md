@@ -102,7 +102,7 @@ KG 應該是可閘控的側通道，而不是必經 scoring component。
 
 左邊是 local view，也就是純 LightGCN。它只看 user-item graph，先保住穩定的 CF signal。中間是 global view，它先用 KG-SVD 建好 aspect slot，再用 softmax rationale masking，針對當前 user-item pair 挑出比較有用的 aspect。最右邊是 fusion gate，負責把兩邊在最後的 scoring stage 融合起來。
 
-這張圖的重點是：前面先分開學，最後再決定要不要用 KG。圖上的符號，像 `u_loc`、`u_glo`、`u_final` 和 `y_hat(u, i)`，分別表示 local embedding、global embedding、融合後的 embedding，以及最後的 score。接下來我再把 local view、global view 和 gate 分開講。
+這張圖的重點是：前面先分開學，最後再決定要不要用 KG。圖上的符號，像 `u_loc`、`u_glo`、`u_final` 和 `y_hat(u, i)`，分別表示 local embedding、global embedding、融合後的 embedding，以及最後的 score。
 
 ## Slide 13 — Problem Setup I
 
