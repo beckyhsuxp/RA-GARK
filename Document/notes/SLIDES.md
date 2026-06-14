@@ -221,6 +221,7 @@ KG should be a gateable side channel, not a mandatory scoring component.
 
 **Task**
 
+- implicit-feedback top-K recommendation
 - rank unseen items for each user
 - train with positive and sampled negative pairs
 
