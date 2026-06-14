@@ -278,7 +278,7 @@ KG should be a gateable side channel, not a mandatory scoring component.
 **Propagation**
 
 ```text
-E^(l+1) = A_norm E^(l)
+E^(l+1) = A_norm E^(l), l = 0, 1, ..., K-1
 \bar{E} = (1 / (K + 1)) * sum_{l=0}^K E^(l)
 ```
 
