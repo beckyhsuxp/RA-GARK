@@ -104,15 +104,23 @@ KG 應該是可閘控的側通道，而不是必經 scoring component。
 
 所以這張圖的核心訊息是：前面先分開學，最後再決定要不要用 KG。訓練時主目標是 BPR，再加上一個很小的 contrastive regularization，讓 representation 更穩。接下來我會先拆 local view，再講 global view，最後說 gate 怎麼把兩邊接起來。
 
-## Slide 13 — Problem Setup
+## Slide 13 — Problem Setup I
+
+這一頁先講任務本身。
 
 我們的任務是 implicit top-K recommendation。對每個 user，要把沒看過的 item 做排序，讓真正互動過的 item 排在前面。訓練時使用正樣本和 sampled negative pairs。
 
-最終分數就是 `u_final` 跟 `i_final` 的內積。`u_final` 和 `i_final` 則是 local 表示和 global 表示的加權和，權重分別由 `alpha_u` 和 `alpha_i` 決定。
+最終分數就是 `u_final` 跟 `i_final` 的內積。這代表後面所有表示，最後都會回到同一個 ranking score。
 
-這裡有一個重要的 convention：`alpha` 越接近 1，就越偏 local、越像純 CF；`alpha` 越接近 0，就越偏 global、越依賴 KG。
+## Slide 14 — Problem Setup II
 
-## Slide 14 — Notation
+這一頁補 fusion 的部分。
+
+`u_final` 和 `i_final` 都是 local 表示和 global 表示的加權和，權重分別由 `alpha_u` 和 `alpha_i` 決定。`alpha` 越接近 1，就越偏 local、越像純 CF；`alpha` 越接近 0，就越偏 global、越依賴 KG。
+
+這裡用兩個 gate，是因為 user-side 和 item-side 的 KG usefulness 不完全一樣，所以我們不共享同一組參數。
+
+## Slide 15 — Notation
 
 這一頁先把符號定義清楚。
 
@@ -120,49 +128,49 @@ KG 應該是可閘控的側通道，而不是必經 scoring component。
 
 `u_loc`、`i_loc` 是 local-view embeddings；`u_glo`、`i_glo` 是 global-view embeddings；`alpha_u`、`alpha_i` 是 fusion gates。
 
-## Slide 15 — Local View
+## Slide 16 — Local View
 
 local view 我們直接用純 LightGCN。
 
 這個選擇沒有特別花俏，但非常重要。因為在我們的 setting 裡，LightGCN 本來就已經比所有 KG-aware baseline 還好，所以它是我們必須守住的 safe default。
 
-## Slide 16 — Local Propagation
+## Slide 17 — Local Propagation
 
 local propagation 的部分就是標準 LightGCN。
 
 我們只在 user-item bipartite graph 上做傳播，而且只用 training interactions。沒有 KG edges，也沒有任何額外的 nonlinear transformation。最後把第 0 層到第 K 層做平均，這裡 K 設成 2。
 
-## Slide 17 — Global View
+## Slide 18 — Global View
 
 global view 的重點是 latent aspect slots。
 
 為什麼不直接把 KG triples 拿來傳播？因為我們的 KG 太稀疏了，直接傳播很容易對缺失邊或噪音邊敏感。相反地，我們把每個 item 的 KG 語意壓縮成四個 latent aspect slots，讓模型在一個比較低維、比較穩定的空間裡處理 KG。
 
-## Slide 18 — KG-SVD Motivation
+## Slide 19 — KG-SVD Motivation
 
 KG-SVD 的出發點很簡單：raw item-aspect matrix 很 sparse，而且太泛用的 aspect 不應該跟太具辨識度的 aspect 用同樣權重。
 
 所以我們先用 IDF weighting 把 generic aspects 壓下去，再用 SVD 去找一個有語意幾何的初始化。
 
-## Slide 19 — KG-SVD Construction
+## Slide 20 — KG-SVD Construction
 
 這一步先建 item-aspect matrix。
 
 如果 item 有某個 aspect，就把對應位置設成 1；接著乘上 aspect 的 IDF，讓常見但沒辨識力的 aspect 影響變小。
 
-## Slide 20 — KG-SVD SVD and Reshape
+## Slide 21 — KG-SVD SVD and Reshape
 
 這張圖對應 KG-SVD 的第二步。
 
 我們對 IDF-weighted matrix 做 truncated SVD，然後把結果投影成 `E_KG = U sqrt(Sigma)`。接著把 flat vector reshape 成每個 item 的四個 aspect slot，每個 slot 維度是 128。
 
-## Slide 21 — KG-SVD Effect
+## Slide 22 — KG-SVD Effect
 
 這張 ablation 表想表達的是：KG-SVD 不是裝飾。
 
 RA-GARK full 是 0.1243 / 0.0594，拿掉 KG-SVD init 之後是 0.1171 / 0.0545。這表示如果沒有一個合理的起點，global view 很難在 sparse KG 下自己長出好的幾何。
 
-## Slide 22 — Softmax Masking Motivation
+## Slide 23 — Softmax Masking Motivation
 
 global view 的第二個核心是 softmax rationale masking。
 
@@ -170,37 +178,37 @@ global view 的第二個核心是 softmax rationale masking。
 
 這樣做的意思是：同一本書對不同 user 可能有不同的推薦理由，所以 rationale 必須是 user-conditioned 的。
 
-## Slide 23 — Softmax Masking Computation
+## Slide 24 — Softmax Masking Computation
 
 這一頁就是具體計算。
 
 `logit_k` 來自 `MLP([u_glo || aspect_slot_i,k])`，再經過 `softmax(logit_k / tau)` 變成 slot 權重，最後把四個 slot 加權求和成 `i_glo`。
 
-## Slide 24 — Softmax Normalization
+## Slide 25 — Softmax Normalization
 
 這裡我們特別強調 softmax 而不是 sigmoid。
 
 softmax 會讓 slot 之間互相競爭，在固定總量下做選擇；這不只是讓 attention 更 sharp，更重要的是它控制了 `i_glo` 的 magnitude。
 
-## Slide 25 — Softmax vs Sigmoid
+## Slide 26 — Softmax vs Sigmoid
 
 如果用 sigmoid，每個 slot 是獨立啟動的，容易所有 slot 都偏高，最後退化成平均。
 
 所以在我們這個被 gate 控制的 sparse KG side channel 裡，softmax 比 sigmoid 更適合。
 
-## Slide 26 — Softmax Ablation
+## Slide 27 — Softmax Ablation
 
 這張 sensitivity 圖對應 w/o-softmax row。
 
 Top-20 是 0.1005 / 0.0451，Top-10 是 0.0785 / 0.0397。這說明 normalization 的選擇會直接影響穩定性和 magnitude control。
 
-## Slide 27 — Fusion Gate Structure
+## Slide 28 — Fusion Gate Structure
 
 這一頁先講 fusion gate。
 
 `alpha_u` 和 `alpha_i` 是用小型 MLP 算出來的，分別控制 user-side 和 item-side 的 local/global 混合比例。`u_final` 和 `i_final` 則是 local 與 global 表示的加權和。
 
-## Slide 28 — Gate Bias and Graceful Degradation
+## Slide 29 — Gate Bias and Graceful Degradation
 
 這一頁講 gate 的初始化。
 
@@ -208,49 +216,49 @@ Top-20 是 0.1005 / 0.0451，Top-10 是 0.0785 / 0.0397。這說明 normalizatio
 
 這樣做的目的是讓系統先站在安全預設上。如果 KG 不可靠，gate 就維持偏關閉；如果 KG 有幫助，訓練才慢慢把它打開。
 
-## Slide 29 — Contrastive Regularization
+## Slide 30 — Contrastive Regularization
 
 除了 BPR，我們還加了兩個很小的 contrastive regularization。
 
 一個是 aspect-level 的對比損失，另一個是 user cross-view 的對比損失。它們只是輔助對齊 local 和 global 的幾何空間，不是主融合機制。
 
-## Slide 30 — Training Objective
+## Slide 31 — Training Objective
 
 這一頁補 BPR 的訓練目標。
 
 我們用正樣本和 sampled negative pairs 來訓練，目標是把真正互動過的 item 排在未互動 item 前面。BPR 負責 ranking signal，gate 和 CL 負責把表示調穩定。
 
-## Slide 31 — Dataset and Optimization
+## Slide 32 — Dataset and Optimization
 
 這一頁補資料規模和訓練設定。
 
 我們的資料集有 905 個 user、1,399 個 item、22,265 筆互動、3,370 條 KG 邊，以及 2,098 個 aspect。訓練設定是 Adam，learning rate 0.001，batch size 128，最多 80 個 epoch，並且用 validation NDCG@20 做 early stopping。
 
-## Slide 32 — Inference and Complexity
+## Slide 33 — Inference and Complexity
 
 評估時採 full-ranking，會排除訓練集裡已經互動過的 item，最後看 HR、Precision、Recall、F1、MAP 和 NDCG，這些都取 @20。
 
 從效能來看，我們每個 epoch 大概 1.5 秒，跟 KGRec 差不多，所以這個設計沒有讓成本爆炸。
 
-## Slide 33 — Main Results
+## Slide 34 — Main Results
 
 先看主結果。
 
 Top-20 時，RA-GARK 的 NDCG@20 是 0.1243，較 KGRec 高 13.5%，較純 LightGCN 高 5.4%。Top-10 時，RA-GARK 的 NDCG@10 是 0.0966，較 KGRec 高 10.5%，較純 LightGCN 高 6.4%。
 
-## Slide 34 — Ablation Summary
+## Slide 35 — Ablation Summary
 
 再看 ablation。
 
 Top-20 時，softmax head 是最大的變化，0.1243 降到 0.1005；KG-SVD 是 0.1171；fusion-gate bias 是 0.1194；MLP gate 是 0.1180。Top-10 也維持相同排序。
 
-## Slide 35 — Case Study and Takeaways
+## Slide 36 — Case Study and Takeaways
 
 這張 heatmap 是 case study。
 
 你可以看到不同 item 會對不同 aspect slot 給出不同的權重，表示 rationale masking 不是固定平均，而是真的有在對不同 item 使用不同的語意路徑。
 
-## Slide 36 — Conclusion
+## Slide 37 — Conclusion
 
 最後總結一下。
 
