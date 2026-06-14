@@ -106,9 +106,13 @@ On this sparse KG, every KG-aware baseline loses to pure LightGCN.
 
 ## Slide 6 — Research Question
 
-**Research question**
+**RQ1: Diagnosis**
 
-How can a recommender use KG when it helps, but avoid KG contamination when KG is sparse or unreliable?
+Why do KG-aware methods underperform pure LightGCN under sparse KG?
+
+**RQ2: Prescription**
+
+What design principle lets a model use KG when helpful and avoid contamination when unreliable?
 
 **RA-GARK answer**
 
