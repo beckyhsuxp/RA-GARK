@@ -54,55 +54,51 @@
 
 ## Slide 7 — Related Work I
 
-先講最基礎的兩個方法。
+先用最基本的對照把位置定出來。
 
-LightGCN 是我們 local view 的直接前身。它的重點是把 GCN 裡比較複雜的 feature transformation 拿掉，只保留線性的鄰居聚合和 layer-wise average，所以在 sparse review KG 上，它是最強的 non-KG anchor。
+LightGCN 是我們的 non-KG anchor，也是 sparse setting 下最安全的起點。KGAT 則代表典型 deep fusion，因為 KG entity 會直接進 propagation，所以 user 和 item 的表示是在一條包含 KG 的路徑上學出來的。
 
-KGAT 則代表典型的 deep fusion。它把 user-item graph 和 KG 合併成一張 collaborative knowledge graph，KG entities 會直接參與 propagation，這在 KG dense 且高品質時通常有效。
-
-所以我們的做法是直接把 LightGCN 原封不動地拿來當 local view，然後把 KG signal 隔離到另一條 global view。
+這一頁的重點只有一句話：在我們的設定裡，真正關鍵的差別不是模型有沒有更複雜，而是 collaborative signal 是不是先被保護住。所以 RA-GARK 才會保留一條乾淨的 LightGCN local view。
 
 ## Slide 8 — Related Work II
 
-接下來是 contrastive KG methods。
+第二類是依賴多視角對齊的方法，像 KGCL 和 MCCLK。
 
-KGCL 會對 KG 結構做擾動，然後對 original view 和 perturbed view 做 contrastive learning。MCCLK 則建立 collaborative、semantic、structural 三個視角，彼此做多重對齊。這些方法在 KG 比較豐富時都很強，但它們仍然假設 KG 結構本身夠有資訊。
+KGCL 會擾動 KG，再對不同 view 做 contrastive learning。MCCLK 則把 collaborative、semantic、structural 三個 view 拉到一起。它們都很強，但前提是一樣的：KG 結構本身還要有足夠資訊，這樣對齊才有意義。
 
-所以我們也有用 contrastive learning，但它只是輔助，權重很小，目的是幫 local 和 global 的幾何空間做輕量對齊，而不是主導融合。
+我們的 setting 更嚴格，因為問題不只是 view 有沒有對齊，而是整條 KG channel 本身可能就不可靠。所以對我們來說，對齊不是第一優先，先決條件是要能控制 KG 要不要進來。
 
 ## Slide 9 — Related Work III
 
-KGRec 是跟我們最直接相關的工作。
+第三類是跟我們最接近的 KGRec。
 
-KGRec 的核心觀察是：不是所有 KG edge 都同樣重要，所以要學 rationale。它做法是對每條 KG edge 算 attention 分數，再用 Bernoulli dropout 去隨機移除高分邊，強迫模型不要過度依賴少數幾條主導邊，之後再用 contrastive learning 強化穩健性。這確實是 rationale-aware recommendation 的代表。
+KGRec 已經注意到不是所有 KG edge 都同樣重要，所以它學的是 edge-level rationale。這個方向很重要，但它的前提還是 KG 裡面至少有一些可挑的 useful edges。
 
-但 KGRec 的假設是，KG 裡面至少有一些 useful edges 可以挑出來。RA-GARK 的前提更保守：我們不假設整個 KG 都可信，所以不是只挑邊，而是把整條 KG channel 變成可閘控的 side channel。
+RA-GARK 的假設更保守。我們問的不是哪條 edge 比較重要，而是這整條 KG channel 到底該不該進 scoring pipeline。也就是說，現有方法大多在改進 how to use KG，我們真正要補的是 when to use KG。
 
-## Slide 10 — Related Work IV
+## Slide 10 — Methodology Roadmap
 
-這裡我想補充 gating 的脈絡。
+接下來進 methodology，我先把步驟講清楚，再往下展開。
 
-Highway Networks 很早就提出一個很重要的概念：用 gate 把變換路徑和 identity path 做加權，而且 gate 的 bias 可以初始化成偏向安全路徑，讓模型一開始接近 identity，再慢慢學要不要打開變換。MMoE 和 PLE 則是在多任務推薦裡，用 gate 在多個 expert tower 之間做選擇。
+整個方法可以拆成四步。第一步，先保留一條乾淨的 local LightGCN view。第二步，用 KG-SVD 把 sparse KG 壓成比較穩定的 global aspect slots。第三步，用 softmax rationale masking 根據 user-item pair 挑出當下最 relevant 的 slot。第四步，用一個偏向 local 的 fusion gate，決定最後要混多少 KG。
 
-但這些方法和我們不一樣的地方有兩個。第一，它們的 expert 多半是同質候選，不是像我們這樣把 CF 和 KG 當成兩條異質訊號管線。第二，它們沒有特別針對「某條管線可能不可信」這件事做安全初始化。
-
-所以在 KG-aware recommendation 領域裡，還是缺少一個 bias-initialized fusion gate，也缺少一個在 sparse or unreliable KG 下能提供 graceful degradation 的架構。
+所以你可以把 RA-GARK 想成一個很保守的流程：先守住 CF，再壓縮 KG，再做 user-conditioned selection，最後才決定要不要融合。
 
 ## Slide 11 — Design Principle
 
-這裡把我們的方法原則講成一句話。
+把剛才那四步收斂成一句話，就是這一頁的原則。
 
-KG 應該是 gateable side channel，而不是 mandatory scoring component。
+KG 應該是 gateable side channel，而不是 mandatory scoring component。這代表 local 和 global 不能一開始就混在一起，而是要分開學，等到最後 scoring 時才由 gate 來決定 KG 是否值得打開。
 
-這個原則帶來三個後果。第一，我們要把 local view 和 global view 分開，避免 KG 污染 CF。第二，融合要晚，等兩邊的 representation 都先學好再決定要不要混。第三，gate 的初始化要偏向 LightGCN，讓模型一開始就站在安全的一邊。
+而且這個 gate 不是中性的。它一開始就要偏向 LightGCN，讓模型先站在安全的一邊；只有當訓練訊號真的支持 KG 有幫助時，gate 才往 global side 打開。這樣才會有 graceful degradation。
 
 ## Slide 12 — Overview
 
-接下來是整體架構。
+這張圖就是剛才四步流程的完整對應。
 
-左邊是 local view，也就是 LightGCN，在 user-item graph 上做線性 propagation。右邊是 global view，它先用 KG-SVD 初始化 aspect slot，再用 softmax rationale masking 動態選出對當前 user-item pair 最有用的 aspect。最右邊是 fusion gate，把 local 和 global 的表示融合起來。最後的訓練損失是 BPR，再加上一個很小的 contrastive regularization。
+第一步，左邊的 local view 用 LightGCN 產生 `u_loc` 和 `i_loc`。第二步，右邊的 global view 先把 item 的 sparse KG 初始化成 latent aspect slots，再得到 `u_glo` 和 `i_glo`。第三步，中間的 rationale masking 只發生在 item 端，負責回答「這個 user 現在在意 item 的哪個 aspect」。第四步，最右邊的 fusion gate 才把 local 和 global 組成 `u_final` 和 `i_final`，再送進 ranking loss。
 
-這張圖最重要的地方是，local 和 global 兩條路線在前面是完全分開的，只有到最後的 scoring stage 才透過 gate 合起來。
+所以後面的 methodology 你可以照這個順序看：先 local，再 global，再 masking，再 gate。
 
 ## Slide 13 — Problem Setup
 
