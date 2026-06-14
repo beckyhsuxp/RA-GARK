@@ -134,7 +134,7 @@ local propagation 的部分就是標準 LightGCN。
 
 我們只在 user-item bipartite graph 上做傳播，而且只用訓練互動資料。`A_norm` 是 normalized adjacency matrix，也就是把鄰居關係做過正規化的鄰接矩陣；`E^(l)` 是第 `l` 層的 embedding。
 
-接著把第 0 層到第 K 層做 layer-wise average，得到 `\bar{\mathbf{E}}`。這個 `\bar{\mathbf{E}}` 就是整體的 local 表示，我們再從裡面讀出 `u_loc` 和 `i_loc`；這裡 K 設成 2。
+接著把第 0 層到第 K 層做層平均，得到 `\bar{\mathbf{E}}`。這個 `\bar{\mathbf{E}}` 就是整體的 local 表示，我們再從裡面讀出 `u_loc` 和 `i_loc`；這裡 K 設成 2。
 
 ## Slide 17 — Global View
 
