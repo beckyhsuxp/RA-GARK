@@ -160,16 +160,19 @@ KG should be a gateable side channel.
 
 ## Slide 9 — Related Work III
 
-**KGRec vs RA-GARK**
+**KGRec**
 
-- KGRec works at the KG edge level.
-- RA-GARK works at the latent aspect-slot level.
-- KGRec uses Bernoulli dropout plus CL.
-- RA-GARK uses softmax attention.
-- KGRec stays inside KGAT propagation.
-- RA-GARK separates the side channel.
-- KGRec cannot disengage KG.
-- RA-GARK can suppress the whole KG.
+- edge-level rationale
+- Bernoulli dropout + CL
+- stays inside KGAT propagation
+- cannot fully disengage KG
+
+**RA-GARK**
+
+- latent aspect-slot rationale
+- softmax attention
+- separate global side channel
+- can suppress the whole KG
 
 **Main difference**
 
