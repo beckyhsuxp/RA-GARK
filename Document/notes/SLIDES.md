@@ -31,7 +31,7 @@ KG should be a gateable side channel, not a mandatory scoring path.
 
 ---
 
-## Slide 2 — Roadmap
+## Slide 2 — Outline
 
 **30 分鐘配置**
 
