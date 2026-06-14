@@ -118,7 +118,7 @@ KG 應該是可閘控的側通道，而不是必經 scoring component。
 
 `u_final` 和 `i_final` 都是 local 表示和 global 表示的加權和，權重分別由 `alpha_u` 和 `alpha_i` 決定。`alpha` 越接近 1，就越偏 local、越像純 CF；`alpha` 越接近 0，就越偏 global、越依賴 KG。
 
-這裡用兩個 gate，是因為 user-side 和 item-side 的 KG usefulness 不完全一樣，所以我們不共享同一組參數。
+這裡用兩個 gate，是因為 user-side 和 item-side 的 KG usefulness 不完全一樣，所以不適合共用同一組參數。
 
 ## Slide 15 — Local View
 
