@@ -67,42 +67,42 @@ On this sparse KG, every KG-aware baseline loses to pure LightGCN.
 
 ## Slide 4 — Why Sparse KG
 
-**Where sparse KG comes from**
+**Why sparse KG appears**
 
-- review-derived KGs inherit their density from whatever users happened to mention
-- cold-start and emerging domains rarely have a curated KG
-- privacy-constrained domains deliberately restrict relational signals
-- aggressive KG completion introduces its own noise and needs seed signal
+- review-derived KGs only reflect what users mention
+- cold-start and emerging domains rarely have curated KGs
+- privacy-constrained domains restrict relational signals
+- KG completion often adds noise and still needs seed signal
 
-**What this means**
+**Main implication**
 
-- sparse KG is the more common practical setting
-- robustness under unreliable KG signal deserves dedicated study
-- the primary design objective is robustness, not only peak performance
+- sparse KG is the practical default
+- robustness matters more than peak performance
+- unreliable KG deserves dedicated modeling
 
 **Takeaway**
 
-- sparse KG is the regime this thesis targets
+- this thesis targets sparse KG
 
 ---
 
 ## Slide 5 — Design Challenge
 
-**Observed tension in prior KG-aware methods**
+**What goes wrong**
 
 - KG entity embeddings participate directly in message passing
-- the implicit assumption is that KG can inject useful signal everywhere it appears
-- under sparse KG, that assumption breaks down
+- prior methods assume KG is useful everywhere it appears
+- sparse KG breaks that assumption
 
-**Why LightGCN wins**
+**Why LightGCN survives**
 
-- It uses only user-item interactions
-- No KG contamination
-- Strong safe default
+- it uses only user-item interactions
+- no KG contamination
+- strong safe default
 
 **Our response**
 
-- route KG signal through a dedicated side channel
+- route KG through a dedicated side channel
 - let the model attenuate or fully disengage KG when unreliable
 
 ---
