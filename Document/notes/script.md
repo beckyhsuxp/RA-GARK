@@ -98,11 +98,11 @@ KG 應該是可閘控的側通道，而不是必經 scoring component。
 
 ## Slide 12 — Overview
 
-接下來是整體架構。
+這一頁先看整體架構。RA-GARK 的重點不是把 KG 直接塞進 propagation，而是把 KG 放成一條獨立的 global side channel。
 
-左邊是 local view，也就是 LightGCN，在 user-item graph 上做線性 propagation。右邊是 global view，它先用 KG-SVD 初始化 aspect slot，再用 softmax rationale masking 動態選出對當前 user-item pair 最有用的 aspect。最右邊是 fusion gate，把 local 和 global 的表示融合起來。最後的訓練損失是 BPR，再加上一個很小的 contrastive regularization。
+左邊是 local view，也就是純 LightGCN。它只看 user-item graph，目的是保住穩定的 CF signal，讓模型先站在一個可靠的基準上。中間是 global view，它先用 KG-SVD 建好 aspect slot，再用 softmax rationale masking，針對當前 user-item pair 挑出比較有用的 aspect。最右邊是 fusion gate，只有到 scoring stage 才決定 local 和 global 要怎麼融合。
 
-這張圖最重要的地方是，local 和 global 兩條路線在前面是完全分開的，只有到最後的 scoring stage 才透過 gate 合起來。
+所以這張圖的核心訊息是：前面先分開學，最後再決定要不要用 KG。訓練時主目標是 BPR，再加上一個很小的 contrastive regularization，讓 representation 更穩。接下來我會先拆 local view，再講 global view，最後說 gate 怎麼把兩邊接起來。
 
 ## Slide 13 — Problem Setup
 
