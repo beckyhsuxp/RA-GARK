@@ -160,23 +160,12 @@ KG should be a gateable side channel.
 
 ## Slide 9 — Related Work III
 
-**KGRec**
-
-| Feature | View |
+| KGRec | RA-GARK |
 |---|---|
-| rationale | edge-level |
-| regularizer | Bernoulli dropout + CL |
-| pipeline | inside KGAT propagation |
-| KG control | cannot fully disengage KG |
-
-**RA-GARK**
-
-| Feature | View |
-|---|---|
-| rationale | latent aspect-slot |
-| regularizer | softmax attention |
-| pipeline | separate global side channel |
-| KG control | can suppress the whole KG |
+| edge-level rationale | latent aspect-slot rationale |
+| Bernoulli dropout + CL | softmax attention |
+| stays inside KGAT propagation | separate global side channel |
+| cannot fully disengage KG | can suppress the whole KG |
 
 **Main difference**
 
