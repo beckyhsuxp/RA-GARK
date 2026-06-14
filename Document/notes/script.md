@@ -122,15 +122,15 @@ KG 應該是可閘控的側通道，而不是必經 scoring component。
 
 ## Slide 15 — Local View
 
-local view 我們直接用純 LightGCN。
+local view 我們直接用純 LightGCN，先保住一條乾淨的 collaborative filtering 路徑。
 
-這個選擇沒有特別花俏，但非常重要。因為在我們的 setting 裡，LightGCN 本來就已經比所有 KG-aware baseline 還好，所以它是我們必須守住的 safe default。
+在我們的 setting 裡，LightGCN 本來就已經比所有 KG-aware baseline 還好，所以它就是我們要守住的 safe default。
 
 ## Slide 16 — Local Propagation
 
 local propagation 的部分就是標準 LightGCN。
 
-我們只在 user-item bipartite graph 上做傳播，而且只用 training interactions。沒有 KG edges，也沒有任何額外的 nonlinear transformation。最後把第 0 層到第 K 層做平均，這裡 K 設成 2。
+我們只在 user-item bipartite graph 上做傳播，而且只用 training interactions。沒有 KG edges，也沒有額外的 nonlinear transformation。最後把第 0 層到第 K 層做平均，這裡 K 設成 2。
 
 ## Slide 17 — Global View
 
