@@ -32,7 +32,7 @@
 
 所以這篇工作的重點不是去解決「KG 太少」本身，而是去解決「當 KG 不可靠時，模型要怎麼穩健地做推薦」。
 
-這也就是為什麼我們後面會強調 safe fallback 和 gateable side channel。這個 benchmark 看的是 robustness，而不只是 dense KG 下的 peak performance。
+這也就是為什麼我們後面會強調安全退路和可閘控側通道。這個 benchmark 看的是 robustness，而不只是 dense KG 下的最高表現。
 
 ## Slide 5 — Design Challenge
 
@@ -56,7 +56,7 @@
 
 先講最基礎的兩個方法。
 
-LightGCN 是我們 local view 的直接前身。它的重點是把 GCN 裡比較複雜的特徵轉換拿掉，只保留線性的鄰居聚合和 layer-wise average，所以在 sparse review KG 上，它是最強的 non-KG anchor。
+LightGCN 是我們 local view 的直接前身。它的重點是把 GCN 裡比較複雜的特徵轉換拿掉，只保留線性的鄰居聚合和 layer-wise average，所以在 sparse review KG 上，它是最強的 non-KG 基準。
 
 KGAT 則代表典型的 deep fusion。它把 user-item graph 和 KG 合併成一張 collaborative knowledge graph，KG entities 會直接參與 propagation，這在 KG dense 且高品質時通常有效。
 
@@ -74,9 +74,9 @@ KGCL 會對 KG 結構做擾動，然後對 original view 和 perturbed view 做�
 
 KGRec 是跟我們最直接相關的工作。
 
-這頁我用一張表直接把 KGRec 和 RA-GARK 對照起來。KGRec 的 rationale 是 edge-level 的，它用 Bernoulli dropout 加 contrastive learning 來挑比較重要的邊；RA-GARK 則把 rationale 放在 latent aspect-slot level，用 softmax attention 直接控制 global side channel 的輸出。
+這頁我用一張表直接把 KGRec 和 RA-GARK 對照起來。KGRec 的 rationale 是 edge-level 的，它用 Bernoulli dropout 加 contrastive learning 來挑比較重要的邊；RA-GARK 則把 rationale 放在 latent aspect-slot level，用 softmax attention 直接控制 global 側通道的輸出。
 
-所以兩者最大的差別是：KGRec 還是預設 KG 裡面至少有一些 useful edges 可以挑出來；RA-GARK 的前提更保守，直接把整條 KG channel 當成可能不可靠的 side channel 來處理。
+所以兩者最大的差別是：KGRec 還是預設 KG 裡面至少有一些有用的 edges 可以挑出來；RA-GARK 的前提更保守，直接把整條 KG channel 當成可能不可靠的側通道來處理。
 
 ## Slide 10 — Related Work IV
 
@@ -86,13 +86,13 @@ Highway Networks 很早就提出一個很重要的概念：用 gate 把變換路
 
 但這些方法和我們不一樣的地方有兩個。第一，它們的 expert 多半是同質候選，不是像我們這樣把 CF 和 KG 當成兩條異質訊號管線。第二，它們沒有特別針對「某條管線可能不可信」這件事做安全初始化。
 
-所以在 KG-aware recommendation 領域裡，還是缺少一個 bias-initialized fusion gate，也缺少一個在 sparse or unreliable KG 下能提供 graceful degradation 的架構。
+所以在 KG-aware recommendation 領域裡，還是缺少一個偏置初始化的 fusion gate，也缺少一個在稀疏或不可靠 KG 下能提供平滑退化的架構。
 
 ## Slide 11 — Design Principle
 
 這裡把我們的方法原則講成一句話。
 
-KG 應該是 gateable side channel，而不是 mandatory scoring component。
+KG 應該是可閘控的側通道，而不是必經 scoring component。
 
 這個原則帶來三個後果。第一，我們要把 local view 和 global view 分開，避免 KG 污染 CF。第二，融合要晚，等兩邊的 representation 都先學好再決定要不要混。第三，gate 的初始化要偏向 LightGCN，讓模型一開始就站在安全的一邊。
 
