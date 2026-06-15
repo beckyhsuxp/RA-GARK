@@ -165,7 +165,7 @@ KG-SVD 是我們用來初始化 item aspect slots 的方法。
 
 這一步是在建 item-aspect matrix。每個 item 如果有某個 aspect，就把對應位置設成 1；接著再乘上 aspect 的 IDF，也就是一種把常見 aspect 權重壓低的方式，讓太常見但沒辨識力的 aspect 影響變小。這裡的 idf of a 會根據 aspect a 在多少 item 裡出現來降權，support of a 就是這個 aspect 出現過的 item 數。
 
-公式裡的 M i,a 就是在說 item i 和 aspect a 的共現關係，也就是 item i 是否包含 aspect a；有就設 1，沒有就設 0。M tilde i,a 就是乘上 IDF 之後的值。這樣做以後，常見 aspect 會被壓低，較少出現但比較有辨識力的 aspect 會留下來。
+公式裡的 M i,a 就是在說 item i 和 aspect a 的共現關係，也就是 item i 有沒有這個 aspect；有就設 1，沒有就設 0。M tilde i,a 就是乘上 IDF 之後的值。這樣做以後，常見 aspect 會被壓低，較少出現但比較有辨識力的 aspect 會留下來。
 
 所以左半邊的重點就是：先把 item 和 aspect 的共現關係寫成矩陣，再把太常見的 aspect 壓下去。
 
