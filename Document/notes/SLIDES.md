@@ -408,23 +408,16 @@ i_{\mathrm{glo}} = \sum_{k=1}^{A} w_{u, i, k} \cdot \mathbf{a}_{i, k}
 
 ## Slide 24 — Softmax Normalization
 
-**Normalization choice**
+**Softmax vs Sigmoid**
 
-| Normalization | Assumption |
-|---|---|
-| Sigmoid | each slot is independently important |
-| Softmax | slots compete under fixed mass |
+- Sigmoid treats each slot independently
+- Softmax lets slots compete under fixed mass
 
 **Why softmax**
 
-- sigmoid does not normalize across slots
-- softmax gives a bounded, competition-based mask
-- this matters because the KG channel is intentionally throttled
-
-**In RA-GARK**
-
-- softmax controls weight competition
-- softmax also controls output magnitude
+- bounded mask
+- controlled output magnitude
+- better for a throttled KG channel
 
 ---
 
