@@ -181,7 +181,7 @@ KG-SVD 是我們用來初始化 item aspect slots 的方法。
 
 KG-SVD 不是只是多做一步而已。它先給 global view 一個比較好的起點，讓 item 的 KG 表示一開始就帶有合理的語意結構，而不是從隨機初始化開始亂長。
 
-更重要的是，這個初始化保留了 item 和 aspect 的共現結構，所以在 training 之前，model 就已經有一個比較穩的 semantic geometry。這也是為什麼在 sparse KG 的情況下，KG-SVD 會明顯幫助後面的 global view。
+更重要的是，這個初始化保留了 item 和 aspect 的共現結構，所以在 training 之前，model 就已經有一個比較穩的 semantic geometry。這不是一個要從零學出的模組，而是先把 slot 放到合理的位置，之後再跟著訓練微調。這也是為什麼在 sparse KG 的情況下，KG-SVD 會明顯幫助後面的 global view。
 
 ## Slide 22 — Softmax Masking Motivation
 
