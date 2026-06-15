@@ -110,7 +110,7 @@ KG 應該是可閘控的側通道，而不是必經 scoring component。
 
 我們的任務是隱式回饋的 top-K 推薦。對每個 user，我們要把候選 item 排序，讓真實互動過的 item 排在前面。訓練時使用正樣本和抽樣得到的負樣本配對。
 
-最終分數是 y hat of u and i，也就是 u final 跟 i final 的內積。y hat of u and i 表示模型對 user u 和 item i 的預測分數，分數越高代表越推薦。這裡先把分數定義清楚，u final 和 i final 的構成放到下一頁。
+最終分數是 y_hat(u, i)，也就是 u_final 跟 i_final 的內積。y_hat(u, i) 表示模型對 user u 和 item i 的預測分數，分數越高代表越推薦。這裡先把分數定義清楚，u_final 和 i_final 的構成放到下一頁。
 
 ## Slide 14 — Problem Setup II
 
@@ -178,7 +178,7 @@ global view 的第二個核心是 softmax rationale masking。
 
 這一頁就是具體計算。
 
-MLP 是一個小型 feed-forward network。logit k 來自把 u glo 和 aspect slot i k 串接後丟進 MLP，表示第 k 個 aspect slot 對這個 user-item pair 的相對重要性；再經過 softmax of logit k divided by tau 變成 slot 權重，其中 tau 是 softmax temperature，控制分佈有多尖銳；最後把四個 slot 加權求和成 i glo。
+MLP 是一個小型 feed-forward network。第 k 個 slot 的分數來自把 u_glo 和 aspect slot i_k 串接後丟進 MLP，表示第 k 個 aspect slot 對這個 user-item pair 的相對重要性；再經過 softmax(logit_k / tau) 變成 slot 權重，其中 tau 是 softmax temperature，控制分佈有多尖銳；最後把四個 slot 加權求和成 i_glo。
 
 ## Slide 24 — Softmax Normalization
 

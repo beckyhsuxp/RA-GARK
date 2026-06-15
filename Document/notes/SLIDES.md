@@ -294,8 +294,7 @@ E^(l+1) = A_norm E^(l), l = 0, 1, ..., K-1
 **Why latent aspect slots**
 
 - each item is compressed into four latent aspect slots
-- raw review-aspect KG is sparse
-- direct propagation is fragile
+- raw review-aspect KG is sparse, so direct propagation is fragile
 - the slots give a compact KG representation
 
 **Representation**
