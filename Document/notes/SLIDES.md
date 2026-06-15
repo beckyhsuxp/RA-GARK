@@ -299,7 +299,7 @@ E^(l+1) = A_norm E^(l), l = 0, 1, ..., K-1
 **Representation**
 
 ```text
-item_kg_aspects[i] in R^(A x d)
+\mathbf{a}_i in R^(A x d)
 A = 4
 d = 128
 ```
