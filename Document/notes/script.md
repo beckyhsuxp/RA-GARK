@@ -175,7 +175,7 @@ KG-SVD 是我們用來初始化 item aspect slots 的方法。
 
 先從 IDF-weighted matrix 做 truncated SVD，也就是只保留前 k 個成分。這裡 `k` 取 `A 乘 d`，也就是把 `A` 個槽、每個槽 `d` 維的總維度保留下來。你可以把這一步想成把加權後的矩陣拆成三個部分：左邊的 `U sub k`、中間的 `Sigma sub k`、以及右邊的 `V sub k transpose`。`U sub k` 可以理解成 item 的低維表示，`Sigma sub k` 是每個方向的重要程度；`V sub k transpose` 只是分解的一部分，這裡先用 `U sub k` 和 `Sigma sub k 的平方根` 來形成 `E sub KG`，也就是每個 item 的初始 KG 表示。
 
-接著把 `E sub KG` reshape 成 `A sub KG zero`，也就是把每個 item 表成 A 個 aspect slot，維度是 d。這裡的 zero 表示初始化後的第一版；整個 `A sub KG zero` 可以想成一個三維張量，也就是 item 數乘 A 乘 d 的大小，裡面的值都來自實數空間。reshape 就是把這些數值排回 A 個 slot。接著會用這個初始化結果交給 graph recommender，也就是 GNN-based recommender 往下做。整體來說，這一步先把加權後的矩陣壓成幾個比較重要的方向，再把分解出來的 item 表示整理成四個槽，最後再把 `E sub KG` 重塑成 `A sub KG zero`。
+接著把 `E sub KG` reshape 成 `A sub KG zero`，也就是把每個 item 表成 A 個 aspect slot，維度是 d。這裡的 zero 表示初始化後的第一版；整個 `A sub KG zero` 可以想成一個三維張量，也就是 item 數乘 A 乘 d 的大小，裡面的值都來自實數空間。reshape 就是把這些數值排回 A 個 slot。接著會用這個初始化結果交給 graph recommender，也就是 GNN-based recommender 往下做。整體來說，這一步先把加權後的矩陣壓成幾個比較重要的方向，再把分解出來的 item 表示整理成四個槽。
 
 ## Slide 21 — KG-SVD Effect
 
