@@ -347,7 +347,7 @@ idf(a) = log(|I| / (|{i : M[i, a] = 1}| + 1)) + 1
 
 3. **Truncated SVD**
 
-- compress the weighted matrix into low-rank factors
+- keep only the top-k factors of the weighted matrix
 
 ```text
 M_tilde ~= U_k Sigma_k V_k^T
