@@ -370,6 +370,7 @@ E_KG -> A_KG^(0) in R^(|I| x A x d)
 
 - give KG a semantic starting geometry
 - preserve the aspect co-occurrence structure before training
+- act as a one-time initialization, not a learned-from-scratch module
 
 ---
 
