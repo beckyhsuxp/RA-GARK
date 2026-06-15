@@ -334,7 +334,7 @@ M[i, a] = 1 if item i has aspect a
 
 ```text
 M_tilde[i, a] = M[i, a] * idf(a)
-idf(a) = log(N_items / support(a) + 1) + 1
+idf(a) = log(|I| / (|{i : M[i, a] = 1}| + 1)) + 1
 ```
 
 **Image**
