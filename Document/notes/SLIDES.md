@@ -320,10 +320,6 @@ E^(l+1) = A_norm E^(l), l = 0, 1, ..., K-1
 
 ## Slide 19 — KG-SVD Construction
 
-**Key idea**
-
-- organize item-aspect co-occurrence into a matrix while downweighting overly common aspects
-
 1. **Build item-aspect matrix**
 
 - binary co-occurrence between items and aspects
@@ -340,6 +336,10 @@ M[i, a] = 1 if item i has aspect a
 M_tilde[i, a] = M[i, a] * idf(a)
 idf(a) = log(|I| / (|{i : M[i, a] = 1}| + 1)) + 1
 ```
+
+**Key idea**
+
+- organize item-aspect co-occurrence into a matrix while downweighting overly common aspects
 
 **Image**
 
