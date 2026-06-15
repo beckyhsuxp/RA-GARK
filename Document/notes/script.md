@@ -165,7 +165,7 @@ KG-SVD 是我們用來初始化 item aspect slots 的方法。
 
 接著再乘上 aspect 的 IDF，也就是一種把常見 aspect 權重壓低的方式，讓太常見但沒辨識力的 aspect 影響變小。
 
-這個公式的意思很簡單：出現越多的 aspect，IDF 就越小；`|I|` 是 item 的總數，`|{i : M[i, a] = 1}|` 是這個 aspect 出現過的 item 數。分母裡的 `+1` 是避免除零，外面的 `+1` 是避免權重變成 0。
+這個公式的意思很簡單：出現越多的 aspect，IDF 就越小；`absolute I` 是 item 的總數，`M sub i,a` 等於 1 代表 item i 有 aspect a，所以 `|{i : M[i, a] = 1}|` 就是這個 aspect 出現過的 item 數。分母裡的 `+1` 是避免除零，外面的 `+1` 是避免權重變成 0。
 
 所以重點是把 item 和 aspect 一起出現的關係整理成矩陣，再把太常見的 aspect 壓低。
 
@@ -173,7 +173,7 @@ KG-SVD 是我們用來初始化 item aspect slots 的方法。
 
 這張圖的右半邊就是接下來的重點，從加權後的矩陣開始做分解。
 
-先從 IDF-weighted matrix 做只保留前 k 個成分的 truncated SVD，這裡 k 等於 A 乘 d。U sub k 是左 singular vectors，Sigma sub k 是 singular values 的對角矩陣，V sub k transpose 是右 singular vectors 的轉置。接著把結果投影成 E KG 等於 U sub k 乘 Sigma sub k 的平方根，這樣就得到每個 item 的初始 KG 表示。最後再把 flat vector reshape 成每個 item 的四個 aspect slot，每個 slot 維度是 128。
+先從 IDF-weighted matrix 做只保留前 k 個成分的 truncated SVD，這裡 k 等於 A 乘 d。`U sub k` 是左 singular vectors，`Sigma sub k` 是 singular values 的對角矩陣，`V sub k transpose` 是右 singular vectors 的轉置。接著把結果投影成 `E sub KG`，也就是 `U sub k` 乘上 `Sigma sub k` 的平方根，這樣就得到每個 item 的初始 KG 表示。最後再把 flat vector reshape 成每個 item 的四個 aspect slot，每個 slot 維度是 128。
 
 ## Slide 21 — KG-SVD Effect
 
@@ -193,13 +193,13 @@ global view 的第二個核心是 softmax rationale masking。
 
 這一頁就是具體計算。
 
-MLP 是一個小型 feed-forward network。第 k 個 slot 的分數來自把 u sub glo 和 aspect slot i sub k 串接後丟進 MLP，表示第 k 個 aspect slot 對這個 user-item pair 的相對重要性；再經過 softmax(logit sub k / tau) 變成 slot 權重，其中 tau 是 softmax temperature，控制分佈有多尖銳；最後把四個 slot 加權求和成 i sub glo。
+MLP 是一個小型 feed-forward network。第 k 個 slot 的分數來自把 `u sub glo` 和 aspect slot `i sub k` 串接後丟進 MLP，表示第 k 個 aspect slot 對這個 user-item pair 的相對重要性；再經過 `softmax of logit sub k over tau` 變成 slot 權重，其中 `tau` 是 softmax temperature，控制分佈有多尖銳；最後把四個 slot 加權求和成 `i sub glo`。
 
 ## Slide 24 — Softmax Normalization
 
 這裡我們特別強調 softmax 而不是 sigmoid。
 
-softmax 會讓 slot 之間互相競爭，在固定總量下做選擇，所以四個權重加起來會等於 1。這不只是讓 attention 更 sharp，更重要的是它控制了 i sub glo 的 magnitude，讓 global channel 不會自己膨脹。
+softmax 會讓 slot 之間互相競爭，在固定總量下做選擇，所以四個權重加起來會等於 1。這不只是讓 attention 更 sharp，更重要的是它控制了 `i sub glo` 的 magnitude，讓 global channel 不會自己膨脹。
 
 ## Slide 25 — Softmax vs Sigmoid
 
