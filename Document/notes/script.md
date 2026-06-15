@@ -208,7 +208,7 @@ KG-SVD 是我們用來初始化 item aspect slots 的方法。
 
 ## Slide 26 — Fusion Gate Structure
 
-這張圖從左往右看，先把 `u_loc` 和 `u_glo` 串起來，得到 `Gate_u([u_loc || u_glo])` 這個輸入。這裡先以 user-side 為例。更完整地說，`Gate(z)` 是 `sigma(w^T tanh(W z) + b)`，所以 `alpha_u` 就是把 user-side 的兩個表示送進這個 gate 後得到的輸出。
+這張圖從左往右看，先把 `u_loc` 和 `u_glo` 串起來，得到 `Gate_u([u_loc || u_glo])` 這個輸入。這裡先以 user-side 為例。更完整地說，`Gate(z)` 就是那個帶 `tanh` 的小型 MLP，再接上一個 sigmoid head；所以 `alpha_u` 就是把 user-side 的兩個表示送進這個 gate 後得到的輸出。
 
 接著看右邊的 fusion。`alpha_u` 會去控制 `u_final` 裡 local 和 global 的比例：一部分乘上 `u_loc`，另一部分乘上 `u_glo`。整個 gate 的作用，就是先偏向 local，之後再根據訓練慢慢決定要不要放更多 KG 進來。
 
