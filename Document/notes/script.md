@@ -198,7 +198,7 @@ KG-SVD 是我們用來初始化 item aspect slots 的方法。
 
 上一頁已經算出每個 slot 的權重，這一頁把 normalization choice 一起講完。
 
-先看 softmax 和 sigmoid 的差別。sigmoid 會把每個 slot 當成獨立判斷；softmax 則會讓 slot 在固定總量下互相競爭，所以四個權重加起來會等於 1。
+這張表是在對照 softmax 和 sigmoid。sigmoid 會把每個 slot 當成獨立判斷；softmax 則會讓 slot 在固定總量下互相競爭，所以四個權重加起來會等於 1。
 
 在 RA-GARK 裡，我們選 softmax，因為它同時控制 attention 和 `i_global` 的 magnitude，所以更適合這種要限制輸出幅度的 KG side channel。
 

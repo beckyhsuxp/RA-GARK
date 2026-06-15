@@ -408,10 +408,12 @@ i_{\mathrm{glo}} = \sum_{k=1}^{A} w_{u, i, k} \cdot \mathbf{a}_{i, k}
 
 ## Slide 24 — Softmax Normalization
 
-**Softmax vs Sigmoid**
+**Normalization**
 
-- Sigmoid treats each slot independently
-- Softmax lets slots compete under fixed mass
+| Normalization | Assumption |
+|---|---|
+| Sigmoid | each slot is independently important |
+| Softmax | slots compete under fixed mass |
 
 **Why softmax**
 
