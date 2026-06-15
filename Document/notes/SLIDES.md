@@ -395,9 +395,9 @@ choose the slot for each user-item pair
 **Computation**
 
 ```text
-logit_k = MLP([u_glo || aspect_slot_i,k])
-w_k = softmax(logit_k / tau)
-i_glo = sum_k w_k * aspect_slot_i,k
+ell_u,i,k = MLP([u_glo || a_i,k])
+w_u,i,k = softmax(ell_u,i,k / tau)
+i_glo = sum_k w_u,i,k * a_i,k
 ```
 
 **Result**
