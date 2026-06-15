@@ -322,11 +322,15 @@ E^(l+1) = A_norm E^(l), l = 0, 1, ..., K-1
 
 1. **Build item-aspect matrix**
 
+- binary co-occurrence between items and aspects
+
 ```text
 M[i, a] = 1 if item i has aspect a
 ```
 
 2. **IDF weighting**
+
+- downweight common aspects
 
 ```text
 M_tilde[i, a] = M[i, a] * idf(a)
@@ -343,12 +347,16 @@ idf(a) = log(N_items / support(a) + 1) + 1
 
 3. **Truncated SVD**
 
+- compress the weighted matrix into low-rank factors
+
 ```text
 M_tilde ~= U_k Sigma_k V_k^T
 E_KG = U_k Sigma_k^(1/2)
 ```
 
 4. **Reshape**
+
+- turn each item vector into four aspect slots
 
 ```text
 E_KG[i] -> item_kg_aspects[i] in R^(4 x 128)
