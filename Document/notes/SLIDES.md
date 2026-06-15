@@ -320,24 +320,24 @@ E^(l+1) = A_norm E^(l), l = 0, 1, ..., K-1
 
 ## Slide 19 — KG-SVD Construction
 
-**Build item-aspect matrix**
+1. **Build item-aspect matrix**
 
 ```text
 M[i, a] = 1 if item i has aspect a
 ```
 
-**IDF weighting**
+2. **IDF weighting**
 
 ```text
 M_tilde[i, a] = M[i, a] * idf(a)
 idf(a) = log(N_items / support(a) + 1) + 1
 ```
 
-**Image**
+3. **Image**
 
 `thesis/img/kg_svd.png`
 
-**Purpose**
+4. **Purpose**
 
 1. downweight generic aspects
 2. keep discriminative aspects
