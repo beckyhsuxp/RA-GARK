@@ -339,7 +339,7 @@ idf(a) = log(|I| / (|{i : M[i, a] = 1}| + 1)) + 1
 
 **Key idea**
 
-- matrix + downweight common aspects
+- compact co-occurrence matrix
 
 **Image**
 
