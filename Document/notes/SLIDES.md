@@ -339,7 +339,7 @@ idf(a) = log(|I| / (|{i : M[i, a] = 1}| + 1)) + 1
 
 **Key idea**
 
-- compact co-occurrence matrix
+- compact matrix of item-aspect co-occurrence
 
 **Image**
 
