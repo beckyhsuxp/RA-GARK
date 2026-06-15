@@ -74,7 +74,7 @@ KGCL 會對 KG 結構做擾動，然後對 original view 和 perturbed view 做�
 
 KGRec 是跟我們最直接相關的工作。
 
-這頁我用一張表直接把 KGRec 和 RA-GARK 對照起來。KGRec 的 rationale 是 edge-level 的，它用 Bernoulli dropout 加 contrastive learning 來挑比較重要的邊；RA-GARK 則把 rationale 放在 latent aspect-slot level，用 softmax attention 直接控制 global 側通道的輸出。
+這頁我用一張表直接把 KGRec 和 RA-GARK 對照起來。KGRec 的 rationale 是 edge-level 的，它用 Bernoulli dropout 加 contrastive learning 來挑比較重要的邊；RA-GARK 則把 rationale 放在 latent aspect-slot level，也就是先把 item 的 KG 語意壓成幾個語意槽，再用 softmax attention 直接控制 global 側通道的輸出。
 
 所以兩者最大的差別是：KGRec 還是預設 KG 裡面至少有一些有用的 edges 可以挑出來；RA-GARK 的前提更保守，直接把整條 KG channel 當成可能不可靠的側通道來處理。
 
@@ -144,7 +144,7 @@ global view 的重點是 latent aspect slots，也就是先把每個 item 壓成
 
 ## Slide 18 — KG-SVD Motivation
 
-KG-SVD 的出發點很簡單：raw item-aspect matrix 很 sparse，而且太泛用的 aspect 不應該跟太具辨識度的 aspect 用同樣權重。
+KG-SVD 的出發點很簡單：item-aspect 關聯矩陣很 sparse，而且太泛用的 aspect 不應該跟太具辨識度的 aspect 用同樣權重。
 
 所以我們先用 IDF weighting 把 generic aspects 壓下去，再用 SVD 去找一個有語意幾何的初始化。
 
@@ -232,7 +232,7 @@ BPR 是 pairwise ranking loss。sigma 是 sigmoid function。公式裡的 positi
 
 ## Slide 32 — Inference and Complexity
 
-評估時採 full-ranking，會排除訓練集裡已經互動過的 item，最後看 HR、Precision、Recall、F1、MAP 和 NDCG，這些都取 @20。
+評估時採 full-ranking，也就是對每個 user 把候選 item 重新完整排序，並排除訓練集裡已經互動過的 item，最後看 HR、Precision、Recall、F1、MAP 和 NDCG，這些都取 @20。
 
 從效能來看，我們每個 epoch 大概 1.5 秒，跟 KGRec 差不多，所以這個設計沒有讓成本爆炸。
 
