@@ -163,6 +163,8 @@ KG-SVD 的目的，是先把每個 item 的 aspect 相關資訊做一個比較�
 
 如果 item 有某個 aspect，就把對應位置設成 1；接著乘上 aspect 的 IDF，讓常見但沒辨識力的 aspect 影響變小。這裡的 idf of a 會根據 aspect a 在多少 item 裡出現來降權，support of a 就是這個 aspect 出現過的 item 數。
 
+這張圖先看前半段就好，重點是 item-aspect matrix 和 IDF weighting。
+
 ## Slide 20 — KG-SVD SVD and Reshape
 
 這張圖就是 KG-SVD 的核心流程，從左到右看就好。

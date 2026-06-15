@@ -333,6 +333,10 @@ M_tilde[i, a] = M[i, a] * idf(a)
 idf(a) = log(N_items / support(a) + 1) + 1
 ```
 
+**Image**
+
+`thesis/img/kg_svd.png`
+
 **Purpose**
 
 - downweight generic aspects
@@ -341,10 +345,6 @@ idf(a) = log(N_items / support(a) + 1) + 1
 ---
 
 ## Slide 20 — KG-SVD SVD and Reshape
-
-**圖片**
-
-`thesis/img/kg_svd.png`
 
 **Truncated SVD**
 
