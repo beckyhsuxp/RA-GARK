@@ -446,15 +446,13 @@ i_{\mathrm{glo}} = \sum_{k=1}^{A} w_{u, i, k} \cdot \mathbf{a}_{i, k}
 **Gate**
 
 ```text
-alpha_u = sigmoid(MLP_gate([u_loc || u_glo]))
-alpha_i = sigmoid(MLP_gate([i_loc || i_glo]))
+u_loc, u_glo -> Concat -> MLP(tanh) -> w^T h + b (b = +5) -> σ -> α_u
 ```
 
 **Fusion**
 
 ```text
 u_final = alpha_u * u_loc + (1 - alpha_u) * u_glo
-i_final = alpha_i * i_loc + (1 - alpha_i) * i_glo
 ```
 
 ---
