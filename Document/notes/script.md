@@ -138,7 +138,7 @@ local propagation 的部分就是標準 LightGCN。
 
 ## Slide 17 — Global View
 
-global view 的重點是 latent aspect slots。這裡不是直接把 KG triples 拿來傳播，而是先把每個 item 的 KG 語意壓成四個語意槽，也就是 a_i，大小是 A x d。
+global view 的重點是 latent aspect slots。這裡不是直接把 KG edges 拿來傳播，而是先把每個 item 的 KG 語意壓成四個語意槽，也就是 a_i，大小是 A x d。
 
 KG 很稀疏，所以不直接做傳播，而是讓模型在這些槽裡挑比較有用的 aspect。這樣做的好處是，global view 保留了 KG 語意，但不會把噪音直接灌進 propagation。
 
