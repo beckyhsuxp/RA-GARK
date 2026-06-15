@@ -155,7 +155,7 @@ KG 很稀疏，所以如果直接傳播，訊號很容易被缺失邊或噪音�
 
 KG-SVD 的目的，是先把每個 item 的 aspect 相關資訊做一個比較穩的初始化。
 
-因為 item-aspect 關聯矩陣很 sparse，而且有些 aspect 很常見、沒那麼有辨識力，所以我們先用 IDF 讓常見的 aspect 權重變小，再用 SVD 從共現結構裡找出一個比較好的起點。
+這裡的做法可以直接先看下一張圖：先建 item-aspect matrix，再做 IDF weighting，最後用 truncated SVD 得到每個 item 的 four-slot 表示。
 
 ## Slide 19 — KG-SVD Construction
 
@@ -165,9 +165,9 @@ KG-SVD 的目的，是先把每個 item 的 aspect 相關資訊做一個比較�
 
 ## Slide 20 — KG-SVD SVD and Reshape
 
-這張圖對應 KG-SVD 的第二步。
+這張圖就是 KG-SVD 的核心流程，從左到右看就好。
 
-我們對 IDF-weighted matrix 做只保留前 k 個成分的 truncated SVD，這裡 k 等於 A 乘 d。U sub k 是左 singular vectors，Sigma sub k 是 singular values 的對角矩陣，V sub k transpose 是右 singular vectors 的轉置。接著把結果投影成 E KG 等於 U sub k 乘 Sigma sub k 的平方根，這樣就得到每個 item 的初始 KG 表示。最後再把 flat vector reshape 成每個 item 的四個 aspect slot，每個 slot 維度是 128。
+先從 IDF-weighted matrix 做只保留前 k 個成分的 truncated SVD，這裡 k 等於 A 乘 d。U sub k 是左 singular vectors，Sigma sub k 是 singular values 的對角矩陣，V sub k transpose 是右 singular vectors 的轉置。接著把結果投影成 E KG 等於 U sub k 乘 Sigma sub k 的平方根，這樣就得到每個 item 的初始 KG 表示。最後再把 flat vector reshape 成每個 item 的四個 aspect slot，每個 slot 維度是 128。
 
 ## Slide 21 — KG-SVD Effect
 
