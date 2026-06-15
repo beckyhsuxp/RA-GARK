@@ -208,11 +208,9 @@ KG-SVD 是我們用來初始化 item aspect slots 的方法。
 
 ## Slide 26 — Fusion Gate Structure
 
-先看左邊的 `alpha_u`。它是由 `u_loc` 和 `u_glo` 串起來之後，再丟進一個帶 `tanh` 的小型 MLP 算出來的。更完整地說，這個 gate 的形式是 `Gate(z) = sigma(w^T tanh(W z) + b)`，而 `alpha_u` 就是把 user-side 的兩個表示放進這個 gate 後得到的輸出。
+這張圖從左往右看，先把 `u_loc` 和 `u_glo` 串起來，丟進帶 `tanh` 的小型 MLP，再經過 `w^T h + b` 和 `sigma`，最後才得到 `alpha_u`。這裡的 bias `b` 一開始設成 `+5`，所以 `alpha_u` 在訓練初期會非常接近 1。
 
-item-side 也是同樣的做法，只是輸入換成 `i_loc` 和 `i_glo`，所以也會得到 `alpha_i`。這裡把 bias `b` 初始化成 `+5`，所以一開始 `alpha_u` 和 `alpha_i` 都會非常接近 1，代表模型一開始幾乎偏向 local，KG 只是輕微進來；等訓練發現 KG 有幫助，gate 才會慢慢往下開。
-
-接下來就是右邊的 fusion。`u_final` 和 `i_final` 都是 local 與 global 的加權和，也就是 gate 根據這個權重，決定要保留多少 local、多少 global。
+接著看右邊的 fusion。`alpha_u` 會去控制 `u_final` 裡 local 和 global 的比例：一部分乘上 `u_loc`，另一部分乘上 `u_glo`。item-side 也是同樣的做法，只是圖上沒有畫出來。整個 gate 的作用，就是先偏向 local，之後再根據訓練慢慢決定要不要放更多 KG 進來。
 
 ## Slide 27 — Gate Bias and Graceful Degradation
 
