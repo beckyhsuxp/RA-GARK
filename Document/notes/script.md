@@ -196,6 +196,8 @@ KG-SVD 是我們用來初始化 item aspect slots 的方法。
 
 ## Slide 24 — Softmax Normalization
 
+上一頁已經算出每個 slot 的權重，這一頁補的是為什麼我們要用 softmax 來做 normalizing。
+
 這裡我們特別強調 softmax 而不是 sigmoid。
 
 softmax 會讓 slot 之間互相競爭，在固定總量下做選擇，所以四個權重加起來會等於 1。這不只是讓 attention 更 sharp，更重要的是它控制了 `i_global` 的 magnitude，讓 global channel 不會自己膨脹。
