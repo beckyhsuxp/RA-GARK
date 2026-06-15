@@ -359,7 +359,7 @@ E_KG = U_k Sigma_k^(1/2)
 - turn each item vector into four aspect slots
 
 ```text
-E_KG[i] -> item_kg_aspects[i] in R^(4 x 128)
+E_KG -> A_KG^(0) in R^(|I| x A x d)
 ```
 
 **Why it helps**
