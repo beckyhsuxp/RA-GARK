@@ -175,9 +175,7 @@ KG-SVD 是我們用來初始化 item aspect slots 的方法。
 
 先從 IDF-weighted matrix 做 truncated SVD，也就是只保留前 k 個成分。這裡 `k` 等於 `A` 乘 `d`，也就是四個槽、每個槽 `d` 維，攤平後的總維度。你可以把這一步想成把加權後的矩陣拆成三個部分：左邊的 `U sub k`、中間的 `Sigma sub k`、以及右邊的 `V sub k transpose`。其中 `U sub k` 搭配 `Sigma sub k` 的平方根，會形成 `E sub KG`，也就是每個 item 的初始 KG 表示。
 
-接著把 `E sub KG` reshape 成 `A sub KG zero`，也就是每個 item 的四個 aspect slot，每個 slot 維度是 d。這個 `R` 表示實數空間，`|I| x A x d` 就是把所有 item 的四個槽排成一個三維張量。
-
-低秩分解的意思，就是把原本很大的矩陣壓成幾個比較小、比較重要的方向，留下最主要的結構。這裡的 `U sub k` 可以理解成 item 的低維表示，`Sigma sub k` 是每個方向的重要程度，最後再把 `E sub KG` 重塑成 `A sub KG zero`。
+接著把 `E sub KG` reshape 成 `A sub KG zero`，也就是每個 item 的四個 aspect slot，每個 slot 維度是 d。這個 `R` 表示實數空間，`|I| x A x d` 就是把所有 item 的四個槽排成一個三維張量。整體來說，這一步先把加權後的矩陣壓成幾個比較重要的方向，再把分解出來的 item 表示整理成四個槽。這裡的 `U sub k` 可以理解成 item 的低維表示，`Sigma sub k` 是每個方向的重要程度，最後再把 `E sub KG` 重塑成 `A sub KG zero`。
 
 ## Slide 21 — KG-SVD Effect
 
