@@ -293,7 +293,7 @@ E^(l+1) = A_norm E^(l), l = 0, 1, ..., K-1
 
 **Why latent aspect slots**
 
-- each item is compressed into four latent aspect slots
+- each item is compressed into four fixed semantic slots
 - the slots keep the KG signal compact and readable
 - sparse KG makes direct propagation fragile
 
