@@ -3,7 +3,7 @@
 <!--
 Writing rule:
 - Introduce a new term with a plain explanation first; do not drop a new name without context.
-- Write symbols in a speakable form, e.g. y_hat(u, i), u_final, i_glo, alpha_u.
+- Write symbols in a speakable form, e.g. y_hat(u, i), a sub i, u sub loc, i sub loc, i sub glo, alpha sub u.
 - Keep technical terms in English, but keep descriptive phrasing natural and easy to read aloud.
 -->
 
@@ -117,7 +117,7 @@ KG 應該是可閘控的側通道，而不是必經 scoring component。
 
 我們的任務是隱式回饋的 top-K 推薦。對每個 user，我們要把候選 item 排序，讓真實互動過的 item 排在前面。訓練時使用正樣本和抽樣得到的負樣本配對。
 
-最終分數是 y_hat(u, i)，也就是 u_final 跟 i_final 的內積。y_hat(u, i) 表示模型對 user u 和 item i 的預測分數，分數越高代表越推薦。這裡先把分數定義清楚，u_final 和 i_final 的構成放到下一頁。
+最終分數是 y_hat(u, i)，也就是 u sub final 跟 i sub final 的內積。y_hat(u, i) 表示模型對 user u 和 item i 的預測分數，分數越高代表越推薦。這裡先把分數定義清楚，u sub final 和 i sub final 的構成放到下一頁。
 
 ## Slide 14 — Problem Setup II
 
@@ -141,11 +141,11 @@ local propagation 的部分就是標準 LightGCN。
 
 我們只在 user-item 二分圖上做傳播，而且只用訓練互動資料。A norm 是 normalized adjacency matrix，也就是把鄰居關係做過正規化的鄰接矩陣；E of l 是第 l 層的 embedding。
 
-接著把第 0 層到第 K 層做層平均，得到 bar E。這個 bar E 就是整體的 local 表示，我們再從裡面讀出 u loc 和 i loc；這裡 K 設成 2。
+接著把第 0 層到第 K 層做層平均，得到 bar E。這個 bar E 就是整體的 local 表示，我們再從裡面讀出 u sub loc 和 i sub loc；這裡 K 設成 2。
 
 ## Slide 17 — Global View
 
-global view 的重點是先把每個 item 的 KG 語意壓成四個固定的語意槽，也就是 latent aspect slots，寫成 a_i，大小是 A x d。
+global view 的重點是先把每個 item 的 KG 語意壓成四個固定的語意槽，也就是 latent aspect slots，寫成 a sub i，大小是 A x d。
 
 KG 很稀疏，所以如果直接傳播，訊號很容易被缺失邊或噪音邊影響。改成這種固定語意槽之後，模型不是被動地吃整張 KG，而是先把 item 的語意拆成幾個固定的槽，再在這些槽裡挑比較有用的 aspect。這樣做的好處是，global view 還是保留 KG 的語意資訊，但傳播的時候不會把雜訊直接灌進來。
 
@@ -185,13 +185,13 @@ global view 的第二個核心是 softmax rationale masking。
 
 這一頁就是具體計算。
 
-MLP 是一個小型 feed-forward network。第 k 個 slot 的分數來自把 u_glo 和 aspect slot i_k 串接後丟進 MLP，表示第 k 個 aspect slot 對這個 user-item pair 的相對重要性；再經過 softmax(logit_k / tau) 變成 slot 權重，其中 tau 是 softmax temperature，控制分佈有多尖銳；最後把四個 slot 加權求和成 i_glo。
+MLP 是一個小型 feed-forward network。第 k 個 slot 的分數來自把 u sub glo 和 aspect slot i sub k 串接後丟進 MLP，表示第 k 個 aspect slot 對這個 user-item pair 的相對重要性；再經過 softmax(logit sub k / tau) 變成 slot 權重，其中 tau 是 softmax temperature，控制分佈有多尖銳；最後把四個 slot 加權求和成 i sub glo。
 
 ## Slide 24 — Softmax Normalization
 
 這裡我們特別強調 softmax 而不是 sigmoid。
 
-softmax 會讓 slot 之間互相競爭，在固定總量下做選擇，所以四個權重加起來會等於 1。這不只是讓 attention 更 sharp，更重要的是它控制了 i_glo 的 magnitude，讓 global channel 不會自己膨脹。
+softmax 會讓 slot 之間互相競爭，在固定總量下做選擇，所以四個權重加起來會等於 1。這不只是讓 attention 更 sharp，更重要的是它控制了 i sub glo 的 magnitude，讓 global channel 不會自己膨脹。
 
 ## Slide 25 — Softmax vs Sigmoid
 
@@ -209,7 +209,7 @@ Top-20 是 0.1005 / 0.0451，Top-10 是 0.0785 / 0.0397。這說明 normalizatio
 
 這一頁先講 fusion gate。
 
-alpha_u 和 alpha_i 是用小型 MLP 算出來的，分別控制 user-side 和 item-side 的 local/global 混合比例。它們也都介於 0 和 1 之間，所以 u_final 和 i_final 就是 local 與 global 表示的加權和。
+alpha sub u 和 alpha sub i 是用小型 MLP 算出來的，分別控制 user-side 和 item-side 的 local/global 混合比例。它們也都介於 0 和 1 之間，所以 u sub final 和 i sub final 就是 local 與 global 表示的加權和。
 
 ## Slide 28 — Gate Bias and Graceful Degradation
 
@@ -223,7 +223,7 @@ alpha_u 和 alpha_i 是用小型 MLP 算出來的，分別控制 user-side 和 i
 
 除了 BPR，我們還加了兩個很小的對比學習輔助項，也就是 contrastive regularization。
 
-面向層的對比損失是物品面向的對比損失，使用者跨視角的對比損失是 user cross-view contrastive loss，也就是讓同一個 user 的 local 和 global 表示靠近；lambda CL 是這個輔助項的權重，tau CL 是對比學習用的 temperature。它們只是輔助對齊 local 和 global 的幾何空間，不是主融合機制。
+面向層的對比損失是物品面向的對比損失，使用者跨視角的對比損失是 user cross-view contrastive loss，也就是讓同一個 user 的 local 和 global 表示靠近；lambda sub CL 是這個輔助項的權重，tau sub CL 是對比學習用的 temperature。它們只是輔助對齊 local 和 global 的幾何空間，不是主融合機制。
 
 ## Slide 30 — Training Objective
 
