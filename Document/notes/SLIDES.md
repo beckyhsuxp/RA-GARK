@@ -337,10 +337,6 @@ M_tilde[i, a] = M[i, a] * idf(a)
 idf(a) = log(|I| / (|{i : M[i, a] = 1}| + 1)) + 1
 ```
 
-**Key idea**
-
-- compact matrix of item-aspect co-occurrence
-
 **Image**
 
 `thesis/img/kg_svd.png`
