@@ -341,14 +341,14 @@ idf(a) = log(N_items / support(a) + 1) + 1
 
 ## Slide 20 — KG-SVD SVD and Reshape
 
-**Truncated SVD**
+3. **Truncated SVD**
 
 ```text
 M_tilde ~= U_k Sigma_k V_k^T
 E_KG = U_k Sigma_k^(1/2)
 ```
 
-**Reshape**
+4. **Reshape**
 
 ```text
 E_KG[i] -> item_kg_aspects[i] in R^(4 x 128)
