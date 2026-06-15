@@ -153,6 +153,8 @@ KG 很稀疏，所以如果直接傳播，訊號很容易被缺失邊或噪音�
 
 ## Slide 18 — KG-SVD Motivation
 
+前一頁我們說過，global view 先把每個 item 壓成四個固定的語意槽。
+
 KG-SVD 是我們用來初始化 item aspect slots 的方法。
 
 它的目的，是先把每個 item 的 aspect 相關資訊做一個比較穩的初始化。
