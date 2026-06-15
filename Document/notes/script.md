@@ -208,7 +208,7 @@ KG-SVD 是我們用來初始化 item aspect slots 的方法。
 
 ## Slide 26 — Fusion Gate Structure
 
-這裡先以 user-side 為例。這張圖從左往右看，先把 `u_loc` 和 `u_glo` 串起來，得到 gate 的輸入。
+這裡先以 user-side 為例，圖從左往右看，先把 `u_loc` 和 `u_glo` 串起來，得到 gate 的輸入。
 
 接下來是中間的 MLP。`Gate(z)` 就是那個帶 `tanh` 的小型 MLP，再接上一個 sigmoid head；其中 `w^T tanh(W z) + b` 可以理解成 MLP 的最後一層，前面先做隱層變換，最後再加上 bias `b`。
 
