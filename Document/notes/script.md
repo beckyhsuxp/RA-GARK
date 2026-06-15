@@ -165,6 +165,8 @@ KG-SVD 是我們用來初始化 item aspect slots 的方法。
 
 接著再乘上 aspect 的 IDF，也就是一種把常見 aspect 權重壓低的方式，讓太常見但沒辨識力的 aspect 影響變小。
 
+這個公式的意思很簡單：出現越多的 aspect，IDF 就越小；`|I|` 是 item 的總數，`|{i : M[i, a] = 1}|` 是這個 aspect 出現過的 item 數。分母裡的 `+1` 是避免除零，外面的 `+1` 是避免權重變成 0。
+
 所以重點是把 item 和 aspect 一起出現的關係整理成矩陣，再把太常見的 aspect 壓低。
 
 ## Slide 20 — KG-SVD SVD and Reshape
