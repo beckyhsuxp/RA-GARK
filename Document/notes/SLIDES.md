@@ -446,9 +446,7 @@ i_{\mathrm{glo}} = \sum_{k=1}^{A} w_{u, i, k} \cdot \mathbf{a}_{i, k}
 **Gate**
 
 ```text
-\alpha_u = \mathrm{Gate}_u([u_{\mathrm{loc}} \,\Vert\, u_{\mathrm{glo}}]) \in (0, 1)
-\alpha_i = \mathrm{Gate}_i([i_{\mathrm{loc}} \,\Vert\, i_{\mathrm{glo}}]) \in (0, 1)
-\mathrm{Gate}(\mathbf{z}) = \sigma\!\left(\mathbf{w}^{\top} \tanh\!\left(\mathbf{W}\mathbf{z}\right) + b\right)
+\alpha_u = \sigma\!\left(\mathbf{w}^{\top} \tanh\!\left(\mathbf{W}[u_{\mathrm{loc}} \,\Vert\, u_{\mathrm{glo}}]\right) + b\right)
 b = +5
 ```
 
@@ -456,7 +454,6 @@ b = +5
 
 ```text
 u_final = alpha_u * u_loc + (1 - alpha_u) * u_glo
-i_final = alpha_i * i_loc + (1 - alpha_i) * i_glo
 ```
 
 ---
