@@ -159,8 +159,6 @@ KG-SVD 是我們用來初始化 item aspect slots 的方法。
 
 它的目的，是先把每個 item 的 aspect 相關資訊做一個比較穩的初始化。
 
-這裡的做法可以直接先看下一張圖：先建 item-aspect matrix，再做 IDF weighting，最後用 truncated SVD 得到每個 item 的 four-slot 表示。
-
 ## Slide 19 — KG-SVD Construction
 
 先看這張圖的左半邊。
