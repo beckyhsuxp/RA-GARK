@@ -159,17 +159,19 @@ KG-SVD 的目的，是先把每個 item 的 aspect 相關資訊做一個比較�
 
 ## Slide 19 — KG-SVD Construction
 
-這一步先建 item-aspect matrix。
+先看這張圖的左半邊。
 
-如果 item 有某個 aspect，就把對應位置設成 1；接著乘上 aspect 的 IDF，讓常見但沒辨識力的 aspect 影響變小。這裡的 idf of a 會根據 aspect a 在多少 item 裡出現來降權，support of a 就是這個 aspect 出現過的 item 數。
+這一步是在建 item-aspect matrix。每個 item 如果有某個 aspect，就把對應位置設成 1；接著再乘上 aspect 的 IDF，讓常見但沒辨識力的 aspect 影響變小。這裡的 idf of a 會根據 aspect a 在多少 item 裡出現來降權，support of a 就是這個 aspect 出現過的 item 數。
 
-這張圖先看前半段就好，重點是 item-aspect matrix 和 IDF weighting。
+所以左半邊的重點就是：先把 item 和 aspect 的共現關係寫成矩陣，再把太常見的 aspect 壓下去。
 
 ## Slide 20 — KG-SVD SVD and Reshape
 
-這張圖就是 KG-SVD 的核心流程，從左到右看就好。
+這張圖的右半邊就是接下來的重點。
 
 先從 IDF-weighted matrix 做只保留前 k 個成分的 truncated SVD，這裡 k 等於 A 乘 d。U sub k 是左 singular vectors，Sigma sub k 是 singular values 的對角矩陣，V sub k transpose 是右 singular vectors 的轉置。接著把結果投影成 E KG 等於 U sub k 乘 Sigma sub k 的平方根，這樣就得到每個 item 的初始 KG 表示。最後再把 flat vector reshape 成每個 item 的四個 aspect slot，每個 slot 維度是 128。
+
+這樣做的意思是，前面先把共現關係整理成一個穩定的矩陣，後面再把它轉成每個 item 的四個 latent slots。
 
 ## Slide 21 — KG-SVD Effect
 
