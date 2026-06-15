@@ -153,9 +153,9 @@ KG 很稀疏，所以如果直接傳播，訊號很容易被缺失邊或噪音�
 
 ## Slide 18 — KG-SVD Motivation
 
-KG-SVD 的出發點很簡單：item-aspect 關聯矩陣很 sparse，而且太泛用的 aspect 不應該跟太具辨識度的 aspect 用同樣權重。
+KG-SVD 的目的，是先把每個 item 的 aspect 相關資訊做一個比較穩的初始化。
 
-所以我們先用 IDF weighting 把 generic aspects 壓下去，再用 SVD 去找一個有語意幾何的初始化。
+因為 item-aspect 關聯矩陣很 sparse，而且有些 aspect 很常見、沒那麼有辨識力，所以我們先用 IDF 讓常見的 aspect 權重變小，再用 SVD 從共現結構裡找出一個比較好的起點。
 
 ## Slide 19 — KG-SVD Construction
 
