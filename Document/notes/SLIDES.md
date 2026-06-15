@@ -339,8 +339,8 @@ idf(a) = log(N_items / support(a) + 1) + 1
 
 **Purpose**
 
-- downweight generic aspects
-- keep discriminative aspects
+1. downweight generic aspects
+2. keep discriminative aspects
 
 ---
 
