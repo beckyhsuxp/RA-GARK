@@ -81,7 +81,7 @@ KGCL 會對 KG 結構做擾動，然後對 original view 和 perturbed view 做�
 
 KGRec 是跟我們最直接相關的工作。
 
-這頁我用一張表直接把 KGRec 和 RA-GARK 對照起來。KGRec 的 rationale 是 edge-level 的，它用 Bernoulli dropout，也就是隨機把一部分邊丟掉，再加 contrastive learning 來挑比較重要的邊；RA-GARK 則把 rationale 放在 latent aspect-slot level，也就是先把 item 的 KG 語意壓成幾個語意槽，再用 softmax attention 直接控制 global 側通道的輸出。
+這頁我用一張表直接把 KGRec 和 RA-GARK 對照起來。KGRec 的 rationale 是 edge-level 的，它用 Bernoulli dropout，也就是隨機把一部分邊丟掉，再加 contrastive learning 來挑比較重要的邊；RA-GARK 則把 rationale 放在 latent aspect-slot level，也就是先把 item 的 KG 語意壓成幾個 semantic slots，再用 softmax attention 直接控制 global 側通道的輸出。
 
 所以兩者最大的差別是：KGRec 還是預設 KG 裡面至少有一些有用的 edges 可以挑出來；RA-GARK 的前提更保守，直接把整條 KG channel 當成可能不可靠的側通道來處理。
 
@@ -145,15 +145,15 @@ local propagation 的部分就是標準 LightGCN。
 
 ## Slide 17 — Global View
 
-global view 的重點是 latent aspect slots。先把每個 item 壓成四個固定的語意槽，這樣就能保留 KG 的語意，但不會直接把整張 KG 拿去傳播。
+global view 的重點是 latent aspect slots。先把每個 item 壓成四個固定的 semantic slots，這樣就能保留 KG 的語意，但不會直接把整張 KG 拿去傳播。
 
-KG 很稀疏，所以如果直接傳播，訊號很容易被缺失邊或噪音邊影響。改成這種固定語意槽之後，模型不是被動地吃整張 KG，而是先把 item 的語意拆成幾個固定的槽，再在這些槽裡挑比較有用的 aspect。這樣做的好處是，global view 還是保留 KG 的語意資訊，但傳播的時候不會把雜訊直接灌進來。
+KG 很稀疏，所以如果直接傳播，訊號很容易被缺失邊或噪音邊影響。改成這種固定 semantic slots 之後，模型不是被動地吃整張 KG，而是先把 item 的語意拆成幾個固定的 slot，再在這些 slot 裡挑比較有用的 aspect。這樣做的好處是，global view 還是保留 KG 的語意資訊，但傳播的時候不會把雜訊直接灌進來。
 
-這裡的表示寫成 a sub i，大小是 A x d，也就是四個槽、每個槽 d 維；R 就是實數空間。
+這裡的表示寫成 a sub i，大小是 A x d，也就是四個 slot、每個 slot 維度是 d；R 就是實數空間。
 
 ## Slide 18 — KG-SVD Motivation
 
-前一頁我們說過，global view 先把每個 item 壓成四個固定的語意槽。
+前一頁我們說過，global view 先把每個 item 壓成四個固定的 semantic slots。
 
 KG-SVD 是我們用來初始化 item aspect slots 的方法。
 
@@ -173,9 +173,9 @@ KG-SVD 是我們用來初始化 item aspect slots 的方法。
 
 前一頁我們先把 item 和 aspect 的共現關係整理成加權矩陣，這一頁就接著看右半邊，從這個矩陣開始做分解。
 
-先從 IDF-weighted matrix 做 truncated SVD，也就是只保留前 k 個成分。這裡 `k` 取 `A 乘 d`，也就是把 `A` 個槽、每個槽 `d` 維的總維度保留下來。你可以把這一步想成把加權後的矩陣拆成三個部分：左邊的 `U sub k`、中間的 `Sigma sub k`、以及右邊的 `V sub k transpose`。`U sub k` 可以理解成 item 的低維表示，`Sigma sub k` 是每個方向的重要程度；`V sub k transpose` 只是分解的一部分，這裡先用 `U sub k` 和 `Sigma sub k 的平方根` 來形成 `E sub KG`，也就是每個 item 的初始 KG 表示。
+先從 IDF-weighted matrix 做 truncated SVD，也就是只保留前 k 個成分。這裡 `k` 取 `A 乘 d`，也就是把 `A` 個 slot、每個 slot 維度是 d 的總維度保留下來。你可以把這一步想成把加權後的矩陣拆成三個部分：左邊的 `U sub k`、中間的 `Sigma sub k`、以及右邊的 `V sub k transpose`。`U sub k` 可以理解成 item 的低維表示，`Sigma sub k` 是每個方向的重要程度；`V sub k transpose` 只是分解的一部分，這裡先用 `U sub k` 和 `Sigma sub k 的平方根` 來形成 `E sub KG`，也就是每個 item 的初始 KG 表示。
 
-接著把 `E sub KG` reshape 成 `A sub KG zero`，也就是把每個 item 表成 A 個 aspect slot，維度是 d。這裡的 zero 表示初始化後的第一版；整個 `A sub KG zero` 可以想成一個三維張量，也就是 item 數乘 A 乘 d 的大小，裡面的值都來自實數空間。reshape 就是把這些數值排回 A 個 slot。接著會用這個初始化結果交給 graph recommender，也就是 GNN-based recommender 往下做。整體來說，這一步先把加權後的矩陣壓成幾個比較重要的方向，再把分解出來的 item 表示整理成四個槽。
+接著把 `E sub KG` reshape 成 `A sub KG zero`，也就是把每個 item 表成 A 個 aspect slot，維度是 d。這裡的 zero 表示初始化後的第一版；整個 `A sub KG zero` 可以想成一個三維張量，也就是 item 數乘 A 乘 d 的大小，裡面的值都來自實數空間。reshape 就是把這些數值排回 A 個 slot。接著會用這個初始化結果交給 graph recommender，也就是 GNN-based recommender 往下做。整體來說，這一步先把加權後的矩陣壓成幾個比較重要的方向，再把分解出來的 item 表示整理成四個 slot。
 
 ## Slide 21 — KG-SVD: Initialization Effect
 
