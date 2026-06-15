@@ -183,6 +183,8 @@ KG-SVD 是我們用來初始化 item aspect slots 的方法。
 
 更重要的是，這個初始化保留了 item 和 aspect 的共現結構，所以在 training 之前，model 就已經有一個比較穩的表示結構。這不是一個要從零學出的模組，而是先把 slot 放到合理的位置，之後再跟著訓練微調。這也是為什麼在 sparse KG 的情況下，KG-SVD 會明顯幫助後面的 global view。
 
+有了這個初始化，下一步就是看在不同的 user-item pair 下，應該由哪個 slot 來代表這個 item，所以接下來進到 softmax masking。
+
 ## Slide 22 — Softmax Masking Motivation
 
 global view 的第二個核心是 softmax rationale masking。
