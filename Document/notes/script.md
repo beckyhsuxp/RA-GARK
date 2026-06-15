@@ -208,7 +208,7 @@ KG-SVD 是我們用來初始化 item aspect slots 的方法。
 
 ## Slide 26 — Fusion Gate Structure
 
-左邊這個 gate 的公式是 `Gate(z) = sigma(w^T tanh(W z) + b)`。在 user-side，它先把 `u_loc` 和 `u_glo` 串起來，變成 gate 的輸入 `z`，再丟進 `tanh` 的小型 MLP，最後接一個線性層和 sigmoid，得到 `alpha_u`。
+先看左邊的 `alpha_u`。它是由 `u_loc` 和 `u_glo` 串起來之後，再丟進一個帶 `tanh` 的小型 MLP 算出來的。更完整地說，這個 gate 的形式是 `Gate(z) = sigma(w^T tanh(W z) + b)`，而 `alpha_u` 就是把 user-side 的兩個表示放進這個 gate 後得到的輸出。
 
 item-side 也是同樣的做法，只是輸入換成 `i_loc` 和 `i_glo`，所以也會得到 `alpha_i`。這裡把 bias `b` 初始化成 `+5`，所以一開始 `alpha_u` 和 `alpha_i` 都會非常接近 1，代表模型一開始幾乎偏向 local，KG 只是輕微進來；等訓練發現 KG 有幫助，gate 才會慢慢往下開。
 
