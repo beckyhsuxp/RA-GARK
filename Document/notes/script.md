@@ -204,7 +204,7 @@ KG-SVD 是我們用來初始化 item aspect slots 的方法。
 
 ## Slide 25 — Fusion Gate Overview
 
-先看架構圖，這一頁先把焦點放到 fusion gate。local view 和 global view 前面都各自獨立建模，直到最後才在這裡匯合，所以這一頁的重點是：gate 決定 KG 要參與多少。
+這一頁聚焦 fusion gate。local view 和 global view 前面都各自獨立建模，直到最後才在這裡匯合，所以這一頁的重點是：gate 決定 KG 要參與多少。
 
 ## Slide 26 — Fusion Gate Structure
 
