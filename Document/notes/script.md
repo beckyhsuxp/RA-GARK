@@ -194,7 +194,7 @@ global view 的第二個核心是 softmax rationale masking。對每個 user-ite
 
 這一頁就是具體計算。
 
-MLP 是一個小型 feed-forward network。第 k 個 slot 的分數來自把 `u sub glo` 和 aspect slot `i sub k` 串接後丟進 MLP，表示第 k 個 aspect slot 對這個 user-item pair 的相對重要性；再經過 `softmax of logit sub k over tau` 變成 slot 權重，其中 `tau` 是 softmax temperature，控制分佈有多尖銳；最後把四個 slot 加權求和成 `i sub glo`。
+先看公式。`logit sub k` 是第 k 個 slot 的分數，來自把 `u sub glo` 和 `aspect slot i sub k` 串接後丟進 MLP。接著 `w sub k` 是把 `logit sub k` 除以 `tau` 再做 softmax 得到的權重，其中 `tau` 是 softmax temperature，控制分佈有多尖銳。最後，`i sub glo` 就是把四個 slot 依照這些權重加權求和。
 
 ## Slide 24 — Softmax Normalization
 
