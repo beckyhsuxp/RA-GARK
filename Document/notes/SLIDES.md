@@ -357,7 +357,6 @@ E_KG = U_k Sigma_k^(1/2)
 4. **Reshape & Initialize**
 
 - turn each item vector into four aspect slots
-- feed the initialized slots into the graph recommender
 
 ```text
 E_KG -> A_KG^(0) in R^(|I| x A x d)
