@@ -208,9 +208,9 @@ KG-SVD 是我們用來初始化 item aspect slots 的方法。
 
 ## Slide 26 — Fusion Gate Structure
 
-先看圖上的左半邊。`u_loc` 和 `u_glo` 先進 `Concat`，接著丟進帶 `tanh` 的 MLP。MLP 的輸出再接一個線性層 `w^T h + b`，這裡的 bias `b` 一開始設成 `+5`，然後再經過 `sigma`，得到 `alpha_u`。
+左邊這個 gate 先把 `u_loc` 和 `u_glo` 串起來，丟進一個帶 `tanh` 的小型 MLP。MLP 後面接一個線性層，再加上 bias `b`，這裡一開始把 `b` 設成 `+5`，所以再經過 `sigma` 之後，`alpha_u` 會一開始非常接近 1。
 
-接著往右看，`alpha_u` 會分別乘上 `u_loc` 和 `u_glo` 的補數 `1 - alpha_u`，最後加總成 `u_final`。這就是圖上 user-side 的 gate 流程；item-side 也是同樣的做法，只是圖裡沒畫出來。
+接下來就是右邊的融合。`alpha_u` 接近 1 的時候，`u_final` 會大部分保留 `u_loc`；如果 `alpha_u` 往下掉，才會慢慢把 `u_glo` 的比例拉上來。也就是說，這個 gate 先偏向 local，再根據訓練慢慢決定要不要放更多 KG 進來。item-side 的 gate 也是同樣邏輯。
 
 ## Slide 27 — Gate Bias and Graceful Degradation
 
