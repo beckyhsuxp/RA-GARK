@@ -1,5 +1,12 @@
 # RA-GARK 口語逐字稿
 
+<!--
+Writing rule:
+- Introduce a new term with a plain explanation first; do not drop a new name without context.
+- Write symbols in a speakable form, e.g. y_hat(u, i), u_final, i_glo, alpha_u.
+- Keep technical terms in English, but keep descriptive phrasing natural and easy to read aloud.
+-->
+
 ## Slide 1 — Title
 
 大家好，我今天要報告的題目是 RA-GARK，完整名稱是 Product Recommendation via Rationale-Aware Gating over Sparse Review-Aspect Knowledge Graphs，也就是基於理由感知門控與稀疏評論面向知識圖譜之產品推薦。
@@ -184,7 +191,7 @@ MLP 是一個小型 feed-forward network。第 k 個 slot 的分數來自把 u_g
 
 這裡我們特別強調 softmax 而不是 sigmoid。
 
-softmax 會讓 slot 之間互相競爭，在固定總量下做選擇，所以四個權重加起來會等於 1。這不只是讓 attention 更 sharp，更重要的是它控制了 i glo 的 magnitude，讓 global channel 不會自己膨脹。
+softmax 會讓 slot 之間互相競爭，在固定總量下做選擇，所以四個權重加起來會等於 1。這不只是讓 attention 更 sharp，更重要的是它控制了 i_glo 的 magnitude，讓 global channel 不會自己膨脹。
 
 ## Slide 25 — Softmax vs Sigmoid
 
@@ -202,7 +209,7 @@ Top-20 是 0.1005 / 0.0451，Top-10 是 0.0785 / 0.0397。這說明 normalizatio
 
 這一頁先講 fusion gate。
 
-alpha u 和 alpha i 是用小型 MLP 算出來的，分別控制 user-side 和 item-side 的 local/global 混合比例。它們也都介於 0 和 1 之間，所以 u final 和 i final 就是 local 與 global 表示的加權和。
+alpha_u 和 alpha_i 是用小型 MLP 算出來的，分別控制 user-side 和 item-side 的 local/global 混合比例。它們也都介於 0 和 1 之間，所以 u_final 和 i_final 就是 local 與 global 表示的加權和。
 
 ## Slide 28 — Gate Bias and Graceful Degradation
 
