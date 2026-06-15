@@ -213,6 +213,7 @@ KG should be a gateable side channel, not a mandatory scoring component.
 - Local View -> `u_loc`, `i_loc`
 - Global View -> `u_glo`, `i_glo`
 - Fusion Gate -> `u_final`, `i_final`
+- Graph Recommender -> final score
 - Training Loss -> ranking objective
 
 ---
