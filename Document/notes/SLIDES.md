@@ -339,7 +339,7 @@ idf(a) = log(|I| / (|{i : M[i, a] = 1}| + 1)) + 1
 
 **Key idea**
 
-- organize item-aspect co-occurrence into a matrix while downweighting overly common aspects
+- matrix + downweight common aspects
 
 **Image**
 
