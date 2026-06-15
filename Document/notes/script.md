@@ -161,9 +161,11 @@ KG-SVD 是我們用來初始化 item aspect slots 的方法。
 
 ## Slide 19 — KG-SVD Construction
 
-先看這張圖的左半邊，重點是把 item 和 aspect 的共現關係整理成矩陣，再把太常見的 aspect 壓低。
+重點是把 item 和 aspect 的共現關係整理成矩陣，再把太常見的 aspect 壓低。
 
-這一步是在建 item-aspect matrix。每個 item 如果有某個 aspect，就把對應位置設成 1；接著再乘上 aspect 的 IDF，也就是一種把常見 aspect 權重壓低的方式，讓太常見但沒辨識力的 aspect 影響變小。
+這一步是在建 item-aspect matrix。每個 item 如果有某個 aspect，就把對應位置設成 1。
+
+接著再乘上 aspect 的 IDF，也就是一種把常見 aspect 權重壓低的方式，讓太常見但沒辨識力的 aspect 影響變小。
 
 ## Slide 20 — KG-SVD SVD and Reshape
 
