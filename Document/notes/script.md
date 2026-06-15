@@ -196,31 +196,25 @@ KG-SVD 是我們用來初始化 item aspect slots 的方法。
 
 ## Slide 24 — Softmax Normalization
 
-上一頁已經算出每個 slot 的權重，這一頁補的是為什麼我們要用 softmax 來做 normalizing。
+上一頁已經算出每個 slot 的權重，這一頁把 normalization choice 一起講完。
 
-這裡我們特別強調 softmax 而不是 sigmoid。
+先看 softmax 和 sigmoid 的差別。sigmoid 會把每個 slot 當成獨立判斷，沒有跨 slot 的競爭；softmax 則會讓 slot 在固定總量下互相競爭，所以四個權重加起來會等於 1。
 
-softmax 會讓 slot 之間互相競爭，在固定總量下做選擇，所以四個權重加起來會等於 1。這不只是讓 attention 更 sharp，更重要的是它控制了 `i_global` 的 magnitude，讓 global channel 不會自己膨脹。
+在 RA-GARK 裡，我們選 softmax，因為它不只讓 attention 比較 sharp，也控制了 `i_global` 的 magnitude，讓 KG channel 保持被 throttled 的狀態。換句話說，softmax 比 sigmoid 更適合這種要限制輸出幅度的 side channel。
 
-## Slide 25 — Softmax vs Sigmoid
-
-如果用 sigmoid，每個 slot 是獨立啟動的，容易所有 slot 都偏高，最後退化成平均。
-
-所以在我們這個被 gate 控制的 sparse KG side channel 裡，softmax 比 sigmoid 更適合。
-
-## Slide 26 — Softmax Ablation
+## Slide 25 — Softmax Ablation
 
 這張 sensitivity 圖對應 w/o-softmax row。
 
 Top-20 是 0.1005 / 0.0451，Top-10 是 0.0785 / 0.0397。這說明 normalization 的選擇會直接影響穩定性和 magnitude control。
 
-## Slide 27 — Fusion Gate Structure
+## Slide 26 — Fusion Gate Structure
 
 這一頁先講 fusion gate。
 
 alpha_u 和 alpha_i 是用小型 MLP 算出來的，分別控制 user-side 和 item-side 的 local/global 混合比例。它們也都介於 0 和 1 之間，所以 u_final 和 i_final 就是 local 與 global 表示的加權和。
 
-## Slide 28 — Gate Bias and Graceful Degradation
+## Slide 27 — Gate Bias and Graceful Degradation
 
 這一頁講 gate 的初始化。
 
@@ -228,49 +222,49 @@ alpha_u 和 alpha_i 是用小型 MLP 算出來的，分別控制 user-side 和 i
 
 這樣做的目的是讓系統先站在安全預設上。如果 KG 不可靠，gate 就維持偏關閉；如果 KG 有幫助，訓練才慢慢把它打開。
 
-## Slide 29 — Contrastive Regularization
+## Slide 28 — Contrastive Regularization
 
 除了 BPR，我們還加了兩個很小的對比學習輔助項，也就是 contrastive regularization。
 
 面向層的對比損失是物品面向的對比損失，使用者跨視角的對比損失是 user cross-view contrastive loss，也就是讓同一個 user 的 local 和 global 表示靠近；lambda_CL 是這個輔助項的權重，tau_CL 是對比學習用的 temperature。它們只是輔助對齊 local 和 global 的幾何空間，不是主融合機制。
 
-## Slide 30 — Training Objective
+## Slide 29 — Training Objective
 
 這一頁補 BPR 的訓練目標。
 
 BPR 是 pairwise ranking loss。sigma 是 sigmoid function。公式裡的 positive item 是正樣本，也就是使用者真的互動過的 item；negative item 是負樣本，也就是抽樣出來、使用者沒互動過的 item。我們用正樣本和 sampled negative pairs 來訓練，目標是把真正互動過的 item 排在未互動 item 前面。BPR 負責 ranking signal，gate 和 CL 負責把表示調穩定。
 
-## Slide 31 — Dataset and Optimization
+## Slide 30 — Dataset and Optimization
 
 這一頁補資料規模和訓練設定。
 
 我們的資料集有 905 個 user、1,399 個 item、22,265 筆互動、3,370 條 KG 邊，以及 2,098 個 aspect。訓練設定是 Adam，learning rate 0.001，batch size 128，最多 80 個 epoch，並且用 validation NDCG@20 做 early stopping。
 
-## Slide 32 — Inference and Complexity
+## Slide 31 — Inference and Complexity
 
 評估時採 full-ranking，也就是對每個 user 把候選 item 重新完整排序，並排除訓練集裡已經互動過的 item，最後看 HR、Precision、Recall、F1、MAP 和 NDCG，這些都取 @20。
 
 從效能來看，我們每個 epoch 大概 1.5 秒，跟 KGRec 差不多，所以這個設計沒有讓成本爆炸。
 
-## Slide 33 — Main Results
+## Slide 32 — Main Results
 
 先看主結果。
 
 Top-20 時，RA-GARK 的 NDCG@20 是 0.1243，較 KGRec 高 13.5%，較純 LightGCN 高 5.4%。Top-10 時，RA-GARK 的 NDCG@10 是 0.0966，較 KGRec 高 10.5%，較純 LightGCN 高 6.4%。
 
-## Slide 34 — Ablation Summary
+## Slide 33 — Ablation Summary
 
 再看 ablation。
 
 Top-20 時，softmax head 是最大的變化，0.1243 降到 0.1005；KG-SVD 是 0.1171；fusion-gate bias 是 0.1194；MLP gate 是 0.1180。Top-10 也維持相同排序。
 
-## Slide 35 — Case Study and Takeaways
+## Slide 34 — Case Study and Takeaways
 
 這張 heatmap 是 case study。
 
 你可以看到不同 item 會對不同 aspect slot 給出不同的權重，表示 rationale masking 不是固定平均，而是真的有在對不同 item 使用不同的語意路徑。
 
-## Slide 36 — Conclusion
+## Slide 35 — Conclusion
 
 最後總結一下。
 
