@@ -318,7 +318,7 @@ E^(l+1) = A_norm E^(l), l = 0, 1, ..., K-1
 
 ---
 
-## Slide 19 — KG-SVD Construction
+## Slide 19 — KG-SVD: Construction
 
 1. **Build item-aspect matrix**
 
@@ -343,7 +343,7 @@ idf(a) = log(|I| / (|{i : M[i, a] = 1}| + 1)) + 1
 
 ---
 
-## Slide 20 — KG-SVD SVD and Reshape
+## Slide 20 — KG-SVD: SVD and Reshape
 
 3. **Truncated SVD**
 
