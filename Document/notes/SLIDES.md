@@ -350,7 +350,7 @@ idf(a) = log(|I| / (|{i : M[i, a] = 1}| + 1)) + 1
 - keep only the top-k factors of the weighted matrix, with `k = A × d`
 
 ```text
-M_tilde ~= U_k Sigma_k V_k^T
+M_tilde ~= U_k Sigma_k V_k^T, with k = A × d
 E_KG = U_k Sigma_k^(1/2)
 ```
 
