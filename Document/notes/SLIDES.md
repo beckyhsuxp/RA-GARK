@@ -448,7 +448,6 @@ i_{\mathrm{glo}} = \sum_{k=1}^{A} w_{u, i, k} \cdot \mathbf{a}_{i, k}
 ```text
 \alpha_u = \mathrm{Gate}_u\!\left([u_{\mathrm{loc}} \,\Vert\, u_{\mathrm{glo}}]\right) \in (0, 1)
 \mathrm{Gate}(\mathbf{z}) = \sigma\!\left(\mathbf{w}^{\top} \tanh\!\left(\mathbf{W}\mathbf{z}\right) + b\right)
-b = +5
 ```
 
 **Fusion**
