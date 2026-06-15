@@ -204,13 +204,13 @@ KG-SVD 是我們用來初始化 item aspect slots 的方法。
 
 ## Slide 25 — Fusion Gate Overview
 
-這一頁先把畫面聚焦到最後的融合位置。local view 和 global view 前面都各自獨立建模，接下來就是看它們怎麼在 gate 裡被接起來。
+這一頁先把畫面聚焦到最後的融合位置。local view 和 global view 前面都各自獨立建模，接下來從圖的左邊 gate 一路看到右邊的 fusion。
 
 ## Slide 26 — Fusion Gate Structure
 
-先看 gate。`alpha_u` 和 `alpha_i` 是用小型 MLP 算出來的，分別控制 user-side 和 item-side 的 local/global 混合比例。它們都介於 0 和 1 之間，所以 gate 的輸出其實就是一個融合權重。
+先看左邊的 gate。`alpha_u` 和 `alpha_i` 是用小型 MLP 算出來的，分別控制 user-side 和 item-side 的 local/global 混合比例。它們都介於 0 和 1 之間，所以 gate 的輸出其實就是一個融合權重。
 
-接著看 fusion。`u_final` 和 `i_final` 就是 local 與 global 表示的加權和，也就是 gate 根據這個權重，決定要留多少 local、多少 global。
+接著往右看 fusion。`u_final` 和 `i_final` 就是 local 與 global 表示的加權和，也就是 gate 根據這個權重，決定要留多少 local、多少 global。
 
 ## Slide 27 — Gate Bias and Graceful Degradation
 
