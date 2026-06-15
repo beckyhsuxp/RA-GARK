@@ -192,7 +192,7 @@ KG-SVD 是我們用來初始化 item aspect slots 的方法。
 
 這一頁就是具體計算。
 
-先看公式。`\ell sub u,i,k` 是第 k 個 slot 的分數，來自把 `u sub global` 和 `a sub i,k` 串接後丟進 MLP。MLP 是一個小型前饋網路。接著把 `\ell sub u,i,k` 除以 `tau` 再做 softmax，就得到 `w sub u,i,k` 這個權重；`tau` 是 softmax temperature，控制分佈有多尖銳。最後，`i sub global` 就是把四個 slot 依照這些權重加權求和。
+先看公式。`\ell sub u,i,k` 是第 k 個 slot 的分數，來自把 `u sub global` 和 `a sub i,k` 串接後丟進 MLP。MLP 是一個小型前饋網路。接著把 `\ell sub u,i,k` 除以 `tau` 再做 softmax，就得到 `w sub u,i,k` 這個權重；`tau` 是 softmax temperature，控制分佈有多尖銳。最後，`i sub global` 就是把四個 slot 依照這些權重加權求和。這樣就完成從 slot 打分到 global 向量的組合。
 
 ## Slide 24 — Softmax Normalization
 
