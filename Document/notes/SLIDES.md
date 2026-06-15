@@ -395,9 +395,9 @@ choose the slot for each user-item pair
 **Computation**
 
 ```text
-ell_u,i,k = MLP([u_glo || a_i,k])
-w_u,i,k = softmax(ell_u,i,k / tau)
-i_glo = sum_k w_u,i,k * a_i,k
+\ell_{u, i, k} = \mathrm{MLP}\!\left( [u_{\mathrm{glo}} \,\Vert\, \mathbf{a}_{i,k}] \right)
+w_{u, i, k} = \frac{\exp(\ell_{u, i, k} / \tau)}{\sum_{k' = 1}^{A} \exp(\ell_{u, i, k'} / \tau)}
+i_{\mathrm{glo}} = \sum_{k=1}^{A} w_{u, i, k} \cdot \mathbf{a}_{i, k}
 ```
 
 **Result**
