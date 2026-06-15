@@ -146,6 +146,7 @@ local propagation 的部分就是標準 LightGCN。
 ## Slide 17 — Global View
 
 global view 的重點是先把每個 item 的 KG 語意壓成四個固定的語意槽，也就是 latent aspect slots，寫成 a sub i，大小是 A x d。
+這裡的 R 指的是實數空間，也就是這些向量都用實數來表示。
 
 KG 很稀疏，所以如果直接傳播，訊號很容易被缺失邊或噪音邊影響。改成這種固定語意槽之後，模型不是被動地吃整張 KG，而是先把 item 的語意拆成幾個固定的槽，再在這些槽裡挑比較有用的 aspect。這樣做的好處是，global view 還是保留 KG 的語意資訊，但傳播的時候不會把雜訊直接灌進來。
 
