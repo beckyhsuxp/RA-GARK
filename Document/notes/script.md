@@ -74,7 +74,7 @@ KGCL 會對 KG 結構做擾動，然後對 original view 和 perturbed view 做�
 
 KGRec 是跟我們最直接相關的工作。
 
-這頁我用一張表直接把 KGRec 和 RA-GARK 對照起來。KGRec 的 rationale 是 edge-level 的，它用 Bernoulli dropout 加 contrastive learning 來挑比較重要的邊；RA-GARK 則把 rationale 放在 latent aspect-slot level，也就是先把 item 的 KG 語意壓成幾個語意槽，再用 softmax attention 直接控制 global 側通道的輸出。
+這頁我用一張表直接把 KGRec 和 RA-GARK 對照起來。KGRec 的 rationale 是 edge-level 的，它用 Bernoulli dropout，也就是隨機把一部分邊丟掉，再加 contrastive learning 來挑比較重要的邊；RA-GARK 則把 rationale 放在 latent aspect-slot level，也就是先把 item 的 KG 語意壓成幾個語意槽，再用 softmax attention 直接控制 global 側通道的輸出。
 
 所以兩者最大的差別是：KGRec 還是預設 KG 裡面至少有一些有用的 edges 可以挑出來；RA-GARK 的前提更保守，直接把整條 KG channel 當成可能不可靠的側通道來處理。
 
@@ -82,7 +82,7 @@ KGRec 是跟我們最直接相關的工作。
 
 這裡我想補充 gating 的脈絡。
 
-Highway Networks 很早就提出一個很重要的概念：用 gate 把變換路徑和 identity path 做加權，而且 gate 的 bias 可以初始化成偏向安全路徑，讓模型一開始接近 identity，再慢慢學要不要打開變換。MMoE 和 PLE 則是在多任務推薦裡，用 gate 在多個 expert tower 之間做選擇。
+Highway Networks 很早就提出一個很重要的概念：用 gate 把變換路徑和 identity path 做加權，而且 gate 的 bias 可以初始化成偏向安全路徑，讓模型一開始接近 identity，再慢慢學要不要打開變換。MMoE 和 PLE 則是在多任務推薦裡，用 gate 在多個 expert 分支之間做選擇。
 
 但這些方法和我們不一樣的地方有兩個。第一，它們的 expert 多半是同質候選，不是像我們這樣把 CF 和 KG 當成兩條異質訊號管線。第二，它們沒有特別針對「某條管線可能不可信」這件事做安全初始化。
 
@@ -158,7 +158,7 @@ KG-SVD 的出發點很簡單：item-aspect 關聯矩陣很 sparse，而且太泛
 
 這張圖對應 KG-SVD 的第二步。
 
-我們對 IDF-weighted matrix 做 rank k 的 truncated SVD，這裡 k 等於 A 乘 d。U sub k 是左 singular vectors，Sigma sub k 是 singular values 的對角矩陣，V sub k transpose 是右 singular vectors 的轉置。接著把結果投影成 E KG 等於 U sub k 乘 Sigma sub k 的平方根，這樣就得到每個 item 的初始 KG 表示。最後再把 flat vector reshape 成每個 item 的四個 aspect slot，每個 slot 維度是 128。
+我們對 IDF-weighted matrix 做只保留前 k 個成分的 truncated SVD，這裡 k 等於 A 乘 d。U sub k 是左 singular vectors，Sigma sub k 是 singular values 的對角矩陣，V sub k transpose 是右 singular vectors 的轉置。接著把結果投影成 E KG 等於 U sub k 乘 Sigma sub k 的平方根，這樣就得到每個 item 的初始 KG 表示。最後再把 flat vector reshape 成每個 item 的四個 aspect slot，每個 slot 維度是 128。
 
 ## Slide 21 — KG-SVD Effect
 
@@ -214,9 +214,9 @@ alpha u 和 alpha i 是用小型 MLP 算出來的，分別控制 user-side 和 i
 
 ## Slide 29 — Contrastive Regularization
 
-除了 BPR，我們還加了兩個很小的 contrastive regularization。
+除了 BPR，我們還加了兩個很小的對比學習輔助項，也就是 contrastive regularization。
 
-面向層的對比損失是物品面向的對比損失，使用者跨視角的對比損失是 user cross-view contrastive loss，lambda CL 是這個輔助項的權重，tau CL 是對比學習用的 temperature。它們只是輔助對齊 local 和 global 的幾何空間，不是主融合機制。
+面向層的對比損失是物品面向的對比損失，使用者跨視角的對比損失是 user cross-view contrastive loss，也就是讓同一個 user 的 local 和 global 表示靠近；lambda CL 是這個輔助項的權重，tau CL 是對比學習用的 temperature。它們只是輔助對齊 local 和 global 的幾何空間，不是主融合機制。
 
 ## Slide 30 — Training Objective
 
