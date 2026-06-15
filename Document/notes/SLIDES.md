@@ -9,9 +9,9 @@
 |---|---|
 | `thesis/img/architecture.png` | Slide 12 |
 | `thesis/img/kg_svd.png` | Slide 20 |
-| `thesis/img/gate.png` | Slide 26 |
-| `thesis/img/sensitivity_2x2.png` | Slide 25 |
-| `thesis/img/case_study_heatmap.png` | Slide 34 |
+| `thesis/img/gate.png` | Slide 25 |
+| `thesis/img/sensitivity_2x2.png` | Slide 31 |
+| `thesis/img/case_study_heatmap.png` | Slide 33 |
 
 ---
 
@@ -428,27 +428,7 @@ i_{\mathrm{glo}} = \sum_{k=1}^{A} w_{u, i, k} \cdot \mathbf{a}_{i, k}
 
 ---
 
-## Slide 25 — Softmax Ablation
-
-**Figure**
-
-`thesis/img/sensitivity_2x2.png`
-
-**Full model**
-
-NDCG@20 0.1243, MAP@20 0.0594.
-
-**Without softmax head**
-
-NDCG@20 0.1005, MAP@20 0.0451.
-
-**Observation**
-
-- softmax is the thesis-normalized rationale operator
-
----
-
-## Slide 26 — Fusion Gate Structure
+## Slide 25 — Fusion Gate Structure
 
 **圖片**
 
@@ -470,7 +450,7 @@ i_final = alpha_i * i_loc + (1 - alpha_i) * i_glo
 
 ---
 
-## Slide 27 — Gate Bias and Graceful Degradation
+## Slide 26 — Gate Bias and Graceful Degradation
 
 **Bias initialization**
 
@@ -491,7 +471,7 @@ alpha_0 = sigmoid(+5) ~= 0.993
 
 ---
 
-## Slide 28 — Contrastive Regularization
+## Slide 27 — Contrastive Regularization
 
 **Main objective**
 
@@ -513,7 +493,7 @@ tau_CL = 0.2
 
 ---
 
-## Slide 29 — Training Objective
+## Slide 28 — Training Objective
 
 **BPR**
 
@@ -533,7 +513,7 @@ L_BPR = -log sigma(y(u, i+) - y(u, i-))
 
 ---
 
-## Slide 30 — Dataset and Optimization
+## Slide 29 — Dataset and Optimization
 
 **Dataset**
 
@@ -557,7 +537,7 @@ L_BPR = -log sigma(y(u, i+) - y(u, i-))
 
 ---
 
-## Slide 31 — Inference and Complexity
+## Slide 30 — Inference and Complexity
 
 **Inference**
 
@@ -577,7 +557,7 @@ L_BPR = -log sigma(y(u, i+) - y(u, i-))
 
 ---
 
-## Slide 32 — Main Results
+## Slide 31 — Main Results
 
 **Top-20**
 
@@ -593,7 +573,7 @@ L_BPR = -log sigma(y(u, i+) - y(u, i-))
 - beats pure LightGCN by 6.4% on NDCG@10
 - beats KGRec by 10.5% on NDCG@10
 
-## Slide 33 — Ablation Summary
+## Slide 32 — Ablation Summary
 
 **Largest drop**
 
@@ -613,7 +593,7 @@ L_BPR = -log sigma(y(u, i+) - y(u, i-))
 
 ---
 
-## Slide 34 — Case Study and Takeaways
+## Slide 33 — Case Study and Takeaways
 
 **圖片**
 
@@ -627,7 +607,7 @@ L_BPR = -log sigma(y(u, i+) - y(u, i-))
 
 ---
 
-## Slide 35 — Conclusion
+## Slide 34 — Conclusion
 
 **Conclusion**
 
