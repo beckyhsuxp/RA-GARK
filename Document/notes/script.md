@@ -3,7 +3,7 @@
 <!--
 Writing rule:
 - Introduce a new term with a plain explanation first; do not drop a new name without context.
-- Write symbols in a speakable form, e.g. y_hat(u, i), a sub i, u sub loc, i sub loc, i sub glo, alpha sub u.
+- Write symbols in a speakable form, e.g. y_hat(u, i), a_i, u_final, i_loc, i_global, alpha_u.
 - Keep technical terms in English, but keep descriptive phrasing natural and easy to read aloud.
 -->
 
@@ -117,7 +117,7 @@ KG 應該是可閘控的側通道，而不是必經 scoring component。
 
 我們的任務是隱式回饋的 top-K 推薦。對每個 user，我們要把候選 item 排序，讓真實互動過的 item 排在前面。訓練時使用正樣本和抽樣得到的負樣本配對。
 
-最終分數是 y_hat(u, i)，也就是 u sub final 跟 i sub final 的內積。y_hat(u, i) 表示模型對 user u 和 item i 的預測分數，分數越高代表越推薦。這裡先把分數定義清楚，u sub final 和 i sub final 的構成放到下一頁。
+最終分數是 y_hat(u, i)，也就是 u_final 跟 i_final 的內積。y_hat(u, i) 表示模型對 user u 和 item i 的預測分數，分數越高代表越推薦。這裡先把分數定義清楚，u_final 和 i_final 的構成放到下一頁。
 
 ## Slide 14 — Problem Setup II
 
@@ -141,7 +141,7 @@ local propagation 的部分就是標準 LightGCN。
 
 我們只在 user-item 二分圖上做傳播，而且只用訓練互動資料。A norm 是 normalized adjacency matrix，也就是把鄰居關係做過正規化的鄰接矩陣；E of l 是第 l 層的 embedding。
 
-接著把第 0 層到第 K 層做層平均，得到 bar E。這個 bar E 就是整體的 local 表示，我們再從裡面讀出 u sub loc 和 i sub loc；這裡 K 設成 2。
+接著把第 0 層到第 K 層做層平均，得到 bar E。這個 bar E 就是整體的 local 表示，我們再從裡面讀出 u_loc 和 i_loc；這裡 K 設成 2。
 
 ## Slide 17 — Global View
 
@@ -149,7 +149,7 @@ global view 的重點是 latent aspect slots。先把每個 item 壓成四個固
 
 KG 很稀疏，所以如果直接傳播，訊號很容易被缺失邊或噪音邊影響。改成這種固定 semantic slots 之後，模型不是被動地吃整張 KG，而是先把 item 的語意拆成幾個固定的 slot，再在這些 slot 裡挑比較有用的 aspect。這樣做的好處是，global view 還是保留 KG 的語意資訊，但傳播的時候不會把雜訊直接灌進來。
 
-這裡的表示寫成 a sub i，大小是 A x d，也就是四個 slot、每個 slot 維度是 d；R 就是實數空間。
+這裡的表示寫成 a_i，大小是 A x d，也就是四個 slot、每個 slot 維度是 d；R 就是實數空間。
 
 ## Slide 18 — KG-SVD Motivation
 
@@ -161,11 +161,11 @@ KG-SVD 是我們用來初始化 item aspect slots 的方法。
 
 ## Slide 19 — KG-SVD: Construction
 
-這一步是在建 item-aspect matrix，也就是整理 item 和 aspect 一起出現的關係。矩陣裡的 `M sub i,a` 表示 item i 和 aspect a 的關係，item i 如果有 aspect a，就把對應位置設成 1。
+這一步是在建 item-aspect matrix，也就是整理 item 和 aspect 一起出現的關係。矩陣裡的 `M_i,a` 表示 item i 和 aspect a 的關係，item i 如果有 aspect a，就把對應位置設成 1。
 
 接著再乘上 aspect 的 IDF，也就是一種把常見 aspect 權重壓低的方式，讓太常見但沒辨識力的 aspect 影響變小。
 
-這個公式的意思很簡單：出現越多的 aspect，IDF 就越小；`I` 是 item 總數，`M sub i,a` 等於 1 代表 item i 有 aspect a，所以分母裡那一項就是這個 aspect 出現過的 item 數再加 1。分母裡的 `+1` 是避免除零，外面的 `+1` 是避免權重變成 0。
+這個公式的意思很簡單：出現越多的 aspect，IDF 就越小；`I` 是 item 總數，`M_i,a` 等於 1 代表 item i 有 aspect a，所以分母裡那一項就是這個 aspect 出現過的 item 數再加 1。分母裡的 `+1` 是避免除零，外面的 `+1` 是避免權重變成 0。
 
 所以重點是把 item 和 aspect 一起出現的關係整理成矩陣，再把太常見的 aspect 壓低。
 
@@ -173,9 +173,9 @@ KG-SVD 是我們用來初始化 item aspect slots 的方法。
 
 前一頁我們先把 item 和 aspect 的共現關係整理成加權矩陣，這一頁就接著看右半邊，從這個矩陣開始做分解。
 
-先從 IDF-weighted matrix 做 truncated SVD，也就是只保留前 k 個成分。這裡 `k` 取 `A 乘 d`，也就是把 `A` 個 slot、每個 slot 維度是 d 的總維度保留下來。你可以把這一步想成把加權後的矩陣拆成三個部分：左邊的 `U sub k`、中間的 `Sigma sub k`、以及右邊的 `V sub k transpose`。`U sub k` 可以理解成 item 的低維表示，`Sigma sub k` 是每個方向的重要程度；`V sub k transpose` 只是分解的一部分，這裡先用 `U sub k` 和 `Sigma sub k 的平方根` 來形成 `E sub KG`，也就是每個 item 的初始 KG 表示。
+先從 IDF-weighted matrix 做 truncated SVD，也就是只保留前 k 個成分。這裡 `k` 取 `A 乘 d`，也就是把 `A` 個 slot、每個 slot 維度是 d 的總維度保留下來。你可以把這一步想成把加權後的矩陣拆成三個部分：左邊的 `U_k`、中間的 `Sigma_k`、以及右邊的 `V_k transpose`。`U_k` 可以理解成 item 的低維表示，`Sigma_k` 是每個方向的重要程度；`V_k transpose` 只是分解的一部分，這裡先用 `U_k` 和 `Sigma_k` 的平方根來形成 `E_KG`，也就是每個 item 的初始 KG 表示。
 
-接著把 `E sub KG` reshape 成 `A sub KG zero`，也就是把每個 item 表成 A 個 aspect slot，維度是 d。這裡的 zero 表示初始化後的第一版；整個 `A sub KG zero` 可以想成一個三維張量，也就是 item 數乘 A 乘 d 的大小，裡面的值都來自實數空間。reshape 就是把這些數值排回 A 個 slot。接著會用這個初始化結果交給 graph recommender，也就是 GNN-based recommender 往下做。整體來說，這一步先把加權後的矩陣壓成幾個比較重要的方向，再把分解出來的 item 表示整理成四個 slot。
+接著把 `E_KG` reshape 成 `A_KG_0`，也就是把每個 item 表成 A 個 aspect slot，維度是 d。這裡的 zero 表示初始化後的第一版；整個 `A_KG_0` 可以想成一個三維張量，也就是 item 數乘 A 乘 d 的大小，裡面的值都來自實數空間。reshape 就是把這些數值排回 A 個 slot。接著會用這個初始化結果交給 graph recommender，也就是 GNN-based recommender 往下做。整體來說，這一步先把加權後的矩陣壓成幾個比較重要的方向，再把分解出來的 item 表示整理成四個 slot。
 
 ## Slide 21 — KG-SVD: Initialization Effect
 
@@ -192,13 +192,13 @@ KG-SVD 是我們用來初始化 item aspect slots 的方法。
 
 這一頁就是具體計算。
 
-先看公式。`\ell sub u,i,k` 是第 k 個 slot 的分數，來自把 `u sub global` 和 `a sub i,k` 串接後丟進 MLP。MLP 是一個小型前饋網路。接著把 `\ell sub u,i,k` 除以 `tau` 再做 softmax，就得到 `w sub u,i,k` 這個權重；`tau` 是 softmax temperature，控制分佈有多尖銳。最後，`i sub global` 就是把四個 slot 依照這些權重加權求和。這樣就完成從 slot 打分到 global 向量的組合。
+先看公式。`\ell_{u,i,k}` 是第 k 個 slot 的分數，來自把 `u_global` 和 `a_i,k` 串接後丟進 MLP。MLP 是一個小型前饋網路。接著把 `\ell_{u,i,k}` 除以 `tau` 再做 softmax，就得到 `w_{u,i,k}` 這個權重；`tau` 是 softmax temperature，控制分佈有多尖銳。最後，`i_global` 就是把四個 slot 依照這些權重加權求和。這樣就完成從 slot 打分到 global 向量的組合。
 
 ## Slide 24 — Softmax Normalization
 
 這裡我們特別強調 softmax 而不是 sigmoid。
 
-softmax 會讓 slot 之間互相競爭，在固定總量下做選擇，所以四個權重加起來會等於 1。這不只是讓 attention 更 sharp，更重要的是它控制了 `i sub glo` 的 magnitude，讓 global channel 不會自己膨脹。
+softmax 會讓 slot 之間互相競爭，在固定總量下做選擇，所以四個權重加起來會等於 1。這不只是讓 attention 更 sharp，更重要的是它控制了 `i_global` 的 magnitude，讓 global channel 不會自己膨脹。
 
 ## Slide 25 — Softmax vs Sigmoid
 
@@ -216,7 +216,7 @@ Top-20 是 0.1005 / 0.0451，Top-10 是 0.0785 / 0.0397。這說明 normalizatio
 
 這一頁先講 fusion gate。
 
-alpha sub u 和 alpha sub i 是用小型 MLP 算出來的，分別控制 user-side 和 item-side 的 local/global 混合比例。它們也都介於 0 和 1 之間，所以 u sub final 和 i sub final 就是 local 與 global 表示的加權和。
+alpha_u 和 alpha_i 是用小型 MLP 算出來的，分別控制 user-side 和 item-side 的 local/global 混合比例。它們也都介於 0 和 1 之間，所以 u_final 和 i_final 就是 local 與 global 表示的加權和。
 
 ## Slide 28 — Gate Bias and Graceful Degradation
 
@@ -230,7 +230,7 @@ alpha sub u 和 alpha sub i 是用小型 MLP 算出來的，分別控制 user-si
 
 除了 BPR，我們還加了兩個很小的對比學習輔助項，也就是 contrastive regularization。
 
-面向層的對比損失是物品面向的對比損失，使用者跨視角的對比損失是 user cross-view contrastive loss，也就是讓同一個 user 的 local 和 global 表示靠近；lambda sub CL 是這個輔助項的權重，tau sub CL 是對比學習用的 temperature。它們只是輔助對齊 local 和 global 的幾何空間，不是主融合機制。
+面向層的對比損失是物品面向的對比損失，使用者跨視角的對比損失是 user cross-view contrastive loss，也就是讓同一個 user 的 local 和 global 表示靠近；lambda_CL 是這個輔助項的權重，tau_CL 是對比學習用的 temperature。它們只是輔助對齊 local 和 global 的幾何空間，不是主融合機制。
 
 ## Slide 30 — Training Objective
 
