@@ -208,7 +208,7 @@ KG-SVD 是我們用來初始化 item aspect slots 的方法。
 
 ## Slide 26 — Fusion Gate Structure
 
-這一頁再把 gate 公式拆開看。
+照著 gate.png 走，先看 gate，再看 fusion。
 
 alpha_u 和 alpha_i 是用小型 MLP 算出來的，分別控制 user-side 和 item-side 的 local/global 混合比例。它們也都介於 0 和 1 之間，所以 u_final 和 i_final 就是 local 與 global 表示的加權和。
 
