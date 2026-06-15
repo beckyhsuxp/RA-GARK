@@ -368,7 +368,7 @@ E_KG -> A_KG^(0) in R^(|I| x A x d)
 
 **What it gives**
 
-- give KG a semantic starting geometry
+- give KG a good starting structure
 - preserve the aspect co-occurrence structure before training
 
 **Why it matters**
