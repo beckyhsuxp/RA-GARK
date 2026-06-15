@@ -171,7 +171,7 @@ KG-SVD 是我們用來初始化 item aspect slots 的方法。
 
 ## Slide 20 — KG-SVD: SVD and Reshape
 
-這張圖的右半邊就是接下來的重點，從加權後的矩陣開始做分解。
+前一頁我們先把 item 和 aspect 的共現關係整理成加權矩陣，這一頁就接著看右半邊，從這個矩陣開始做分解。
 
 先從 IDF-weighted matrix 做 truncated SVD，也就是只保留前 k 個成分。這裡 `k` 取 `A 乘 d`，也就是把 `A` 個槽、每個槽 `d` 維的總維度保留下來。你可以把這一步想成把加權後的矩陣拆成三個部分：左邊的 `U sub k`、中間的 `Sigma sub k`、以及右邊的 `V sub k transpose`。其中 `U sub k` 搭配 `Sigma sub k` 的平方根，會形成 `E sub KG`，也就是每個 item 的初始 KG 表示。
 
