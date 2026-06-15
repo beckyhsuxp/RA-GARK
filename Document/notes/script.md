@@ -177,9 +177,9 @@ KG-SVD 是我們用來初始化 item aspect slots 的方法。
 
 接著把 `E sub KG` reshape 成 `A sub KG zero`，也就是把每個 item 表成 A 個 aspect slot，維度是 d。這裡的 zero 表示初始化後的第一版；整個 `A sub KG zero` 可以想成一個三維張量，也就是 item 數乘 A 乘 d 的大小，裡面的值都來自實數空間。reshape 就是把這些數值排回 A 個 slot。接著會用這個初始化結果交給 graph recommender，也就是 GNN-based recommender 往下做。整體來說，這一步先把加權後的矩陣壓成幾個比較重要的方向，再把分解出來的 item 表示整理成四個槽。
 
-## Slide 21 — KG-SVD: Why It Helps
+## Slide 21 — KG-SVD: Initialization Effect
 
-KG-SVD 不是只是多做一步而已。它先給 global view 一個比較好的起點，讓 item 的 KG 表示一開始就帶有合理的語意結構，而不是從隨機初始化開始亂長。
+這一頁是在總結 KG-SVD 的初始化效果。它先給 global view 一個比較好的起點，讓 item 的 KG 表示一開始就帶有合理的語意結構，而不是從隨機初始化開始亂長。
 
 更重要的是，這個初始化保留了 item 和 aspect 的共現結構，所以在 training 之前，model 就已經有一個比較穩的 semantic geometry。這不是一個要從零學出的模組，而是先把 slot 放到合理的位置，之後再跟著訓練微調。這也是為什麼在 sparse KG 的情況下，KG-SVD 會明顯幫助後面的 global view。
 
