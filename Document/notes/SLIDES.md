@@ -8,10 +8,10 @@
 | 圖檔 | 頁面 |
 |---|---|
 | `thesis/img/architecture.png` | Slide 12 |
-| `thesis/img/kg_svd.png` | Slide 21 |
-| `thesis/img/gate.png` | Slide 28 |
-| `thesis/img/sensitivity_2x2.png` | Slide 27 |
-| `thesis/img/case_study_heatmap.png` | Slide 36 |
+| `thesis/img/kg_svd.png` | Slide 20 |
+| `thesis/img/gate.png` | Slide 27 |
+| `thesis/img/sensitivity_2x2.png` | Slide 26 |
+| `thesis/img/case_study_heatmap.png` | Slide 35 |
 
 ---
 
@@ -369,23 +369,7 @@ E_KG -> A_KG^(0) in R^(|I| x A x d)
 
 ---
 
-## Slide 21 — KG-SVD Effect
-
-**Full model**
-
-NDCG@20 0.1243, MAP@20 0.0594.
-
-**Without KG-SVD init**
-
-NDCG@20 0.1171, MAP@20 0.0545.
-
-**Observation**
-
-- KG-SVD preserves the initial semantic geometry
-
----
-
-## Slide 22 — Softmax Masking Motivation
+## Slide 21 — Softmax Masking Motivation
 
 **Goal**
 
@@ -398,7 +382,7 @@ Select which aspect slot should represent the item for a given user-item pair.
 
 ---
 
-## Slide 23 — Softmax Masking Computation
+## Slide 22 — Softmax Masking Computation
 
 **Computation**
 
@@ -414,7 +398,7 @@ i_glo = sum_k w_k * aspect_slot_i,k
 
 ---
 
-## Slide 24 — Softmax Normalization
+## Slide 23 — Softmax Normalization
 
 **Normalization choice**
 
@@ -430,7 +414,7 @@ i_glo = sum_k w_k * aspect_slot_i,k
 
 ---
 
-## Slide 25 — Softmax vs Sigmoid
+## Slide 24 — Softmax vs Sigmoid
 
 **Why softmax**
 
@@ -444,7 +428,7 @@ It matches the throttled KG channel.
 
 ---
 
-## Slide 26 — Softmax Ablation
+## Slide 25 — Softmax Ablation
 
 **Figure**
 
@@ -464,7 +448,7 @@ NDCG@20 0.1005, MAP@20 0.0451.
 
 ---
 
-## Slide 27 — Fusion Gate Structure
+## Slide 26 — Fusion Gate Structure
 
 **圖片**
 
@@ -486,7 +470,7 @@ i_final = alpha_i * i_loc + (1 - alpha_i) * i_glo
 
 ---
 
-## Slide 28 — Gate Bias and Graceful Degradation
+## Slide 27 — Gate Bias and Graceful Degradation
 
 **Bias initialization**
 
@@ -507,7 +491,7 @@ alpha_0 = sigmoid(+5) ~= 0.993
 
 ---
 
-## Slide 29 — Contrastive Regularization
+## Slide 28 — Contrastive Regularization
 
 **Main objective**
 
@@ -529,7 +513,7 @@ tau_CL = 0.2
 
 ---
 
-## Slide 30 — Training Objective
+## Slide 29 — Training Objective
 
 **BPR**
 
@@ -549,7 +533,7 @@ L_BPR = -log sigma(y(u, i+) - y(u, i-))
 
 ---
 
-## Slide 31 — Dataset and Optimization
+## Slide 30 — Dataset and Optimization
 
 **Dataset**
 
@@ -573,7 +557,7 @@ L_BPR = -log sigma(y(u, i+) - y(u, i-))
 
 ---
 
-## Slide 32 — Inference and Complexity
+## Slide 31 — Inference and Complexity
 
 **Inference**
 
@@ -593,7 +577,7 @@ L_BPR = -log sigma(y(u, i+) - y(u, i-))
 
 ---
 
-## Slide 33 — Main Results
+## Slide 32 — Main Results
 
 **Top-20**
 
@@ -609,7 +593,7 @@ L_BPR = -log sigma(y(u, i+) - y(u, i-))
 - beats pure LightGCN by 6.4% on NDCG@10
 - beats KGRec by 10.5% on NDCG@10
 
-## Slide 34 — Ablation Summary
+## Slide 33 — Ablation Summary
 
 **Largest drop**
 
@@ -629,7 +613,7 @@ L_BPR = -log sigma(y(u, i+) - y(u, i-))
 
 ---
 
-## Slide 35 — Case Study and Takeaways
+## Slide 34 — Case Study and Takeaways
 
 **圖片**
 
@@ -643,7 +627,7 @@ L_BPR = -log sigma(y(u, i+) - y(u, i-))
 
 ---
 
-## Slide 36 — Conclusion
+## Slide 35 — Conclusion
 
 **Conclusion**
 

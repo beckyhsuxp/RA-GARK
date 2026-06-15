@@ -177,13 +177,7 @@ KG-SVD 是我們用來初始化 item aspect slots 的方法。
 
 接著把 `E sub KG` reshape 成 `A sub KG zero`，也就是把每個 item 表成 A 個 aspect slot，維度是 d。這裡的 zero 表示初始化後的第一版；整個 `A sub KG zero` 可以想成一個三維張量，也就是 item 數乘 A 乘 d 的大小，裡面的值都來自實數空間。reshape 就是把這些數值排回 A 個 slot。接著會用這個初始化結果交給 graph recommender，也就是 GNN-based recommender 往下做。整體來說，這一步先把加權後的矩陣壓成幾個比較重要的方向，再把分解出來的 item 表示整理成四個槽。
 
-## Slide 21 — KG-SVD Effect
-
-這張 ablation 表想表達的是：KG-SVD 不是裝飾。
-
-RA-GARK full 是 0.1243 / 0.0594，拿掉 KG-SVD init 之後是 0.1171 / 0.0545。這表示如果沒有一個合理的起點，global view 很難在 sparse KG 下自己長出好的幾何。
-
-## Slide 22 — Softmax Masking Motivation
+## Slide 21 — Softmax Masking Motivation
 
 global view 的第二個核心是 softmax rationale masking。
 
@@ -191,37 +185,37 @@ global view 的第二個核心是 softmax rationale masking。
 
 這樣做的意思是：同一本書對不同 user 可能有不同的推薦理由，所以 rationale 必須是 user-conditioned 的。
 
-## Slide 23 — Softmax Masking Computation
+## Slide 22 — Softmax Masking Computation
 
 這一頁就是具體計算。
 
 MLP 是一個小型 feed-forward network。第 k 個 slot 的分數來自把 `u sub glo` 和 aspect slot `i sub k` 串接後丟進 MLP，表示第 k 個 aspect slot 對這個 user-item pair 的相對重要性；再經過 `softmax of logit sub k over tau` 變成 slot 權重，其中 `tau` 是 softmax temperature，控制分佈有多尖銳；最後把四個 slot 加權求和成 `i sub glo`。
 
-## Slide 24 — Softmax Normalization
+## Slide 23 — Softmax Normalization
 
 這裡我們特別強調 softmax 而不是 sigmoid。
 
 softmax 會讓 slot 之間互相競爭，在固定總量下做選擇，所以四個權重加起來會等於 1。這不只是讓 attention 更 sharp，更重要的是它控制了 `i sub glo` 的 magnitude，讓 global channel 不會自己膨脹。
 
-## Slide 25 — Softmax vs Sigmoid
+## Slide 24 — Softmax vs Sigmoid
 
 如果用 sigmoid，每個 slot 是獨立啟動的，容易所有 slot 都偏高，最後退化成平均。
 
 所以在我們這個被 gate 控制的 sparse KG side channel 裡，softmax 比 sigmoid 更適合。
 
-## Slide 26 — Softmax Ablation
+## Slide 25 — Softmax Ablation
 
 這張 sensitivity 圖對應 w/o-softmax row。
 
 Top-20 是 0.1005 / 0.0451，Top-10 是 0.0785 / 0.0397。這說明 normalization 的選擇會直接影響穩定性和 magnitude control。
 
-## Slide 27 — Fusion Gate Structure
+## Slide 26 — Fusion Gate Structure
 
 這一頁先講 fusion gate。
 
 alpha sub u 和 alpha sub i 是用小型 MLP 算出來的，分別控制 user-side 和 item-side 的 local/global 混合比例。它們也都介於 0 和 1 之間，所以 u sub final 和 i sub final 就是 local 與 global 表示的加權和。
 
-## Slide 28 — Gate Bias and Graceful Degradation
+## Slide 27 — Gate Bias and Graceful Degradation
 
 這一頁講 gate 的初始化。
 
@@ -229,49 +223,49 @@ alpha sub u 和 alpha sub i 是用小型 MLP 算出來的，分別控制 user-si
 
 這樣做的目的是讓系統先站在安全預設上。如果 KG 不可靠，gate 就維持偏關閉；如果 KG 有幫助，訓練才慢慢把它打開。
 
-## Slide 29 — Contrastive Regularization
+## Slide 28 — Contrastive Regularization
 
 除了 BPR，我們還加了兩個很小的對比學習輔助項，也就是 contrastive regularization。
 
 面向層的對比損失是物品面向的對比損失，使用者跨視角的對比損失是 user cross-view contrastive loss，也就是讓同一個 user 的 local 和 global 表示靠近；lambda sub CL 是這個輔助項的權重，tau sub CL 是對比學習用的 temperature。它們只是輔助對齊 local 和 global 的幾何空間，不是主融合機制。
 
-## Slide 30 — Training Objective
+## Slide 29 — Training Objective
 
 這一頁補 BPR 的訓練目標。
 
 BPR 是 pairwise ranking loss。sigma 是 sigmoid function。公式裡的 positive item 是正樣本，也就是使用者真的互動過的 item；negative item 是負樣本，也就是抽樣出來、使用者沒互動過的 item。我們用正樣本和 sampled negative pairs 來訓練，目標是把真正互動過的 item 排在未互動 item 前面。BPR 負責 ranking signal，gate 和 CL 負責把表示調穩定。
 
-## Slide 31 — Dataset and Optimization
+## Slide 30 — Dataset and Optimization
 
 這一頁補資料規模和訓練設定。
 
 我們的資料集有 905 個 user、1,399 個 item、22,265 筆互動、3,370 條 KG 邊，以及 2,098 個 aspect。訓練設定是 Adam，learning rate 0.001，batch size 128，最多 80 個 epoch，並且用 validation NDCG@20 做 early stopping。
 
-## Slide 32 — Inference and Complexity
+## Slide 31 — Inference and Complexity
 
 評估時採 full-ranking，也就是對每個 user 把候選 item 重新完整排序，並排除訓練集裡已經互動過的 item，最後看 HR、Precision、Recall、F1、MAP 和 NDCG，這些都取 @20。
 
 從效能來看，我們每個 epoch 大概 1.5 秒，跟 KGRec 差不多，所以這個設計沒有讓成本爆炸。
 
-## Slide 33 — Main Results
+## Slide 32 — Main Results
 
 先看主結果。
 
 Top-20 時，RA-GARK 的 NDCG@20 是 0.1243，較 KGRec 高 13.5%，較純 LightGCN 高 5.4%。Top-10 時，RA-GARK 的 NDCG@10 是 0.0966，較 KGRec 高 10.5%，較純 LightGCN 高 6.4%。
 
-## Slide 34 — Ablation Summary
+## Slide 33 — Ablation Summary
 
 再看 ablation。
 
 Top-20 時，softmax head 是最大的變化，0.1243 降到 0.1005；KG-SVD 是 0.1171；fusion-gate bias 是 0.1194；MLP gate 是 0.1180。Top-10 也維持相同排序。
 
-## Slide 35 — Case Study and Takeaways
+## Slide 34 — Case Study and Takeaways
 
 這張 heatmap 是 case study。
 
 你可以看到不同 item 會對不同 aspect slot 給出不同的權重，表示 rationale masking 不是固定平均，而是真的有在對不同 item 使用不同的語意路徑。
 
-## Slide 36 — Conclusion
+## Slide 35 — Conclusion
 
 最後總結一下。
 
