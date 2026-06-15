@@ -159,7 +159,7 @@ KG-SVD 是我們用來初始化 item aspect slots 的方法。
 
 它的目的，是先把每個 item 的 aspect 相關資訊做一個比較穩的初始化。
 
-## Slide 19 — KG-SVD Construction
+## Slide 19 — KG-SVD: Construction
 
 這一步是在建 item-aspect matrix，也就是整理 item 和 aspect 一起出現的關係。矩陣裡的 `M sub i,a` 表示 item i 和 aspect a 的關係，item i 如果有 aspect a，就把對應位置設成 1。
 
@@ -169,7 +169,7 @@ KG-SVD 是我們用來初始化 item aspect slots 的方法。
 
 所以重點是把 item 和 aspect 一起出現的關係整理成矩陣，再把太常見的 aspect 壓低。
 
-## Slide 20 — KG-SVD SVD and Reshape
+## Slide 20 — KG-SVD: SVD and Reshape
 
 這張圖的右半邊就是接下來的重點，從加權後的矩陣開始做分解。
 
