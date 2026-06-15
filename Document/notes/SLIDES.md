@@ -354,7 +354,7 @@ M_tilde ~= U_k Sigma_k V_k^T
 E_KG = U_k Sigma_k^(1/2)
 ```
 
-4. **Reshape**
+4. **Reshape & Initialize**
 
 - turn each item vector into four aspect slots
 
