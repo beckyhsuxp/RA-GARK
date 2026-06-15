@@ -333,14 +333,22 @@ M_tilde[i, a] = M[i, a] * idf(a)
 idf(a) = log(N_items / support(a) + 1) + 1
 ```
 
-3. **Image**
+3. **Truncated SVD**
+
+```text
+M_tilde ~= U_k Sigma_k V_k^T
+E_KG = U_k Sigma_k^(1/2)
+```
+
+4. **Reshape**
+
+```text
+E_KG[i] -> item_kg_aspects[i] in R^(4 x 128)
+```
+
+**Image**
 
 `thesis/img/kg_svd.png`
-
-4. **Purpose**
-
-1. downweight generic aspects
-2. keep discriminative aspects
 
 ---
 
