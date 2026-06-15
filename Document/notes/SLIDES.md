@@ -379,8 +379,14 @@ E_KG -> A_KG^(0) in R^(|I| x A x d)
 
 ## Slide 22 — Softmax Masking Motivation
 
-- choose the slot for each user-item pair
-- same item, different users, different rationales
+**Goal**
+
+choose the slot for each user-item pair
+
+**Why user-conditioned**
+
+- different users care about different item aspects
+- the same item can have different rationales for different users
 
 ---
 
