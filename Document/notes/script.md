@@ -107,7 +107,7 @@ KG 應該是可閘控的側通道，而不是必經 scoring component。
 
 這一頁先看架構圖。
 
-上半部是 local view，也就是純 LightGCN，只看 user-item graph 來保住穩定的 CF signal。下半部是 global view，先用 KG-SVD 建好 aspect slot，再用 softmax rationale masking，針對當前 user-item pair 挑出比較有用的 aspect。中間是 fusion gate，負責在最後的 scoring stage 把兩邊融合起來。右邊整個 graph recommender 就是最後的推薦器本體，負責輸出最後的 score。
+上半部是 local view，也就是純 LightGCN，只看 user-item graph 來保住穩定的 CF signal。下半部是 global view，先用 KG-SVD 建好 aspect slot，再用 softmax rationale masking，針對當前 user-item pair 挑出比較有用的 aspect。中間是 fusion gate，負責在最後的 scoring stage 把兩邊融合起來。
 
 這張圖的重點是：local 和 global 先各自建模，最後再由 gate 決定 KG 佔多少比例。
 
@@ -175,7 +175,7 @@ KG-SVD 是我們用來初始化 item aspect slots 的方法。
 
 先從 IDF-weighted matrix 做 truncated SVD，也就是只保留前 k 個成分。這裡 `k` 取 `A 乘 d`，也就是把 `A` 個槽、每個槽 `d` 維的總維度保留下來。你可以把這一步想成把加權後的矩陣拆成三個部分：左邊的 `U sub k`、中間的 `Sigma sub k`、以及右邊的 `V sub k transpose`。其中 `U sub k` 搭配 `Sigma sub k` 的平方根，會形成 `E sub KG`，也就是每個 item 的初始 KG 表示。
 
-接著把 `E sub KG` reshape 成 `A sub KG zero`，也就是每個 item 的 A 個 aspect slot，每個 slot 維度是 d。reshape 就是把同一批數值重新排成這個 A 個 slot 的形式。這裡的 zero 表示初始化後的第一版。這個 `R` 表示實數空間，`|I| x A x d` 就是 item 數乘 A 乘 d 的三維張量。整體來說，這一步先把加權後的矩陣壓成幾個比較重要的方向，再把分解出來的 item 表示整理成四個槽。這裡的 `U sub k` 可以理解成 item 的低維表示，`Sigma sub k` 是每個方向的重要程度，最後再把 `E sub KG` 重塑成 `A sub KG zero`。
+接著把 `E sub KG` reshape 成 `A sub KG zero`，也就是每個 item 的 A 個 aspect slot，每個 slot 維度是 d。reshape 就是把同一批數值重新排成這個 A 個 slot 的形式。這裡的 zero 表示初始化後的第一版。這個 `R` 表示實數空間，`|I| x A x d` 就是 item 數乘 A 乘 d 的三維張量。右邊的 graph recommender 就是接這個初始化結果往下做的 GNN item init。整體來說，這一步先把加權後的矩陣壓成幾個比較重要的方向，再把分解出來的 item 表示整理成四個槽。這裡的 `U sub k` 可以理解成 item 的低維表示，`Sigma sub k` 是每個方向的重要程度，最後再把 `E sub KG` 重塑成 `A sub KG zero`。
 
 ## Slide 21 — KG-SVD Effect
 
