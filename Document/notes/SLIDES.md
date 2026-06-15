@@ -379,13 +379,9 @@ E_KG -> A_KG^(0) in R^(|I| x A x d)
 
 ## Slide 22 — Softmax Masking Motivation
 
-**Transition**
-
-Initialize first, then choose the slot for each user-item pair.
-
 **Goal**
 
-Select which aspect slot should represent the item for a given user-item pair.
+After initialization, select which aspect slot should represent the item for a given user-item pair.
 
 **Why user-conditioned**
 

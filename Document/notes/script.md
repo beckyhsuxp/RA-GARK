@@ -187,9 +187,9 @@ KG-SVD 是我們用來初始化 item aspect slots 的方法。
 
 ## Slide 22 — Softmax Masking Motivation
 
-global view 的第二個核心是 softmax rationale masking。
+前一頁先把 item 初始化成 aspect slots，這一頁接著看怎麼根據 user 來挑哪個 slot 比較重要。
 
-對每個 user-item pair，我們會用 user 的 global embedding 去條件化 item 的每個 aspect slot，先算出每個 slot 的 logit，再用 softmax 得到權重。
+global view 的第二個核心是 softmax rationale masking。對每個 user-item pair，我們會用 user 的 global embedding 去條件化 item 的每個 aspect slot，先算出每個 slot 的 logit，再用 softmax 得到權重。
 
 這樣做的意思是：同一本書對不同 user 可能有不同的推薦理由，所以 rationale 必須是 user-conditioned 的。
 
