@@ -45,7 +45,7 @@ Writing rule:
 
 這裡我先把現有 KG-aware 方法面臨的設計挑戰講清楚。
 
-大多數 KG-aware recommenders 的共同點是：KG entity embeddings 會直接進入 message passing，user 和 item 的表示是在一條包含 KG 的路徑上學出來的。這背後的隱含假設是，KG 可以在它出現的地方都注入有用訊號；但在 sparse KG 下，這個假設會失效。
+大多數 KG-aware recommenders 的共同點是：KG entity embeddings 會直接進入訊息傳遞，user 和 item 的表示是在一條包含 KG 的路徑上學出來的。這背後的隱含假設是，KG 可以在它出現的地方都注入有用訊號；但在 sparse KG 下，這個假設會失效。
 
 這也是為什麼在我們的設定裡，LightGCN 反而會贏。因為 LightGCN 只看 user-item interaction，不會碰到那條不可靠的 KG branch，所以它保留了一個乾淨又安全的 baseline。
 
@@ -101,7 +101,7 @@ Highway Networks 很早就提出一個很重要的概念：用 gate 把變換路
 
 KG 應該是可閘控的側通道，而不是必經 scoring component。
 
-這個原則帶來三個後果。第一，我們要把 local view 和 global view 分開，避免 KG 污染 CF。第二，融合要晚，等兩邊的 representation 都先學好再決定要不要混。第三，gate 的初始化要偏向 LightGCN，讓模型一開始就站在安全的一邊。
+這個原則帶來三個後果。第一，我們要把 local view 和 global view 分開，避免 KG 污染 CF。第二，融合要晚，等兩邊的表示都先學好再決定要不要混。第三，gate 的初始化要偏向 LightGCN，讓模型一開始就站在安全的一邊。
 
 ## Slide 12 — Overview
 
@@ -175,7 +175,7 @@ KG-SVD 是我們用來初始化 item aspect slots 的方法。
 
 先從 IDF-weighted matrix 做 truncated SVD，也就是只保留前 k 個成分。這裡 `k` 取 `A · d`，也就是把 `A` 個槽、每個槽 `d` 維的總維度保留下來。你可以把這一步想成把加權後的矩陣拆成三個部分：左邊的 `U sub k`、中間的 `Sigma sub k`、以及右邊的 `V sub k transpose`。其中 `U sub k` 搭配 `Sigma sub k` 的平方根，會形成 `E sub KG`，也就是每個 item 的初始 KG 表示。
 
-接著把 `E sub KG` reshape 成 `A sub KG zero`，也就是每個 item 的四個 aspect slot，每個 slot 維度是 d。這裡的 zero 表示初始化後的第一版。這個 `R` 表示實數空間，`|I| x A x d` 就是 item 數乘 A 乘 d 的三維張量。整體來說，這一步先把加權後的矩陣壓成幾個比較重要的方向，再把分解出來的 item 表示整理成四個槽。這裡的 `U sub k` 可以理解成 item 的低維表示，`Sigma sub k` 是每個方向的重要程度，最後再把 `E sub KG` 重塑成 `A sub KG zero`。
+接著把 `E sub KG` reshape 成 `A sub KG zero`，也就是每個 item 的A個 aspect slot，每個 slot 維度是 d。這裡的 zero 表示初始化後的第一版。這個 `R` 表示實數空間，`|I| x A x d` 就是 item 數乘 A 乘 d 的三維張量。整體來說，這一步先把加權後的矩陣壓成幾個比較重要的方向，再把分解出來的 item 表示整理成四個槽。這裡的 `U sub k` 可以理解成 item 的低維表示，`Sigma sub k` 是每個方向的重要程度，最後再把 `E sub KG` 重塑成 `A sub KG zero`。
 
 ## Slide 21 — KG-SVD Effect
 
