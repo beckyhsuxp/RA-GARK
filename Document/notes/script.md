@@ -252,21 +252,17 @@ KG-SVD 是我們用來初始化 item aspect slots 的方法。
 
 再看 Top-10。這一頁的排序和 Top-20 一樣，RA-GARK 仍然維持最好的 NDCG@10、HR@10、Recall@10 和 MAP@10，表示結果不是只在較長候選列表下才成立。
 
-## Slide 34 — Ablation Summary I
+## Slide 34 — Ablation Summary
 
-再看 ablation 的 Top-20。這張表可以直接對照前面的主結果，主要看哪些元件拿掉之後掉得最明顯。
+再看 ablation 的 Top-20。這張表可以直接對照前面的主結果，從上到下看就好：softmax head 掉最多，接著是 KG-SVD init、fusion-gate bias 和 MLP gate；後面的 user CL、aspect CL、rationale-enabled selection 和 global view 也都有穩定但較小的影響。
 
-## Slide 35 — Ablation Summary II
-
-再看 Top-10 的 ablation。排序和 Top-20 很一致，最大影響還是 softmax head。
-
-## Slide 36 — Case Study and Takeaways
+## Slide 35 — Case Study and Takeaways
 
 這張 heatmap 是 case study。
 
 你可以看到不同 item 會對不同 aspect slot 給出不同的權重，表示 rationale masking 不是固定平均，而是真的有在對不同 item 使用不同的語意路徑。
 
-## Slide 37 — Conclusion
+## Slide 36 — Conclusion
 
 最後總結一下。
 
