@@ -232,7 +232,7 @@ KG-SVD 是我們用來初始化 item aspect slots 的方法。
 
 ## Slide 29 — Contrastive Regularization
 
-接著看跟它搭配的對比學習正則。這裡的想法是：BPR 負責排序，對比學習負責把 local 和 global 的幾何空間稍微拉齊。除了 BPR，也就是 Bayesian Personalized Ranking 之外，我們再加兩個很小的對比學習輔助項，也就是 contrastive regularization。`lambda_CL` 控制這個輔助項的強度，`tau_CL` 則是對比學習的 temperature；這裡不用特別把數字唸出來。
+沿著上一頁的 BPR，這一頁再補對比學習正則。它的作用很簡單，就是幫 local 和 global 的表示稍微對齊，但不取代 BPR。`lambda_CL` 控制這個輔助項的強度，`tau_CL` 則是對比學習的 temperature；這裡不用特別把數字唸出來。
 
 面向層的對比損失是物品面向的對比損失，使用者跨視角的對比損失是 user cross-view contrastive loss，也就是讓同一個 user 的 local 和 global 表示靠近。它們只是輔助對齊 local 和 global 的幾何空間，不是主融合機制。
 
