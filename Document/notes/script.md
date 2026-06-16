@@ -161,7 +161,7 @@ KG-SVD 是我們用來初始化 item aspect slots 的方法。
 
 接著把 `E_KG` reshape 成 `A_KG_0`，也就是把每個 item 表成 A 個 aspect slot，維度是 d。這裡的 zero 表示初始化後的第一版；整個 `A_KG_0` 可以想成一個三維張量，也就是 item 數乘 A 乘 d 的大小，裡面的值都來自實數空間。reshape 就是把這些數值排回 A 個 slot。接著會用這個初始化結果交給 graph recommender，也就是 GNN-based recommender 往下做。整體來說，這一步先把加權後的矩陣壓成幾個比較重要的方向，再把分解出來的 item 表示整理成四個 slot。
 
-## Slide 20 — Softmax Masking Motivation
+## Slide 19 — Softmax Masking Motivation
 
 KG-SVD 初始化完之後，下一步就是看怎麼根據 user 來挑比較重要的 slot。
 
@@ -171,7 +171,7 @@ KG-SVD 初始化完之後，下一步就是看怎麼根據 user 來挑比較重�
 
 先看公式。`\ell_{u,i,k}` 是第 k 個 slot 的分數，來自把 `u_global` 和 `a_i,k` 串接後丟進 MLP。MLP 是一個小型前饋網路。接著把 `\ell_{u,i,k}` 除以 `tau` 再做 softmax，就得到 `w_{u,i,k}` 這個權重；`tau` 是 softmax temperature，控制分佈有多尖銳。最後，`i_global` 就是把四個 slot 依照這些權重加權求和。這樣就完成從 slot 打分到 global 向量的組合。
 
-## Slide 21 — Softmax Normalization
+## Slide 20 — Softmax Normalization
 
 上一頁已經算出每個 slot 的權重，這一頁把 normalization choice 一起講完。
 
@@ -179,11 +179,11 @@ KG-SVD 初始化完之後，下一步就是看怎麼根據 user 來挑比較重�
 
 在 RA-GARK 裡，我們選 softmax，因為它不只是在選哪個 slot 比較重要，還會把整個 `i_global` 的大小控制在比較穩定的範圍內。這很重要，因為後面的 gate 會拿這個 global 向量去跟 local 向量做融合；如果 global 向量的 magnitude 不穩，gate 的輸入尺度就會飄。softmax 先把這個 KG side channel 的輸出幅度壓住，後面的融合才比較好校準。
 
-## Slide 22 — Fusion Gate Overview
+## Slide 21 — Fusion Gate Overview
 
 這一頁先把畫面聚焦到最後的融合位置。local view 和 global view 前面都各自獨立建模，接下來從圖的左邊 gate 一路看到右邊的 fusion。
 
-## Slide 23 — Fusion Gate Structure
+## Slide 22 — Fusion Gate Structure
 
 這裡先以 user-side 為例，圖從左往右看，先把 `u_loc` 和 `u_glo` 串起來，得到 gate 的輸入。
 
@@ -193,7 +193,7 @@ KG-SVD 初始化完之後，下一步就是看怎麼根據 user 來挑比較重�
 
 最後看右邊的 fusion。`alpha_u` 會一部分乘上 `u_loc`，另一部分乘上 `u_glo`，加總成 `u_final`。整個 gate 的作用，就是先偏向 local，之後再根據訓練慢慢決定要不要放更多 KG 進來。
 
-## Slide 24 — Gate Bias and Graceful Degradation
+## Slide 23 — Gate Bias and Graceful Degradation
 
 前一頁我們已經看到 `alpha_u` 是 gate 的輸出，這一頁接著看它的初始化設定。
 
@@ -201,49 +201,49 @@ KG-SVD 初始化完之後，下一步就是看怎麼根據 user 來挑比較重�
 
 這樣做的目的是讓系統先站在安全預設上。如果 KG 不可靠，gate 就維持偏關閉；如果 KG 有幫助，訓練才慢慢把它打開。
 
-## Slide 25 — Training Objective
+## Slide 24 — Training Objective
 
 前一頁 gate 初始化完之後，這一頁回到訓練目標。
 
 模型最後的 score 是 user 和 item 的 final representation 做內積。BPR 是用正負樣本做排序學習的 loss；`i+` 是使用者真的互動過的 item，`i-` 是抽樣出來、使用者沒互動過的 item。對每個已觀察互動，我們會再抽一個沒互動過的 item，讓模型把正樣本排在負樣本前面。BPR 負責把排序學好，gate 則是先把 local 和 global 的融合控制住。接下來看總 loss，除了 BPR，還會再加上一個很小的對比正則。
 
-## Slide 26 — Total Objective
+## Slide 25 — Total Objective
 
 這一頁就是總損失。除了 BPR，我們還加上一個很小的對比正則，讓同一個 user 或 item 在 local view 和 global view 的表示在向量空間裡拉近，但不取代 BPR。`lambda_CL` 控制這個輔助項的強度；這裡不用特別把其他超參數唸出來。
 
 這兩個對比項分別是物品面向和使用者跨視角的對齊，作用都是把兩個 view 的表示距離縮小一點，不是主融合機制。
 
-## Slide 27 — Dataset
+## Slide 26 — Dataset
 
 這一頁先看資料集。它來自 Amazon Books 的評論子集，重點是平均每個 item 只有 2.4 條 KG 邊，是一個很稀疏的 KG；另外還有 905 個 user、1,399 個 item、22,265 筆互動、3,370 條 KG 邊，以及 2,098 個 aspect。
 
-## Slide 28 — Experimental Setup
+## Slide 27 — Experimental Setup
 
 這頁簡單看一下訓練設定。
 
-## Slide 29 — Main Results I
+## Slide 28 — Main Results I
 
 先看評估方式。我們採 full-ranking，也就是對每個 user 把候選 item 重新完整排序，並排除訓練集裡已經互動過的 item，最後看 HR、Precision、Recall、F1、MAP 和 NDCG，這些都取 @20。接著看 Top-20。這張表先列幾個 baseline，包含 MCCLK、KGCL、KGAT、KGRec 和純 LightGCN，最後是 RA-GARK。ranking metrics 是 NDCG@20、HR@20、Recall@20 和 MAP@20；RA-GARK 在這四個指標都最好，表示在這個 sparse KG 設定下，這個架構真的把 KG 的訊號轉成了正向貢獻。
 
-## Slide 30 — Main Results II
+## Slide 29 — Main Results II
 
 再看 Top-10。這一頁的排序和 Top-20 一樣，RA-GARK 仍然維持最好的 NDCG@10、HR@10、Recall@10 和 MAP@10，表示結果不是只在較長候選列表下才成立。
 
-## Slide 31 — Ablation Results I
+## Slide 30 — Ablation Results I
 
 先看 ablation 的前半段。這一頁可以直接對照前面的主結果：softmax head 掉最多，接著是 KG-SVD init、fusion-gate bias 和 MLP gate，代表這幾個設計是主要來源。
 
-## Slide 32 — Ablation Results II
+## Slide 31 — Ablation Results II
 
 再看 ablation 的後半段。user CL、aspect CL、rationale-enabled selection 和 global view 的影響都比較小，但還是能看到穩定的下降，表示這些輔助設計也有幫助。
 
-## Slide 33 — Case Study
+## Slide 32 — Case Study
 
 這張圖每個小圖是一個 item，橫軸是 4 個 aspect slot，縱軸是不同 user。顏色越深代表權重越高；你可以看到同一個 item 會有一個比較明顯的主 slot，但不同 user 對同一個 item 的分布又很接近，表示它主要是在做 item-level 的 slot 選擇。
 
 所以這個 case study 的重點是：不同 item 會偏向不同的 slot，而同一個 item 在不同 user 之間的差異不大。
 
-## Slide 34 — Conclusion & Future Work
+## Slide 33 — Conclusion & Future Work
 
 最後總結一下。
 
@@ -251,6 +251,6 @@ KG-SVD 初始化完之後，下一步就是看怎麼根據 user 來挑比較重�
 
 未來工作會測試更密集的 KG benchmark，也會進一步分析什麼情況下 user-level 的推薦理由差異會更明顯。
 
-## Slide 35 — Thank You
+## Slide 34 — Thank You
 
 Thank you for listening.
