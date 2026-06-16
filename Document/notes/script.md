@@ -251,7 +251,7 @@ KG-SVD 初始化完之後，下一步是看怎麼根據 user 來挑哪個 slot �
 
 當 KG 不可靠時，架構最需要的不是更強的 KG aggregator，而是一個能把 KG opt out 的 structural switch。這篇工作的主要貢獻有四個：gateable KG side channel、KG-SVD initialization、softmax rationale masking、local-biased fusion gate。
 
-Future work will test on denser KG benchmarks and study when user-level rationale differences emerge.
+未來工作會測試更密集的 KG benchmark，也會進一步分析什麼情況下 user-level 的推薦理由差異會更明顯。
 
 ## Slide 35 — Thank You
 
