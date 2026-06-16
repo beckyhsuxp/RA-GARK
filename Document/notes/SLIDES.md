@@ -519,13 +519,9 @@ L = L_BPR + lambda_CL * (L_aCL + L_uCL)
 
 ---
 
-## Slide 30 — Experimental Setup
+## Slide 30 — Dataset
 
-**Setup**
-
-**Dataset**
-
-- Amazon Books review subset
+**Amazon Books review subset**
 
 | Statistic | Value |
 |---|---|
@@ -535,6 +531,10 @@ L = L_BPR + lambda_CL * (L_aCL + L_uCL)
 | Interactions | 22,265 |
 | KG edges | 3,370 |
 | Aspects | 2,098 |
+
+---
+
+## Slide 31 — Experimental Setup
 
 **Optimization**
 
@@ -552,7 +552,7 @@ L = L_BPR + lambda_CL * (L_aCL + L_uCL)
 
 ---
 
-## Slide 31 — Inference and Complexity
+## Slide 32 — Inference and Complexity
 
 **Inference**
 
@@ -572,7 +572,7 @@ L = L_BPR + lambda_CL * (L_aCL + L_uCL)
 
 ---
 
-## Slide 32 — Main Results
+## Slide 33 — Main Results
 
 **Top-20**
 
@@ -588,7 +588,7 @@ L = L_BPR + lambda_CL * (L_aCL + L_uCL)
 - beats pure LightGCN by 6.4% on NDCG@10
 - beats KGRec by 10.5% on NDCG@10
 
-## Slide 33 — Ablation Summary
+## Slide 34 — Ablation Summary
 
 **Largest drop**
 
@@ -608,7 +608,7 @@ L = L_BPR + lambda_CL * (L_aCL + L_uCL)
 
 ---
 
-## Slide 34 — Case Study and Takeaways
+## Slide 35 — Case Study and Takeaways
 
 **圖片**
 
@@ -622,7 +622,7 @@ L = L_BPR + lambda_CL * (L_aCL + L_uCL)
 
 ---
 
-## Slide 35 — Conclusion
+## Slide 36 — Conclusion
 
 **Conclusion**
 

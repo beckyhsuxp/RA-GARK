@@ -236,35 +236,39 @@ KG-SVD 是我們用來初始化 item aspect slots 的方法。
 
 這兩個對比項分別是物品面向和使用者跨視角的對齊，作用都是把兩個 view 的表示距離縮小一點，不是主融合機制。
 
-## Slide 30 — Experimental Setup
+## Slide 30 — Dataset
 
-這一頁分成兩塊看，左邊是資料集，右邊是訓練設定。資料集來自 Amazon Books 的評論子集，重點是平均每個 item 有 2.4 條 KG 邊，另外還有 905 個 user、1,399 個 item、22,265 筆互動、3,370 條 KG 邊，以及 2,098 個 aspect。訓練設定這張表也很簡單，Optimizer 是 Adam，learning rate 0.001，batch size 128，最多 80 個 epoch，並且用 validation NDCG@20 做 early stopping。
+這一頁先看資料集。它來自 Amazon Books 的評論子集，重點是平均每個 item 有 2.4 條 KG 邊，另外還有 905 個 user、1,399 個 item、22,265 筆互動、3,370 條 KG 邊，以及 2,098 個 aspect。
 
-## Slide 31 — Inference and Complexity
+## Slide 31 — Experimental Setup
+
+這一頁看訓練設定。Optimizer 是 Adam，learning rate 0.001，batch size 128，最多 80 個 epoch，並且用 validation NDCG@20 做 early stopping。這個 benchmark 本身就很稀疏，所以我們才特別在這種設定下測試方法。
+
+## Slide 32 — Inference and Complexity
 
 評估時採 full-ranking，也就是對每個 user 把候選 item 重新完整排序，並排除訓練集裡已經互動過的 item，最後看 HR、Precision、Recall、F1、MAP 和 NDCG，這些都取 @20。
 
 從效能來看，我們每個 epoch 大概 1.5 秒，跟 KGRec 差不多，所以這個設計沒有讓成本爆炸。
 
-## Slide 32 — Main Results
+## Slide 33 — Main Results
 
 先看主結果。
 
 Top-20 時，RA-GARK 的 NDCG@20 是 0.1243，較 KGRec 高 13.5%，較純 LightGCN 高 5.4%。Top-10 時，RA-GARK 的 NDCG@10 是 0.0966，較 KGRec 高 10.5%，較純 LightGCN 高 6.4%。
 
-## Slide 33 — Ablation Summary
+## Slide 34 — Ablation Summary
 
 再看 ablation。
 
 Top-20 時，softmax head 是最大的變化，0.1243 降到 0.1005；KG-SVD 是 0.1171；fusion-gate bias 是 0.1194；MLP gate 是 0.1180。Top-10 也維持相同排序。
 
-## Slide 34 — Case Study and Takeaways
+## Slide 35 — Case Study and Takeaways
 
 這張 heatmap 是 case study。
 
 你可以看到不同 item 會對不同 aspect slot 給出不同的權重，表示 rationale masking 不是固定平均，而是真的有在對不同 item 使用不同的語意路徑。
 
-## Slide 35 — Conclusion
+## Slide 36 — Conclusion
 
 最後總結一下。
 
