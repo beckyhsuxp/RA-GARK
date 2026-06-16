@@ -73,9 +73,9 @@ Writing rule:
 
 ## Slide 8 — Related Work II
 
-接著是 contrastive KG learning 和 gating。簡單說，KGCL 和 MCCLK 會用對比學習強化 KG 表示，gating 方法則是學習不同訊號要怎麼分配權重。
+接著是 contrastive KG learning。簡單說，KGCL 和 MCCLK 會用對比學習強化 KG 表示，但它們依賴 KG 結構本身要夠有資訊，對比學習才會穩。
 
-KGCL、MCCLK 依賴 KG 結構本身夠有資訊，對比學習才會穩；Highway Networks、MMoE、PLE 則證明 gate 可以控制資訊流，但它們不是為 unreliable KG 設計，也沒有安全初始化。
+再來是 gating。Highway Networks、MMoE、PLE 證明 gate 可以控制資訊流，但它們不是為 unreliable KG 設計，也沒有安全初始化。
 
 所以我們的做法是把 KG 改成可閘控的 side channel，而不是必經路徑。
 
