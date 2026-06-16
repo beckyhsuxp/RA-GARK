@@ -511,18 +511,11 @@ L = L_BPR + lambda_CL * (L_aCL + L_uCL)
 
 - auxiliary geometric alignment
 - not the main integration path
-- lambda_CL controls the strength
-- tau_CL is the contrastive temperature
 
 **Stability**
 
 - stop-gradient on the KG side
 - projection head only on the local side
-
-**What it optimizes**
-
-- push held-out positives above negatives
-- let the gate and CL refine the representation
 
 ---
 
