@@ -615,7 +615,7 @@ When the KG is unreliable, what the architecture needs is not a better KG aggreg
 
 **Future work**
 
-We will test on denser KG benchmarks and study when user-level rationale differences emerge.
+Future work will test on denser KG benchmarks and study when user-level rationale differences emerge.
 
 ---
 
