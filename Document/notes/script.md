@@ -250,7 +250,7 @@ KG-SVD 是我們用來初始化 item aspect slots 的方法。
 
 ## Slide 32 — Main Results I
 
-先看 Top-20。這張表先列幾個 baseline，包含 MCCLK、KGCL、KGAT、KGRec 和純 LightGCN，最後是 RA-GARK。右邊的 ranking metrics 是 NDCG@20、HR@20、Recall@20 和 MAP@20；RA-GARK 在這四個指標都最好，表示在這個 sparse KG 設定下，這個架構真的把 KG 的訊號轉成了正向貢獻。
+先看 Top-20。這張表先列幾個 baseline，包含 MCCLK、KGCL、KGAT、KGRec 和純 LightGCN，最後是 RA-GARK。ranking metrics 是 NDCG@20、HR@20、Recall@20 和 MAP@20；RA-GARK 在這四個指標都最好，表示在這個 sparse KG 設定下，這個架構真的把 KG 的訊號轉成了正向貢獻。
 
 ## Slide 33 — Main Results II
 
