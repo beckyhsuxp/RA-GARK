@@ -220,7 +220,7 @@ KG-SVD 是我們用來初始化 item aspect slots 的方法。
 
 這一頁講 gate 的初始化。
 
-我們把 gate bias 設成加 5，所以一開始 alpha 幾乎是 0.993，也就是模型剛開始幾乎等同於 LightGCN。b 就是 gate 的 bias，alpha 的初始值大概是 0.993，也就是 sigmoid 正 5 的結果。
+我們把 gate bias 設成加 5，所以一開始 alpha 幾乎是 0.993，也就是模型剛開始幾乎等同於 LightGCN。b 就是 gate 的 bias，alpha 的初始值大概是 0.993，也就是 sigmoid 正 5 的結果。這裡先不用講最後指標，重點是它讓模型一開始站在比較安全的 local 預設上。
 
 這樣做的目的是讓系統先站在安全預設上。如果 KG 不可靠，gate 就維持偏關閉；如果 KG 有幫助，訓練才慢慢把它打開。
 
