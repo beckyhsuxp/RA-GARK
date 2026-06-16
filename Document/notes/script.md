@@ -258,7 +258,7 @@ KG-SVD 是我們用來初始化 item aspect slots 的方法。
 
 ## Slide 35 — Case Study
 
-這張 heatmap 在看的是：同一個 item 會不會對不同 aspect slot 給出不同權重。你可以看到有些 item 會明顯偏向某一個 slot，表示 rationale masking 不是固定平均，而是在替不同 item 選不同的語意路徑。
+這張 heatmap 在看的是：同一個 item 會不會對不同 aspect slot 給出不同權重。你可以看到有些 item 會明顯偏向某一個 slot，表示不同 item 真的會用到不同的 slot。
 
 ## Slide 36 — Conclusion
 
