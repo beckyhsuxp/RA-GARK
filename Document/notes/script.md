@@ -242,7 +242,7 @@ KG-SVD 是我們用來初始化 item aspect slots 的方法。
 
 ## Slide 31 — Experimental Setup
 
-這一頁看訓練設定。Optimizer 是 Adam，learning rate 0.001，batch size 128，最多 80 個 epoch，並且用 validation NDCG@20 做 early stopping。這個 benchmark 本身就很稀疏，所以我們才特別在這種設定下測試方法。
+這一頁看訓練設定。表格裡依序是 Optimizer、learning rate、batch size、max epochs 和 early stopping。這個 benchmark 本身就很稀疏，所以我們才特別在這種設定下測試方法。
 
 ## Slide 32 — Inference and Complexity
 
