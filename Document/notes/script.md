@@ -25,9 +25,9 @@ Writing rule:
 
 但是只看互動也有一個限制，就是它比較難知道 item 為什麼被推薦。所以另一條線是 KG-aware recommendation，把 item 的語意資訊，像是題材、風格、主題，透過 knowledge graph 引進模型裡。直覺上，KG 應該可以補上協同過濾看不到的內容訊號，讓推薦更準，也更可解釋。
 
-問題是，這個直覺有一個前提：KG 本身要夠完整、夠可靠。可是我們的 setting 剛好相反。我們用的是 Amazon Books 的子集，而且 knowledge graph 是從書評抽出的 aspect，所以 KG 天生就很稀疏。過濾後平均每本書只有 2.4 條 KG 邊。
+問題是，這個直覺有一個前提：KG 本身要夠完整、夠可靠。但在 sparse KG 的情況下，這個前提不一定成立。
 
-在這個 setting 下，我們看到一個很反直覺的現象：幾個主流 KG-aware 方法全部都輸給純 LightGCN。LightGCN 的 NDCG@20 是 0.1179，反而高於 KGAT、KGCL、MCCLK 和 KGRec。
+也因此，我們看到一個很反直覺的現象：幾個主流 KG-aware 方法全部都輸給純 LightGCN。LightGCN 的 NDCG@20 是 0.1179，反而高於 KGAT、KGCL、MCCLK 和 KGRec。
 
 所以這裡的動機不是說 KG 沒有用，而是說當 KG 稀疏又不穩定時，如果把 KG 直接融進 scoring pipeline，它很可能不是補充訊號，而是把雜訊帶進來，最後拖累原本乾淨的互動訊號。
 
