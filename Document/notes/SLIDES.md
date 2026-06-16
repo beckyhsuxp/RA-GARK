@@ -489,7 +489,6 @@ alpha_0 = sigmoid(+5) ~= 0.993
 
 - 排序損失，用已觀察互動和抽樣負例來訓練
 ```text
-score = <u_final, i_final>
 L_BPR = -log sigma(y(u, i+) - y(u, i-))
 ```
 
