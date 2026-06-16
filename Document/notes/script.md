@@ -33,7 +33,7 @@ Writing rule:
 
 ## Slide 4 — Why Sparse KG
 
-接著說明為什麼這種 KG 會這麼稀疏。
+那為什麼我們要特別討論 sparse KG？
 
 答案是，稀疏 KG 在實務上很常見，不是例外。review-derived KG 本來就只會覆蓋使用者提到過的主題，所以密度自然不均勻。cold-start 和 emerging domains 通常也缺少像 Freebase 或 Wikidata 那樣完整的整理來源。再加上 medical、financial 這類 privacy-constrained domains，能用的關聯訊號也會被刻意限制。最後，KG completion 也不是無痛解法，因為它會引入新的噪音，而且通常還需要 seed signal。
 
