@@ -487,7 +487,7 @@ alpha_0 = sigmoid(+5) ~= 0.993
 
 **BPR**
 
-- ranking loss on observed vs. sampled unseen items
+- 排序損失，用已觀察互動和抽樣負例來訓練
 ```text
 score = <u_final, i_final>
 L_BPR = -log sigma(y(u, i+) - y(u, i-))
@@ -495,8 +495,8 @@ L_BPR = -log sigma(y(u, i+) - y(u, i-))
 
 **Sampling**
 
-- observed interaction pairs are treated as positive
-- sampled unseen items are treated as negative
+- 已觀察互動視為正樣本
+- 抽樣出來的未互動 item 視為負樣本
 
 ---
 
