@@ -521,20 +521,16 @@ L = L_BPR + lambda_CL * (L_aCL + L_uCL)
 
 ## Slide 30 — Dataset and Optimization
 
-**Dataset**
+**Setup**
 
-- 905 users
-- 1,399 items
-- 22,265 interactions
-- 3,370 KG edges
-- 2,098 aspects
-
-**Optimization**
-
-- Adam
-- learning rate 1e-3
-- batch size 128
-- up to 80 epochs with early stopping
+```text
+Dataset        905 users / 1,399 items / 22,265 interactions
+KG             3,370 KG edges / 2,098 aspects
+Optimizer      Adam
+Learning rate  1e-3
+Batch size     128
+Training       up to 80 epochs with early stopping
+```
 
 **Why it matters**
 
