@@ -488,13 +488,14 @@ alpha_0 = sigmoid(+5) ~= 0.993
 **BPR**
 
 ```text
+score = <u_final, i_final>
 L_BPR = -log sigma(y(u, i+) - y(u, i-))
 ```
 
 **Sampling**
 
-- positive pairs come from observed interactions
-- negatives are sampled from items the user has not interacted with
+- observed interaction pairs are treated as positive
+- sampled unseen items are treated as negative
 
 ---
 
