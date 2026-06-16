@@ -41,8 +41,6 @@ Writing rule:
 
 所以這篇工作的重點不是去解決「KG 太少」本身，而是去解決「當 KG 不可靠時，模型要怎麼穩健地做推薦」。
 
-這也就是為什麼我們後面會強調安全退路和可閘控側通道。這個 benchmark 看的是 robustness，而不只是 dense KG 下的最高表現。
-
 ## Slide 5 — Design Challenge
 
 這裡我先把現有 KG-aware 方法面臨的設計挑戰講清楚。
