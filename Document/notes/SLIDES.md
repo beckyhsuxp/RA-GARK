@@ -121,7 +121,7 @@ KG should be a gateable side channel.
 
 ## Slide 7 — Collaborative Filtering
 
-**Reference**
+**Representative Works**
 
 - LightGCN
 
@@ -139,7 +139,7 @@ KG should be a gateable side channel.
 
 ## Slide 8 — Direct KG Fusion
 
-**References**
+**Representative Works**
 
 - KGAT
 - KGRec
@@ -154,7 +154,7 @@ KG should be a gateable side channel.
 
 ## Slide 9 — Contrastive KG Learning
 
-**References**
+**Representative Works**
 
 - KGCL
 - MCCLK
@@ -169,7 +169,7 @@ KG should be a gateable side channel.
 
 ## Slide 10 — Gating for Fusion
 
-**References**
+**Representative Works**
 
 - Highway Networks
 - MMoE
