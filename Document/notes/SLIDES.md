@@ -525,6 +525,8 @@ L = L_BPR + lambda_CL * (L_aCL + L_uCL)
 
 **Dataset**
 
+- Amazon Books review subset
+
 | Statistic | Value |
 |---|---|
 | Average KG edges / item | 2.4 |
