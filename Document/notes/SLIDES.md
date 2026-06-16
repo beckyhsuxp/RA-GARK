@@ -600,7 +600,7 @@ L = L_BPR + lambda_CL * (L_aCL + L_uCL)
 
 ---
 
-## Slide 37 — Conclusion
+## Slide 37 — Conclusion & Future Work
 
 **Conclusion**
 
@@ -612,6 +612,11 @@ When the KG is unreliable, what the architecture needs is not a better KG aggreg
 - KG-SVD initialization
 - softmax rationale masking
 - local-biased fusion gate
+
+**Future work**
+
+- test on denser KG benchmarks
+- study when user-level rationale differences emerge
 
 ---
 
