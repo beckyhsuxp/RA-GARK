@@ -548,7 +548,7 @@ L = L_BPR + lambda_CL * (L_aCL + L_uCL)
 | Optimizer | Adam |
 ---
 
-## Slide 32 — Main Results
+## Slide 32 — Main Results I
 
 **Top-20**
 
@@ -561,6 +561,8 @@ L = L_BPR + lambda_CL * (L_aCL + L_uCL)
 | LightGCN | 0.1179 | 0.4917 | 0.1937 | 0.0555 |
 | **RA-GARK** | **0.1243** | **0.4972** | **0.2020** | **0.0594** |
 
+## Slide 33 — Main Results II
+
 **Top-10**
 
 | Model | NDCG@10 | HR@10 | Recall@10 | MAP@10 |
@@ -572,7 +574,7 @@ L = L_BPR + lambda_CL * (L_aCL + L_uCL)
 | LightGCN | 0.0908 | 0.3436 | 0.1201 | 0.0483 |
 | **RA-GARK** | **0.0966** | **0.3558** | **0.1265** | **0.0520** |
 
-## Slide 33 — Ablation Summary
+## Slide 34 — Ablation Summary
 
 **Largest drop**
 
@@ -592,7 +594,7 @@ L = L_BPR + lambda_CL * (L_aCL + L_uCL)
 
 ---
 
-## Slide 34 — Case Study and Takeaways
+## Slide 35 — Case Study and Takeaways
 
 **圖片**
 
@@ -606,7 +608,7 @@ L = L_BPR + lambda_CL * (L_aCL + L_uCL)
 
 ---
 
-## Slide 35 — Conclusion
+## Slide 36 — Conclusion
 
 **Conclusion**
 

@@ -248,23 +248,27 @@ KG-SVD 是我們用來初始化 item aspect slots 的方法。
 
 從效能來看，我們每個 epoch 大概 1.5 秒，跟 KGRec 差不多，所以這個設計沒有讓成本爆炸。
 
-## Slide 32 — Main Results
+## Slide 32 — Main Results I
 
-先看主結果表。
+先看主結果表，Top-20。
 
-## Slide 33 — Ablation Summary
+## Slide 33 — Main Results II
+
+再看 Top-10。
+
+## Slide 34 — Ablation Summary
 
 再看 ablation。
 
 Top-20 時，softmax head 是最大的變化，0.1243 降到 0.1005；KG-SVD 是 0.1171；fusion-gate bias 是 0.1194；MLP gate 是 0.1180。Top-10 也維持相同排序。
 
-## Slide 34 — Case Study and Takeaways
+## Slide 35 — Case Study and Takeaways
 
 這張 heatmap 是 case study。
 
 你可以看到不同 item 會對不同 aspect slot 給出不同的權重，表示 rationale masking 不是固定平均，而是真的有在對不同 item 使用不同的語意路徑。
 
-## Slide 35 — Conclusion
+## Slide 36 — Conclusion
 
 最後總結一下。
 
