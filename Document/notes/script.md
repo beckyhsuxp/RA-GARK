@@ -61,7 +61,7 @@ Writing rule:
 
 這篇工作我們把它命名為 RA-GARK。
 
-對應這兩個問題，我們的答案是：KG 不應該是 scoring pipeline 裡的必經成分，而應該是一條可以被 gate 控制的側通道。這個想法後面會具體落地在三個設計上，分別是 KG-SVD 初始化、softmax rationale masking 和 local-biased fusion gate。
+對應這兩個問題，我們的答案是：KG 不應該是 scoring pipeline 裡必須使用的組件，而應該是一條可以被 gate 控制的側通道。這個想法後面會具體落地在三個設計上，分別是 KG-SVD 初始化、softmax rationale masking 和 local-biased fusion gate。
 
 ## Slide 7 — Related Work I
 
