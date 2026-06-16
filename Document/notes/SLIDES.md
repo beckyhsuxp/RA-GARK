@@ -536,7 +536,7 @@ L = L_BPR + lambda_CL * (L_aCL + L_uCL)
 
 ## Slide 31 — Experimental Setup
 
-**Optimization**
+**Training Setup**
 
 | Hyperparameter | Value |
 |---|---|
