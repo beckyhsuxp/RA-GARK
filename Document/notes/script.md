@@ -23,9 +23,7 @@ Writing rule:
 
 在推薦系統裡，最核心的訊號其實還是 user 和 item 之間的互動。像 LightGCN 這類用 GNN 做協同過濾的方法，就是直接在 user-item graph 上傳播訊息。LightGCN 把 GNN 簡化成線性鄰居聚合，但仍然很有效。這代表一件事：乾淨的互動訊號本身就很強，而且很穩定。
 
-但是只看互動也有一個限制，就是它比較難知道 item 為什麼被推薦。所以另一條線是 KG-aware recommendation，把 item 的語意資訊，像是題材、風格、主題，透過 knowledge graph 引進模型裡。直覺上，KG 應該可以補上協同過濾看不到的內容訊號，讓推薦更準，也更可解釋。
-
-問題是，這個直覺有一個前提：KG 本身要夠完整、夠可靠。但在 sparse KG 的情況下，這個前提不一定成立。
+但是只看互動也有一個限制，就是它比較難知道 item 為什麼被推薦。所以另一條線是 KG-aware recommendation，把 item 的語意資訊，像是題材、風格、主題，透過 knowledge graph 引進模型裡。KG 理論上可以補上協同過濾看不到的內容訊號，但 sparse KG 不一定可靠。
 
 也因此，我們看到一個很反直覺的現象：幾個主流 KG-aware 方法全部都輸給純 LightGCN。
 
