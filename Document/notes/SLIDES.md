@@ -494,8 +494,8 @@ L_BPR = -log sigma(y(u, i+) - y(u, i-))
 
 **Sampling**
 
-- 已觀察互動視為正樣本
-- 抽樣出來的未互動 item 視為負樣本
+- observed interaction pairs are treated as positive
+- sampled unseen items are treated as negative
 
 ---
 
