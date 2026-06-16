@@ -258,7 +258,7 @@ KG-SVD 是我們用來初始化 item aspect slots 的方法。
 
 ## Slide 35 — Case Study
 
-這張 heatmap 在看的是：同一個 item 會不會對不同 aspect slot 給出不同權重。你可以看到有些 item 會明顯偏向某一個 slot，表示不同 item 真的會用到不同的 slot。
+這張 heatmap 的橫軸是 item，縱軸是 aspect slot，顏色越深代表權重越高。你可以看到有些 item 會明顯偏向某一個 slot，表示不同 item 真的會用到不同的 slot。
 
 ## Slide 36 — Conclusion
 
