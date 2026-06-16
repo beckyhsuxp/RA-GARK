@@ -238,7 +238,7 @@ KG-SVD 是我們用來初始化 item aspect slots 的方法。
 
 ## Slide 30 — Dataset
 
-這一頁先看資料集。它來自 Amazon Books 的評論子集，重點是平均每個 item 有 2.4 條 KG 邊，另外還有 905 個 user、1,399 個 item、22,265 筆互動、3,370 條 KG 邊，以及 2,098 個 aspect。
+這一頁先看資料集。它來自 Amazon Books 的評論子集，重點是平均每個 item 只有 2.4 條 KG 邊，是一個很稀疏的 KG；另外還有 905 個 user、1,399 個 item、22,265 筆互動、3,370 條 KG 邊，以及 2,098 個 aspect。
 
 ## Slide 31 — Experimental Setup
 
