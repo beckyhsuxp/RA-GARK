@@ -574,27 +574,27 @@ L = L_BPR + lambda_CL * (L_aCL + L_uCL)
 | LightGCN | 0.0908 | 0.3436 | 0.1201 | 0.0483 |
 | **RA-GARK** | **0.0966** | **0.3558** | **0.1265** | **0.0520** |
 
-## Slide 34 — Ablation Summary
+## Slide 34 — Ablation Summary I
 
-**Largest drop**
+| Model | NDCG@20 | MAP@20 |
+|---|---|---|
+| RA-GARK (full) | 0.1243 | 0.0594 |
+| w/o softmax head | 0.1005 | 0.0451 |
+| w/o KG-SVD init | 0.1171 | 0.0545 |
+| w/o fusion-gate bias | 0.1194 | 0.0555 |
+| w/o MLP gate | 0.1180 | 0.0552 |
 
-- w/o softmax head hurts the most
-- it removes the rationale selection step
+## Slide 35 — Ablation Summary II
 
-**Other core pieces**
+| Model | NDCG@10 | MAP@10 |
+|---|---|---|
+| RA-GARK (full) | 0.0960 | 0.0519 |
+| w/o softmax head | 0.0785 | 0.0397 |
+| w/o KG-SVD init | 0.0922 | 0.0479 |
+| w/o fusion-gate bias | 0.0923 | 0.0482 |
+| w/o MLP gate | 0.0926 | 0.0484 |
 
-- w/o KG-SVD init degrades the global view
-- w/o fusion-gate bias weakens the safe default
-- w/o MLP gate reduces fusion flexibility
-
-**Smaller but consistent**
-
-- w/o user CL and w/o aspect CL both drop performance
-- w/o rationale-enabled selection and w/o global view also underperform
-
----
-
-## Slide 35 — Case Study and Takeaways
+## Slide 36 — Case Study and Takeaways
 
 **圖片**
 
@@ -608,7 +608,7 @@ L = L_BPR + lambda_CL * (L_aCL + L_uCL)
 
 ---
 
-## Slide 36 — Conclusion
+## Slide 37 — Conclusion
 
 **Conclusion**
 
