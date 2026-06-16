@@ -250,11 +250,11 @@ KG-SVD 是我們用來初始化 item aspect slots 的方法。
 
 ## Slide 32 — Main Results I
 
-先看主結果表，Top-20。
+先看 Top-20。這張表裡 RA-GARK 的 NDCG@20 是 0.1243，優於 KGRec 也優於純 LightGCN，表示在這個 sparse KG 設定下，這個架構真的把 KG 的訊號轉成了正向貢獻。
 
 ## Slide 33 — Main Results II
 
-再看 Top-10。
+再看 Top-10。這一頁的排序和 Top-20 一樣，RA-GARK 仍然維持最好的 NDCG@10、HR@10、Recall@10 和 MAP@10，表示結果不是只在較長候選列表下才成立。
 
 ## Slide 34 — Ablation Summary
 
