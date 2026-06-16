@@ -226,15 +226,15 @@ KG-SVD 是我們用來初始化 item aspect slots 的方法。
 
 ## Slide 28 — Training Objective
 
-gate 的初始化講完之後，接下來就看訓練目標。
+前一頁 gate 初始化完之後，這一頁回到訓練目標。
 
-先看 score，這裡是 `score = <u_final, i_final>`。BPR 是 pairwise ranking loss。sigma 是 sigmoid function。公式裡的 observed pair 是正樣本，也就是使用者真的互動過的 item；sampled unseen item 是負樣本，也就是抽樣出來、使用者沒互動過的 item。我們用這些正負 pair 來訓練，目標是把真正互動過的 item 排在未互動 item 前面。BPR 負責 ranking signal，gate 和 CL 負責把表示調穩定。
+模型最後的 score 是 `score = <u_final, i_final>`，也就是把 user 和 item 的 final representation 做內積。BPR 是 pairwise ranking loss，會拿這個 score 來比正負樣本。對每個 observed pair，我們再抽一個 sampled unseen item 當負樣本，目標是讓真正互動過的 item 分數高於未互動 item。這樣 BPR 就提供主要的 ranking signal，gate 則是負責先把表示維持在比較穩定的狀態。
 
 ## Slide 29 — Contrastive Regularization
 
-剛剛先看了 BPR，這一頁再補對比學習正則。gate 決定表示怎麼融合，接下來訓練時還要靠 ranking loss 和對比學習把這個表示穩住。除了 BPR，也就是 Bayesian Personalized Ranking 之外，我們還加了兩個很小的對比學習輔助項，也就是 contrastive regularization。`lambda_CL` 控制這個輔助項的強度，`tau_CL` 則是對比學習的 temperature；這裡不用特別把數字唸出來。
+接著看跟它搭配的對比學習正則。這裡的想法是：BPR 負責排序，對比學習負責把 local 和 global 的幾何空間稍微拉齊。除了 BPR，也就是 Bayesian Personalized Ranking 之外，我們再加兩個很小的對比學習輔助項，也就是 contrastive regularization。`lambda_CL` 控制這個輔助項的強度，`tau_CL` 則是對比學習的 temperature；這裡不用特別把數字唸出來。
 
-面向層的對比損失是物品面向的對比損失，使用者跨視角的對比損失是 user cross-view contrastive loss，也就是讓同一個 user 的 local 和 global 表示靠近；lambda_CL 是這個輔助項的權重，tau_CL 是對比學習用的 temperature。它們只是輔助對齊 local 和 global 的幾何空間，不是主融合機制。
+面向層的對比損失是物品面向的對比損失，使用者跨視角的對比損失是 user cross-view contrastive loss，也就是讓同一個 user 的 local 和 global 表示靠近。它們只是輔助對齊 local 和 global 的幾何空間，不是主融合機制。
 
 ## Slide 30 — Dataset and Optimization
 
