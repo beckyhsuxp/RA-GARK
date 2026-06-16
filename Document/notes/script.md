@@ -260,6 +260,8 @@ KG-SVD 是我們用來初始化 item aspect slots 的方法。
 
 這張圖每個小圖是一個 item，橫軸是 4 個 aspect slot，縱軸是不同 user。顏色越深代表權重越高；你可以看到同一個 item 會有一個比較明顯的主 slot，但不同 user 對同一個 item 的分布又很接近，表示它主要是在做 item-level 的 slot 選擇。
 
+所以這個 case study 的重點是：rationale masking 真的有在幫 item 挑 slot，但還沒有強到會把同一個 item 對不同 user 的權重拉開很多。
+
 ## Slide 36 — Conclusion
 
 最後總結一下。
