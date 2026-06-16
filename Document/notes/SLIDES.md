@@ -489,6 +489,7 @@ alpha_0 = sigmoid(+5) ~= 0.993
 
 - ranking loss on observed vs. sampled unseen items
 ```text
+score = <u_final, i_final>
 L_BPR = -log sigma(y(u, i+) - y(u, i-))
 ```
 
