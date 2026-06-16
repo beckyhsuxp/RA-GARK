@@ -501,18 +501,18 @@ L_BPR = -log sigma(y(u, i+) - y(u, i-))
 
 ## Slide 29 — Total Objective
 
-**Main objective**
+**Total objective**
 
 ```text
 L = L_BPR + lambda_CL * (L_aCL + L_uCL)
 ```
 
-**Role**
+**Why**
 
-- auxiliary geometric alignment
-- not the main integration path
+- BPR is the main ranking loss
+- CL is a small auxiliary regularizer
 
-**Stability**
+**Design**
 
 - stop-gradient on the KG side
 - projection head only on the local side
