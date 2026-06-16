@@ -250,9 +250,7 @@ KG-SVD 是我們用來初始化 item aspect slots 的方法。
 
 ## Slide 32 — Main Results
 
-先看主結果。
-
-Top-20 時，RA-GARK 的 NDCG@20 是 0.1243，較 KGRec 高 13.5%，較純 LightGCN 高 5.4%。Top-10 時，RA-GARK 的 NDCG@10 是 0.0966，較 KGRec 高 10.5%，較純 LightGCN 高 6.4%。
+先看主結果表。
 
 ## Slide 33 — Ablation Summary
 
