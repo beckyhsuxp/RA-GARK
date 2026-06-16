@@ -272,7 +272,7 @@ KG-SVD 是我們用來初始化 item aspect slots 的方法。
 
 當 KG 不可靠時，架構最需要的不是更強的 KG aggregator，而是一個能把 KG opt out 的 structural switch。這篇工作的主要貢獻有四個：gateable KG side channel、KG-SVD initialization、softmax rationale masking、local-biased fusion gate。
 
-未來可以再看更稠密的 KG 資料集，或者觀察什麼情況下 user-level 的 rationale 差異會真的出現。
+未來可以再看更稠密的 KG 資料集，並觀察什麼情況下 user-level 的 rationale 差異會真的出現。
 
 ## Slide 38 — Thank You
 
