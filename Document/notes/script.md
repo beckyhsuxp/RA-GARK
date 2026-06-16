@@ -244,31 +244,29 @@ KG-SVD 是我們用來初始化 item aspect slots 的方法。
 
 這一頁看訓練設定。表格裡挑幾個重要的就好，像是 embedding dimension、aspect slots、rationale temperature、fusion-gate bias、contrastive weight 和 optimizer。
 
-## Slide 32 — Inference and Complexity
-
 評估時採 full-ranking，也就是對每個 user 把候選 item 重新完整排序，並排除訓練集裡已經互動過的 item，最後看 HR、Precision、Recall、F1、MAP 和 NDCG，這些都取 @20。
 
 從效能來看，我們每個 epoch 大概 1.5 秒，跟 KGRec 差不多，所以這個設計沒有讓成本爆炸。
 
-## Slide 33 — Main Results
+## Slide 32 — Main Results
 
 先看主結果。
 
 Top-20 時，RA-GARK 的 NDCG@20 是 0.1243，較 KGRec 高 13.5%，較純 LightGCN 高 5.4%。Top-10 時，RA-GARK 的 NDCG@10 是 0.0966，較 KGRec 高 10.5%，較純 LightGCN 高 6.4%。
 
-## Slide 34 — Ablation Summary
+## Slide 33 — Ablation Summary
 
 再看 ablation。
 
 Top-20 時，softmax head 是最大的變化，0.1243 降到 0.1005；KG-SVD 是 0.1171；fusion-gate bias 是 0.1194；MLP gate 是 0.1180。Top-10 也維持相同排序。
 
-## Slide 35 — Case Study and Takeaways
+## Slide 34 — Case Study and Takeaways
 
 這張 heatmap 是 case study。
 
 你可以看到不同 item 會對不同 aspect slot 給出不同的權重，表示 rationale masking 不是固定平均，而是真的有在對不同 item 使用不同的語意路徑。
 
-## Slide 36 — Conclusion
+## Slide 35 — Conclusion
 
 最後總結一下。
 

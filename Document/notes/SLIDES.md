@@ -548,27 +548,7 @@ L = L_BPR + lambda_CL * (L_aCL + L_uCL)
 | Optimizer | Adam |
 ---
 
-## Slide 32 — Inference and Complexity
-
-**Inference**
-
-- full ranking over unseen items
-- exclude training interactions
-- vectorized scoring over the full item set
-
-**Cost profile**
-
-- LightGCN propagation dominates training cost
-- KG-side modules scale linearly in `A` and `d`
-- wall-clock is comparable to KGRec
-
-**Takeaway**
-
-- the extra KG machinery does not blow up runtime
-
----
-
-## Slide 33 — Main Results
+## Slide 32 — Main Results
 
 **Top-20**
 
@@ -584,7 +564,7 @@ L = L_BPR + lambda_CL * (L_aCL + L_uCL)
 - beats pure LightGCN by 6.4% on NDCG@10
 - beats KGRec by 10.5% on NDCG@10
 
-## Slide 34 — Ablation Summary
+## Slide 33 — Ablation Summary
 
 **Largest drop**
 
@@ -604,7 +584,7 @@ L = L_BPR + lambda_CL * (L_aCL + L_uCL)
 
 ---
 
-## Slide 35 — Case Study and Takeaways
+## Slide 34 — Case Study and Takeaways
 
 **圖片**
 
@@ -618,7 +598,7 @@ L = L_BPR + lambda_CL * (L_aCL + L_uCL)
 
 ---
 
-## Slide 36 — Conclusion
+## Slide 35 — Conclusion
 
 **Conclusion**
 
