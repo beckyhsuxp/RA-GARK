@@ -499,7 +499,7 @@ L_BPR = -log sigma(y(u, i+) - y(u, i-))
 
 ---
 
-## Slide 29 — Contrastive Regularization
+## Slide 29 — Total Objective
 
 **Main objective**
 
