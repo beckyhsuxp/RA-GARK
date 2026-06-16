@@ -615,11 +615,6 @@ When the KG is unreliable, what the architecture needs is not a better KG aggreg
 
 ---
 
-## Slide 38 — Future Work
+## Slide 38 — Thank You
 
-**Future work**
-
-- test on denser KG benchmarks
-- study when user-level rationale differences emerge
-
-以上，謝謝大家。
+**Thank you**
