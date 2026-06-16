@@ -596,7 +596,7 @@ L = L_BPR + lambda_CL * (L_aCL + L_uCL)
 
 ---
 
-## Slide 36 — Conclusion
+## Slide 36 — Conclusion & Future Work
 
 **Conclusion**
 
@@ -614,5 +614,10 @@ When the KG is unreliable, what the architecture needs is not a better KG aggreg
 - one sparse review-aspect KG dataset
 - KG construction pipeline is adopted rather than proposed
 - dense-KG settings may still favor deep fusion
+
+**Future work**
+
+- test on denser KG benchmarks
+- study when user-level rationale differences emerge
 
 以上，謝謝大家。
