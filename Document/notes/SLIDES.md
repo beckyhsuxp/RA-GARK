@@ -527,6 +527,7 @@ L = L_BPR + lambda_CL * (L_aCL + L_uCL)
 
 | Statistic | Value |
 |---|---|
+| Source | Amazon Books review subset |
 | Users | 905 |
 | Items | 1,399 |
 | Interactions | 22,265 |
