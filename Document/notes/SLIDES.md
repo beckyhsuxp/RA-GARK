@@ -7,7 +7,7 @@
 
 | 圖檔 | 頁面 |
 |---|---|
-| `thesis/img/architecture.png` | Slide 9 / 22 |
+| `thesis/img/architecture.png` | Slide 10 / 23 |
 | `thesis/img/kg_svd.png` | Slide 17 |
 | `thesis/img/gate.png` | Slide 24 |
 | `thesis/img/case_study_heatmap.png` | Slide 34 |
@@ -85,21 +85,13 @@ On this sparse KG, every KG-aware baseline loses to pure LightGCN.
 
 ## Slide 5 — Design Challenge
 
-**1. Failure mode**
+**Design challenge**
 
-- KG embeddings enter message passing directly
-- prior methods assume KG is always useful
+- KG is mixed directly into user/item representations
+- KG becomes part of representation learning, not just extra evidence
+- this assumes KG is useful whenever it is used
 - sparse KG breaks that assumption
-
-**2. Safe default**
-
-- LightGCN only uses user-item interactions
-- no KG contamination
-
-**3. Our response**
-
-- route KG through a dedicated side channel
-- let the model attenuate or disengage KG when unreliable
+- key question: avoid unreliable KG affecting final scores
 
 ---
 
@@ -115,7 +107,7 @@ What design principle lets a model use KG when helpful and avoid contamination w
 
 **RA-GARK answer**
 
-KG should be a gateable side channel.
+KG should not be a mandatory scoring component.
 
 ---
 
@@ -127,8 +119,8 @@ KG should be a gateable side channel.
 
 **Challenge**
 
-- strong non-KG anchor
-- but no semantic KG signal
+- uses only user-item interaction
+- cannot use item semantic information from KG
 
 **2. Direct KG Fusion**
 
@@ -137,9 +129,9 @@ KG should be a gateable side channel.
 
 **Challenge**
 
-- KG is fused directly into propagation or edge selection
+- KG is used in user/item representation learning and score computation
 - assumes the KG is useful enough to trust
-- sparse KG can contaminate the CF path
+- sparse KG can contaminate recommendation scores
 
 ---
 
@@ -152,9 +144,8 @@ KG should be a gateable side channel.
 
 **Challenge**
 
-- relies on informative KG structure for alignment
-- weak KG makes contrastive supervision fragile
-- alignment can become noise-dominated
+- relies on informative KG structure
+- weak KG makes contrastive learning unstable
 
 **2. Gating for Fusion**
 
@@ -164,13 +155,32 @@ KG should be a gateable side channel.
 
 **Challenge**
 
-- gates are used for mixing paths or experts
 - not designed for unreliable KG
 - no explicit safe initialization for a KG side channel
 
 ---
 
-## Slide 9 — Overview
+## Slide 9 — Design Principle
+
+**1. Failure mode**
+
+- KG embeddings enter message passing directly
+- prior methods assume KG is always useful
+- sparse KG breaks that assumption
+
+**2. Safe default**
+
+- LightGCN only uses user-item interactions
+- no KG contamination
+
+**3. Our response**
+
+- route KG through a dedicated side channel
+- attenuate or disengage KG when unreliable
+
+---
+
+## Slide 10 — Overview
 
 **圖片**
 
@@ -185,7 +195,7 @@ KG should be a gateable side channel.
 
 ---
 
-## Slide 10 — Problem Setup I
+## Slide 11 — Problem Setup I
 
 **Task**
 
@@ -195,6 +205,9 @@ KG should be a gateable side channel.
 
 **Score**
 
+- `u`: user, `i`: item
+- `u_final`: final user vector
+- `i_final`: final item vector
 - `y_hat(u, i) = <u_final, i_final>`
 
 **Readout**
@@ -203,7 +216,7 @@ KG should be a gateable side channel.
 
 ---
 
-## Slide 11 — Problem Setup II
+## Slide 12 — Problem Setup II
 
 **Fusion**
 
@@ -221,7 +234,7 @@ KG should be a gateable side channel.
 
 ---
 
-## Slide 12 — Local View
+## Slide 13 — Local View
 
 **Pure LightGCN**
 
@@ -236,7 +249,7 @@ KG should be a gateable side channel.
 
 ---
 
-## Slide 13 — Local Propagation
+## Slide 14 — Local Propagation
 
 **Graph**
 
@@ -257,13 +270,14 @@ E^(l+1) = A_norm E^(l), l = 0, 1, ..., K-1
 
 ---
 
-## Slide 14 — Global View
+## Slide 15 — Global View
 
 **Why latent aspect slots**
 
-- each item is compressed into four fixed semantic slots
-- the slots keep the KG signal compact and readable
-- sparse KG makes direct propagation fragile
+- do not propagate the entire KG directly
+- organize each item into four fixed semantic slots
+- keep KG semantics while avoiding passive intake of the full sparse KG
+- later select useful aspects from these slots
 
 **Representation**
 
@@ -271,7 +285,7 @@ E^(l+1) = A_norm E^(l), l = 0, 1, ..., K-1
 
 ---
 
-## Slide 15 — KG-SVD Motivation
+## Slide 16 — KG-SVD Motivation
 
 **Why KG-SVD**
 
@@ -286,7 +300,7 @@ E^(l+1) = A_norm E^(l), l = 0, 1, ..., K-1
 
 ---
 
-## Slide 16 — KG-SVD: Construction
+## Slide 17 — KG-SVD: Construction
 
 1. **Build item-aspect matrix**
 
@@ -311,7 +325,7 @@ idf(a) = log(|I| / (|{i : M[i, a] = 1}| + 1)) + 1
 
 ---
 
-## Slide 17 — KG-SVD: SVD and Reshape
+## Slide 18 — KG-SVD: SVD and Reshape
 
 3. **Truncated SVD**
 
@@ -332,20 +346,7 @@ E_KG -> A_KG^(0) in R^(|I| x A x d)
 
 ---
 
-## Slide 18 — KG-SVD: Initialization Effect
-
-**What it gives**
-
-- give KG a good starting structure
-- preserve the aspect co-occurrence structure before training
-
-**Why it matters**
-
-- act as a one-time initialization, not a learned-from-scratch module
-
----
-
-## Slide 19 — Softmax Masking Motivation
+## Slide 20 — Softmax Masking Motivation
 
 **Goal**
 
@@ -358,7 +359,7 @@ choose the slot for each user-item pair
 
 ---
 
-## Slide 20 — Softmax Masking Computation
+## Slide 21 — Softmax Masking Computation
 
 **Computation**
 
@@ -374,7 +375,7 @@ i_{\mathrm{glo}} = \sum_{k=1}^{A} w_{u, i, k} \cdot \mathbf{a}_{i, k}
 
 ---
 
-## Slide 21 — Softmax Normalization
+## Slide 22 — Softmax Normalization
 
 **Normalization**
 
@@ -391,7 +392,7 @@ i_{\mathrm{glo}} = \sum_{k=1}^{A} w_{u, i, k} \cdot \mathbf{a}_{i, k}
 
 ---
 
-## Slide 22 — Fusion Gate Overview
+## Slide 23 — Fusion Gate Overview
 
 **Image**
 
@@ -405,7 +406,7 @@ i_{\mathrm{glo}} = \sum_{k=1}^{A} w_{u, i, k} \cdot \mathbf{a}_{i, k}
 
 ---
 
-## Slide 23 — Fusion Gate Structure
+## Slide 24 — Fusion Gate Structure
 
 **圖片**
 
@@ -430,7 +431,7 @@ u_final = alpha_u * u_loc + (1 - alpha_u) * u_glo
 
 ---
 
-## Slide 24 — Gate Bias and Graceful Degradation
+## Slide 25 — Gate Bias and Graceful Degradation
 
 **Bias initialization**
 
@@ -451,7 +452,7 @@ alpha_0 = sigmoid(+5) ~= 0.993
 
 ---
 
-## Slide 25 — Training Objective
+## Slide 26 — Training Objective
 
 **BPR**
 
@@ -467,7 +468,7 @@ L_BPR = -log sigma(y(u, i+) - y(u, i-))
 
 ---
 
-## Slide 26 — Total Objective
+## Slide 27 — Total Objective
 
 **Total objective**
 
@@ -487,7 +488,7 @@ L = L_BPR + lambda_CL * (L_aCL + L_uCL)
 
 ---
 
-## Slide 27 — Dataset
+## Slide 28 — Dataset
 
 **Amazon Books review subset**
 
@@ -502,7 +503,7 @@ L = L_BPR + lambda_CL * (L_aCL + L_uCL)
 
 ---
 
-## Slide 28 — Experimental Setup
+## Slide 29 — Experimental Setup
 
 **Training Setup**
 
@@ -516,7 +517,7 @@ L = L_BPR + lambda_CL * (L_aCL + L_uCL)
 | Optimizer | Adam |
 ---
 
-## Slide 29 — Main Results I
+## Slide 30 — Main Results I
 
 **Top-20**
 
@@ -529,7 +530,7 @@ L = L_BPR + lambda_CL * (L_aCL + L_uCL)
 | LightGCN | 0.1179 | 0.4917 | 0.1937 | 0.0555 |
 | **RA-GARK** | **0.1243** | **0.4972** | **0.2020** | **0.0594** |
 
-## Slide 30 — Main Results II
+## Slide 31 — Main Results II
 
 **Top-10**
 
@@ -542,7 +543,7 @@ L = L_BPR + lambda_CL * (L_aCL + L_uCL)
 | LightGCN | 0.0908 | 0.3436 | 0.1201 | 0.0483 |
 | **RA-GARK** | **0.0966** | **0.3558** | **0.1265** | **0.0520** |
 
-## Slide 31 — Ablation Results I
+## Slide 32 — Ablation Results I
 
 | Model | NDCG@20 | MAP@20 |
 |---|---|---|
@@ -552,7 +553,7 @@ L = L_BPR + lambda_CL * (L_aCL + L_uCL)
 | w/o fusion-gate bias | 0.1194 | 0.0555 |
 | w/o MLP gate | 0.1180 | 0.0552 |
 
-## Slide 32 — Ablation Results II
+## Slide 33 — Ablation Results II
 
 | Model | NDCG@20 | MAP@20 |
 |---|---|---|
@@ -561,7 +562,7 @@ L = L_BPR + lambda_CL * (L_aCL + L_uCL)
 | w/o rationale-enabled selection | 0.1213 | 0.0568 |
 | w/o global view | 0.1219 | 0.0575 |
 
-## Slide 33 — Case Study
+## Slide 34 — Case Study
 
 **圖片**
 
@@ -569,7 +570,7 @@ L = L_BPR + lambda_CL * (L_aCL + L_uCL)
 
 ---
 
-## Slide 34 — Conclusion & Future Work
+## Slide 35 — Conclusion & Future Work
 
 **Conclusion**
 
@@ -588,6 +589,6 @@ Future work will test on denser KG benchmarks and study when user-level rational
 
 ---
 
-## Slide 35 — Thank You
+## Slide 36 — Thank You
 
 **Thank you for listening**
