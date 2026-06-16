@@ -61,33 +61,19 @@ Writing rule:
 
 ## Slide 7 — Related Work I
 
-先講 collaborative filtering 這條線。
+先把兩條最接近的方法放在一起看。
 
-LightGCN 是我們 local view 的直接前身，也是這裡最重要的 reference。它的優點是乾淨、穩定，能把 non-KG 的協同訊號守住；但它的限制也很清楚，就是完全不看 KG。
-
-所以我們的做法是把 LightGCN 直接當 local view，保留這條安全路徑。
+左邊這組是 collaborative filtering 和 direct KG fusion。LightGCN 是我們 local view 的直接前身，也是最重要的 non-KG reference；它的優點是乾淨、穩定，但完全不看 KG。KGAT 和 KGRec 則是把 KG 直接帶進 propagation 或 edge selection，前提是 KG 本身值得信任。
 
 ## Slide 8 — Related Work II
 
-這一頁是 direct KG fusion。
+右邊這組是 contrastive KG learning 和 gating。
 
-KGAT 和 KGRec 都是很重要的 reference。它們的共同點是會把 KG 直接帶進 propagation 或 edge selection 裡；問題是，這等於先假設 KG 本身值得信任。當 KG 很稀疏時，這條路就容易把雜訊一起帶進來。
+KGCL、MCCLK 依賴 KG 結構本身夠有資訊，對比學習才會穩；Highway Networks、MMoE、PLE 則證明 gate 可以控制資訊流，但它們不是為 unreliable KG 設計，也沒有安全初始化。
 
-## Slide 9 — Related Work III
+所以我們的做法是把 KG 改成可閘控的 side channel，而不是必經路徑。
 
-接下來是 contrastive KG learning。
-
-KGCL 和 MCCLK 都屬於這一類，重點是用對比學習去對齊不同 view。這在 KG 夠強的時候很有效，但它還是依賴 KG 結構本身有足夠資訊；如果 KG 太弱，對比訊號也會跟著變得不穩。
-
-## Slide 10 — Related Work IV
-
-最後是 gating 這條線。
-
-Highway Networks、MMoE 和 PLE 都是重要 reference。它們證明 gate 可以用來控制資訊流，但它們主要是在混同質的 path 或 expert，不是專門為 unreliable KG 設計，也沒有像我們一樣做安全初始化。
-
-所以我們把這個想法改成：KG 不是必經路徑，而是一個可以被 gate 掉的 side channel。
-
-## Slide 11 — Design Principle
+## Slide 9 — Design Principle
 
 這裡把我們的方法原則講成一句話。
 
@@ -95,7 +81,7 @@ KG 應該是可閘控的側通道，而不是必經 scoring component。
 
 這個原則帶來三個後果。第一，我們要把 local view 和 global view 分開，避免 KG 污染 CF。第二，融合要晚，等兩邊的表示都先學好再決定要不要混。第三，gate 的初始化要偏向 LightGCN，讓模型一開始就站在安全的一邊。
 
-## Slide 12 — Overview
+## Slide 10 — Overview
 
 這一頁先看架構圖。
 
@@ -103,7 +89,7 @@ KG 應該是可閘控的側通道，而不是必經 scoring component。
 
 這張圖的重點是：local 和 global 先各自建模，最後再由 gate 決定 KG 佔多少比例。
 
-## Slide 13 — Problem Setup I
+## Slide 11 — Problem Setup I
 
 這一頁先講任務和分數。
 
@@ -111,7 +97,7 @@ KG 應該是可閘控的側通道，而不是必經 scoring component。
 
 最終分數是 y_hat(u, i)，也就是 u_final 跟 i_final 的內積。y_hat(u, i) 表示模型對 user u 和 item i 的預測分數，分數越高代表越推薦。這裡先把分數定義清楚，u_final 和 i_final 的構成放到下一頁。
 
-## Slide 14 — Problem Setup II
+## Slide 12 — Problem Setup II
 
 這一頁補 fusion 和 gate 的角色。
 
@@ -119,7 +105,7 @@ u final 和 i final 都是 local 表示和 global 表示的加權和，權重分
 
 這裡用兩個 gate，是因為 user-side 和 item-side 的 KG usefulness 不完全一樣，所以不適合共用同一組參數。
 
-## Slide 15 — Local View
+## Slide 13 — Local View
 
 local view 我們直接用純 LightGCN，先保住一條乾淨的 collaborative filtering 路徑。
 
@@ -127,7 +113,7 @@ local view 我們直接用純 LightGCN，先保住一條乾淨的 collaborative 
 
 這一支只走 user-item graph，不會碰 KG edges，也不加額外的 nonlinear transformation。
 
-## Slide 16 — Local Propagation
+## Slide 14 — Local Propagation
 
 local propagation 的部分就是標準 LightGCN。
 
@@ -135,7 +121,7 @@ local propagation 的部分就是標準 LightGCN。
 
 接著把第 0 層到第 K 層做層平均，得到 bar E。這個 bar E 就是整體的 local 表示，我們再從裡面讀出 u_loc 和 i_loc；這裡 K 設成 2。
 
-## Slide 17 — Global View
+## Slide 15 — Global View
 
 global view 的重點是 latent aspect slots。先把每個 item 壓成四個固定的 semantic slots，這樣就能保留 KG 的語意，但不會直接把整張 KG 拿去傳播。
 
@@ -143,7 +129,7 @@ KG 很稀疏，所以如果直接傳播，訊號很容易被缺失邊或噪音�
 
 這裡的表示寫成 a_i，大小是 A x d，也就是四個 slot、每個 slot 維度是 d；R 就是實數空間。
 
-## Slide 18 — KG-SVD Motivation
+## Slide 16 — KG-SVD Motivation
 
 前一頁我們說過，global view 先把每個 item 壓成四個固定的 semantic slots。
 
@@ -151,7 +137,7 @@ KG-SVD 是我們用來初始化 item aspect slots 的方法。
 
 它的目的，是先把每個 item 的 aspect 相關資訊做一個比較穩的初始化。
 
-## Slide 19 — KG-SVD: Construction
+## Slide 17 — KG-SVD: Construction
 
 這一步是在建 item-aspect matrix，也就是整理 item 和 aspect 一起出現的關係。矩陣裡的 `M_i,a` 表示 item i 和 aspect a 的關係，item i 如果有 aspect a，就把對應位置設成 1。
 
@@ -161,7 +147,7 @@ KG-SVD 是我們用來初始化 item aspect slots 的方法。
 
 所以重點是把 item 和 aspect 一起出現的關係整理成矩陣，再把太常見的 aspect 壓低。
 
-## Slide 20 — KG-SVD: SVD and Reshape
+## Slide 18 — KG-SVD: SVD and Reshape
 
 前一頁我們先把 item 和 aspect 的共現關係整理成加權矩陣，這一頁就接著看右半邊，從這個矩陣開始做分解。
 
@@ -169,24 +155,24 @@ KG-SVD 是我們用來初始化 item aspect slots 的方法。
 
 接著把 `E_KG` reshape 成 `A_KG_0`，也就是把每個 item 表成 A 個 aspect slot，維度是 d。這裡的 zero 表示初始化後的第一版；整個 `A_KG_0` 可以想成一個三維張量，也就是 item 數乘 A 乘 d 的大小，裡面的值都來自實數空間。reshape 就是把這些數值排回 A 個 slot。接著會用這個初始化結果交給 graph recommender，也就是 GNN-based recommender 往下做。整體來說，這一步先把加權後的矩陣壓成幾個比較重要的方向，再把分解出來的 item 表示整理成四個 slot。
 
-## Slide 21 — KG-SVD: Initialization Effect
+## Slide 19 — KG-SVD: Initialization Effect
 
 這一頁是在總結 KG-SVD 的初始化效果。它先給 global view 一個比較好的起點，讓 item 的 KG 表示一開始就帶有合理的語意結構，而不是從隨機初始化開始亂長。
 
 更重要的是，這個初始化保留了 item 和 aspect 的共現結構，所以在 training 之前，model 就已經有一個比較穩的表示結構。這不是一個要從零學出的模組，而是先把 slot 放到合理的位置，之後再跟著訓練微調。這也是為什麼在 sparse KG 的情況下，KG-SVD 會明顯幫助後面的 global view。
-## Slide 22 — Softmax Masking Motivation
+## Slide 20 — Softmax Masking Motivation
 
 前一頁先把 item 初始化成 aspect slots，這一頁接著看怎麼根據 user 來挑哪個 slot 比較重要。
 
 重點是：同一個 item 對不同 user 可能有不同的推薦理由，所以 slot 的選擇必須跟 user 綁在一起，而不是固定用同一個 slot。
 
-## Slide 23 — Softmax Masking Computation
+## Slide 21 — Softmax Masking Computation
 
 這一頁就是具體計算。
 
 先看公式。`\ell_{u,i,k}` 是第 k 個 slot 的分數，來自把 `u_global` 和 `a_i,k` 串接後丟進 MLP。MLP 是一個小型前饋網路。接著把 `\ell_{u,i,k}` 除以 `tau` 再做 softmax，就得到 `w_{u,i,k}` 這個權重；`tau` 是 softmax temperature，控制分佈有多尖銳。最後，`i_global` 就是把四個 slot 依照這些權重加權求和。這樣就完成從 slot 打分到 global 向量的組合。
 
-## Slide 24 — Softmax Normalization
+## Slide 22 — Softmax Normalization
 
 上一頁已經算出每個 slot 的權重，這一頁把 normalization choice 一起講完。
 
@@ -194,11 +180,11 @@ KG-SVD 是我們用來初始化 item aspect slots 的方法。
 
 在 RA-GARK 裡，我們選 softmax，因為它不只是在選哪個 slot 比較重要，還會把整個 `i_global` 的大小控制在比較穩定的範圍內。這很重要，因為後面的 gate 會拿這個 global 向量去跟 local 向量做融合；如果 global 向量的 magnitude 不穩，gate 的輸入尺度就會飄。softmax 先把這個 KG side channel 的輸出幅度壓住，後面的融合才比較好校準。
 
-## Slide 25 — Fusion Gate Overview
+## Slide 23 — Fusion Gate Overview
 
 這一頁先把畫面聚焦到最後的融合位置。local view 和 global view 前面都各自獨立建模，接下來從圖的左邊 gate 一路看到右邊的 fusion。
 
-## Slide 26 — Fusion Gate Structure
+## Slide 24 — Fusion Gate Structure
 
 這裡先以 user-side 為例，圖從左往右看，先把 `u_loc` 和 `u_glo` 串起來，得到 gate 的輸入。
 
@@ -208,7 +194,7 @@ KG-SVD 是我們用來初始化 item aspect slots 的方法。
 
 最後看右邊的 fusion。`alpha_u` 會一部分乘上 `u_loc`，另一部分乘上 `u_glo`，加總成 `u_final`。整個 gate 的作用，就是先偏向 local，之後再根據訓練慢慢決定要不要放更多 KG 進來。
 
-## Slide 27 — Gate Bias and Graceful Degradation
+## Slide 25 — Gate Bias and Graceful Degradation
 
 前一頁我們已經看到 `alpha_u` 是 gate 的輸出，這一頁接著看它的初始化設定。
 
@@ -216,49 +202,49 @@ KG-SVD 是我們用來初始化 item aspect slots 的方法。
 
 這樣做的目的是讓系統先站在安全預設上。如果 KG 不可靠，gate 就維持偏關閉；如果 KG 有幫助，訓練才慢慢把它打開。
 
-## Slide 28 — Training Objective
+## Slide 26 — Training Objective
 
 前一頁 gate 初始化完之後，這一頁回到訓練目標。
 
 模型最後的 score 是 user 和 item 的 final representation 做內積。BPR 是用正負樣本做排序學習的 loss；`i+` 是使用者真的互動過的 item，`i-` 是抽樣出來、使用者沒互動過的 item。對每個已觀察互動，我們會再抽一個沒互動過的 item，讓模型把正樣本排在負樣本前面。BPR 負責把排序學好，gate 則是先把 local 和 global 的融合控制住。接下來看總 loss，除了 BPR，還會再加上一個很小的對比正則。
 
-## Slide 29 — Total Objective
+## Slide 27 — Total Objective
 
 這一頁就是總損失。除了 BPR，我們還加上一個很小的對比正則，讓同一個 user 或 item 在 local view 和 global view 的表示在向量空間裡拉近，但不取代 BPR。`lambda_CL` 控制這個輔助項的強度；這裡不用特別把其他超參數唸出來。
 
 這兩個對比項分別是物品面向和使用者跨視角的對齊，作用都是把兩個 view 的表示距離縮小一點，不是主融合機制。
 
-## Slide 30 — Dataset
+## Slide 28 — Dataset
 
 這一頁先看資料集。它來自 Amazon Books 的評論子集，重點是平均每個 item 只有 2.4 條 KG 邊，是一個很稀疏的 KG；另外還有 905 個 user、1,399 個 item、22,265 筆互動、3,370 條 KG 邊，以及 2,098 個 aspect。
 
-## Slide 31 — Experimental Setup
+## Slide 29 — Experimental Setup
 
 這頁簡單看一下訓練設定。
 
-## Slide 32 — Main Results I
+## Slide 30 — Main Results I
 
 先看評估方式。我們採 full-ranking，也就是對每個 user 把候選 item 重新完整排序，並排除訓練集裡已經互動過的 item，最後看 HR、Precision、Recall、F1、MAP 和 NDCG，這些都取 @20。接著看 Top-20。這張表先列幾個 baseline，包含 MCCLK、KGCL、KGAT、KGRec 和純 LightGCN，最後是 RA-GARK。ranking metrics 是 NDCG@20、HR@20、Recall@20 和 MAP@20；RA-GARK 在這四個指標都最好，表示在這個 sparse KG 設定下，這個架構真的把 KG 的訊號轉成了正向貢獻。
 
-## Slide 33 — Main Results II
+## Slide 31 — Main Results II
 
 再看 Top-10。這一頁的排序和 Top-20 一樣，RA-GARK 仍然維持最好的 NDCG@10、HR@10、Recall@10 和 MAP@10，表示結果不是只在較長候選列表下才成立。
 
-## Slide 34 — Ablation Results I
+## Slide 32 — Ablation Results I
 
 先看 ablation 的前半段。這一頁可以直接對照前面的主結果：softmax head 掉最多，接著是 KG-SVD init、fusion-gate bias 和 MLP gate，代表這幾個設計是主要來源。
 
-## Slide 35 — Ablation Results II
+## Slide 33 — Ablation Results II
 
 再看 ablation 的後半段。user CL、aspect CL、rationale-enabled selection 和 global view 的影響都比較小，但還是能看到穩定的下降，表示這些輔助設計也有幫助。
 
-## Slide 36 — Case Study
+## Slide 34 — Case Study
 
 這張圖每個小圖是一個 item，橫軸是 4 個 aspect slot，縱軸是不同 user。顏色越深代表權重越高；你可以看到同一個 item 會有一個比較明顯的主 slot，但不同 user 對同一個 item 的分布又很接近，表示它主要是在做 item-level 的 slot 選擇。
 
 所以這個 case study 的重點是：不同 item 會偏向不同的 slot，而同一個 item 在不同 user 之間的差異不大。
 
-## Slide 37 — Conclusion & Future Work
+## Slide 35 — Conclusion & Future Work
 
 最後總結一下。
 
@@ -266,6 +252,6 @@ KG-SVD 是我們用來初始化 item aspect slots 的方法。
 
 Future work will test on denser KG benchmarks and study when user-level rationale differences emerge.
 
-## Slide 38 — Thank You
+## Slide 36 — Thank You
 
 Thank you for listening.
