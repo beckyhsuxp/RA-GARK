@@ -252,23 +252,27 @@ KG-SVD 是我們用來初始化 item aspect slots 的方法。
 
 再看 Top-10。這一頁的排序和 Top-20 一樣，RA-GARK 仍然維持最好的 NDCG@10、HR@10、Recall@10 和 MAP@10，表示結果不是只在較長候選列表下才成立。
 
-## Slide 34 — Ablation Results
+## Slide 34 — Ablation Results I
 
-再看 ablation 的 Top-20。這張表可以直接對照前面的主結果，從上到下看就好：softmax head 掉最多，接著是 KG-SVD init、fusion-gate bias 和 MLP gate；後面的 user CL、aspect CL、rationale-enabled selection 和 global view 也都有穩定但較小的影響。
+先看 ablation 的前半段。這一頁可以直接對照前面的主結果：softmax head 掉最多，接著是 KG-SVD init、fusion-gate bias 和 MLP gate，代表這幾個設計是主要來源。
 
-## Slide 35 — Case Study
+## Slide 35 — Ablation Results II
+
+再看 ablation 的後半段。user CL、aspect CL、rationale-enabled selection 和 global view 的影響都比較小，但還是能看到穩定的下降，表示這些輔助設計也有幫助。
+
+## Slide 36 — Case Study
 
 這張圖每個小圖是一個 item，橫軸是 4 個 aspect slot，縱軸是不同 user。顏色越深代表權重越高；你可以看到同一個 item 會有一個比較明顯的主 slot，但不同 user 對同一個 item 的分布又很接近，表示它主要是在做 item-level 的 slot 選擇。
 
 所以這個 case study 的重點是：不同 item 會偏向不同的 slot，而同一個 item 在不同 user 之間的差異不大。
 
-## Slide 36 — Conclusion
+## Slide 37 — Conclusion
 
 最後總結一下。
 
 當 KG 不可靠時，架構最需要的不是更強的 KG aggregator，而是一個能把 KG opt out 的 structural switch。這篇工作的主要貢獻有四個：gateable KG side channel、KG-SVD initialization、softmax rationale masking、local-biased fusion gate。
 
-## Slide 37 — Future Work
+## Slide 38 — Future Work
 
 未來可以再看更稠密的 KG 資料集，或者觀察什麼情況下 user-level 的 rationale 差異會真的出現。
 
