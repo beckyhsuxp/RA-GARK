@@ -45,7 +45,9 @@ Writing rule:
 
 這裡我先把現有 KG-aware 方法面臨的設計挑戰講清楚。
 
-大多數 KG-aware recommenders 的共同點是：KG entity embeddings 會直接進入訊息傳遞，user 和 item 的表示是在一條包含 KG 的路徑上學出來的。這背後的隱含假設是，KG 可以在它出現的地方都注入有用訊號；但在 sparse KG 下，這個假設會失效。
+大多數 KG-aware recommenders 會把 KG 直接混進 user 和 item 的表示裡。換句話說，模型在學推薦分數的時候，KG 不是額外參考，而是表示學習的一部分。
+
+這樣做其實假設了一件事：只要 KG 被放進模型，它多半就是有幫助的。但在 sparse KG 下，這個假設很容易失效。
 
 這也是為什麼在我們的設定裡，LightGCN 反而會贏。因為 LightGCN 只看 user-item interaction，不會碰到那條不可靠的 KG branch，所以它保留了一個乾淨又安全的 baseline。
 
@@ -57,7 +59,7 @@ Writing rule:
 
 第一個是 diagnosis，也就是為什麼 KG-aware 模型會在 sparse KG 下輸給純 LightGCN。第二個是 prescription，也就是什麼樣的設計原則，才能讓模型在 KG 有用時利用它，在 KG 不可靠時避免污染協同過濾。
 
-這篇工作我們把它命名為 RA-GARK，重點就是用 rationale-aware gating 來處理 sparse review-aspect KG。
+這篇工作我們把它命名為 RA-GARK。
 
 對應這兩個問題，我們的答案是：KG 不應該是 scoring pipeline 裡的必經成分，而應該是一條可以被 gate 控制的側通道。這個想法後面會具體落地在三個設計上，分別是 KG-SVD 初始化、softmax rationale masking 和 local-biased fusion gate。
 
