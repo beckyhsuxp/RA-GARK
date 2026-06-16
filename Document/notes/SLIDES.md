@@ -519,7 +519,7 @@ L = L_BPR + lambda_CL * (L_aCL + L_uCL)
 
 ---
 
-## Slide 30 — Setup
+## Slide 30 — Experimental Setup
 
 **Setup**
 
