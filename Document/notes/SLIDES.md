@@ -574,7 +574,7 @@ L = L_BPR + lambda_CL * (L_aCL + L_uCL)
 | LightGCN | 0.0908 | 0.3436 | 0.1201 | 0.0483 |
 | **RA-GARK** | **0.0966** | **0.3558** | **0.1265** | **0.0520** |
 
-## Slide 34 — Ablation Summary I
+## Slide 34 — Ablation Summary
 
 | Model | NDCG@20 | MAP@20 |
 |---|---|---|
@@ -583,18 +583,12 @@ L = L_BPR + lambda_CL * (L_aCL + L_uCL)
 | w/o KG-SVD init | 0.1171 | 0.0545 |
 | w/o fusion-gate bias | 0.1194 | 0.0555 |
 | w/o MLP gate | 0.1180 | 0.0552 |
+| w/o user CL | 0.1192 | 0.0563 |
+| w/o aspect CL | 0.1200 | 0.0570 |
+| w/o rationale-enabled selection | 0.1213 | 0.0568 |
+| w/o global view | 0.1219 | 0.0575 |
 
-## Slide 35 — Ablation Summary II
-
-| Model | NDCG@10 | MAP@10 |
-|---|---|---|
-| RA-GARK (full) | 0.0960 | 0.0519 |
-| w/o softmax head | 0.0785 | 0.0397 |
-| w/o KG-SVD init | 0.0922 | 0.0479 |
-| w/o fusion-gate bias | 0.0923 | 0.0482 |
-| w/o MLP gate | 0.0926 | 0.0484 |
-
-## Slide 36 — Case Study and Takeaways
+## Slide 35 — Case Study and Takeaways
 
 **圖片**
 
@@ -608,7 +602,7 @@ L = L_BPR + lambda_CL * (L_aCL + L_uCL)
 
 ---
 
-## Slide 37 — Conclusion
+## Slide 36 — Conclusion
 
 **Conclusion**
 
