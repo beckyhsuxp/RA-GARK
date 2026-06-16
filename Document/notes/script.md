@@ -256,11 +256,9 @@ KG-SVD 是我們用來初始化 item aspect slots 的方法。
 
 再看 ablation 的 Top-20。這張表可以直接對照前面的主結果，從上到下看就好：softmax head 掉最多，接著是 KG-SVD init、fusion-gate bias 和 MLP gate；後面的 user CL、aspect CL、rationale-enabled selection 和 global view 也都有穩定但較小的影響。
 
-## Slide 35 — Case Study and Takeaways
+## Slide 35 — Case Study
 
-這張 heatmap 是 case study。
-
-你可以看到不同 item 會對不同 aspect slot 給出不同的權重，表示 rationale masking 不是固定平均，而是真的有在對不同 item 使用不同的語意路徑。
+這張 heatmap 在看的是：同一個 item 會不會對不同 aspect slot 給出不同權重。你可以看到有些 item 會明顯偏向某一個 slot，表示 rationale masking 不是固定平均，而是在替不同 item 選不同的語意路徑。
 
 ## Slide 36 — Conclusion
 
