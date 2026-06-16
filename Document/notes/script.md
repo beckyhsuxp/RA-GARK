@@ -67,7 +67,7 @@ Writing rule:
 
 接下來看 related work。
 
-首先是 collaborative filtering。簡單說，LightGCN 只用 user-item interaction 做推薦，所以可以作為一個乾淨又安全的 baseline。它的限制是完全不看 KG，因此沒辦法利用 item 的語意資訊。
+首先是 collaborative filtering。簡單說，LightGCN 只用 user-item interaction 做推薦。它的限制是完全不看 KG，因此沒辦法利用 item 的語意資訊。
 
 接著是 direct KG fusion。KGAT 和 KGRec 代表這一類方法，會把 KG 用在 user 和 item 的表示學習，以及最後的推薦分數計算裡；它們的前提是 KG 本身值得信任。
 
