@@ -535,7 +535,7 @@ L = L_BPR + lambda_CL * (L_aCL + L_uCL)
 
 **Optimization**
 
-| Setting | Value |
+| Hyperparameter | Value |
 |---|---|
 | Optimizer | Adam |
 | Learning rate | 1e-3 |
