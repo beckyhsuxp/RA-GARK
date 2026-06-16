@@ -523,14 +523,14 @@ L = L_BPR + lambda_CL * (L_aCL + L_uCL)
 
 **Setup**
 
-```text
-Dataset        905 users / 1,399 items / 22,265 interactions
-KG             3,370 KG edges / 2,098 aspects
-Optimizer      Adam
-Learning rate  1e-3
-Batch size     128
-Training       up to 80 epochs with early stopping
-```
+| Item | Value |
+|---|---|
+| Dataset | 905 users / 1,399 items / 22,265 interactions |
+| KG | 3,370 KG edges / 2,098 aspects |
+| Optimizer | Adam |
+| Learning rate | 1e-3 |
+| Batch size | 128 |
+| Training | up to 80 epochs with early stopping |
 
 **Why it matters**
 

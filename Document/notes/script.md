@@ -238,7 +238,7 @@ KG-SVD 是我們用來初始化 item aspect slots 的方法。
 
 ## Slide 30 — Dataset and Optimization
 
-這一頁看這張簡化表就好。資料集有 905 個 user、1,399 個 item、22,265 筆互動、3,370 條 KG 邊，以及 2,098 個 aspect。訓練設定是 Adam，learning rate 0.001，batch size 128，最多 80 個 epoch，並且用 validation NDCG@20 做 early stopping。
+這一頁看這張表就好。資料集有 905 個 user、1,399 個 item、22,265 筆互動、3,370 條 KG 邊，以及 2,098 個 aspect。訓練設定是 Adam，learning rate 0.001，batch size 128，最多 80 個 epoch，並且用 validation NDCG@20 做 early stopping。
 
 ## Slide 31 — Inference and Complexity
 
