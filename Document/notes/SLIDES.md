@@ -617,4 +617,4 @@ When the KG is unreliable, what the architecture needs is not a better KG aggreg
 
 ## Slide 38 — Thank You
 
-**Thank you**
+**Thank you for listening**

@@ -274,4 +274,4 @@ KG-SVD 是我們用來初始化 item aspect slots 的方法。
 
 ## Slide 38 — Thank You
 
-以上，謝謝大家。
+Thank you for listening.
