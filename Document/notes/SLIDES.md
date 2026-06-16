@@ -7,7 +7,7 @@
 
 | 圖檔 | 頁面 |
 |---|---|
-| `thesis/img/architecture.png` | Slide 10 / 23 |
+| `thesis/img/architecture.png` | Slide 9 / 22 |
 | `thesis/img/kg_svd.png` | Slide 17 |
 | `thesis/img/gate.png` | Slide 24 |
 | `thesis/img/case_study_heatmap.png` | Slide 34 |
@@ -170,21 +170,7 @@ KG should be a gateable side channel.
 
 ---
 
-## Slide 9 — Design Principle
-
-**RA-GARK principle**
-
-KG should be a gateable side channel, not a mandatory scoring component.
-
-**Three consequences**
-
-- separate local and global views
-- fuse late
-- bias the gate toward LightGCN at initialization
-
----
-
-## Slide 10 — Overview
+## Slide 9 — Overview
 
 **圖片**
 
@@ -199,7 +185,7 @@ KG should be a gateable side channel, not a mandatory scoring component.
 
 ---
 
-## Slide 11 — Problem Setup I
+## Slide 10 — Problem Setup I
 
 **Task**
 
@@ -217,7 +203,7 @@ KG should be a gateable side channel, not a mandatory scoring component.
 
 ---
 
-## Slide 12 — Problem Setup II
+## Slide 11 — Problem Setup II
 
 **Fusion**
 
@@ -235,7 +221,7 @@ KG should be a gateable side channel, not a mandatory scoring component.
 
 ---
 
-## Slide 13 — Local View
+## Slide 12 — Local View
 
 **Pure LightGCN**
 
@@ -250,7 +236,7 @@ KG should be a gateable side channel, not a mandatory scoring component.
 
 ---
 
-## Slide 14 — Local Propagation
+## Slide 13 — Local Propagation
 
 **Graph**
 
@@ -271,7 +257,7 @@ E^(l+1) = A_norm E^(l), l = 0, 1, ..., K-1
 
 ---
 
-## Slide 15 — Global View
+## Slide 14 — Global View
 
 **Why latent aspect slots**
 
@@ -285,7 +271,7 @@ E^(l+1) = A_norm E^(l), l = 0, 1, ..., K-1
 
 ---
 
-## Slide 16 — KG-SVD Motivation
+## Slide 15 — KG-SVD Motivation
 
 **Why KG-SVD**
 
@@ -300,7 +286,7 @@ E^(l+1) = A_norm E^(l), l = 0, 1, ..., K-1
 
 ---
 
-## Slide 17 — KG-SVD: Construction
+## Slide 16 — KG-SVD: Construction
 
 1. **Build item-aspect matrix**
 
@@ -325,7 +311,7 @@ idf(a) = log(|I| / (|{i : M[i, a] = 1}| + 1)) + 1
 
 ---
 
-## Slide 18 — KG-SVD: SVD and Reshape
+## Slide 17 — KG-SVD: SVD and Reshape
 
 3. **Truncated SVD**
 
@@ -346,7 +332,7 @@ E_KG -> A_KG^(0) in R^(|I| x A x d)
 
 ---
 
-## Slide 19 — KG-SVD: Initialization Effect
+## Slide 18 — KG-SVD: Initialization Effect
 
 **What it gives**
 
@@ -359,7 +345,7 @@ E_KG -> A_KG^(0) in R^(|I| x A x d)
 
 ---
 
-## Slide 20 — Softmax Masking Motivation
+## Slide 19 — Softmax Masking Motivation
 
 **Goal**
 
@@ -372,7 +358,7 @@ choose the slot for each user-item pair
 
 ---
 
-## Slide 21 — Softmax Masking Computation
+## Slide 20 — Softmax Masking Computation
 
 **Computation**
 
@@ -388,7 +374,7 @@ i_{\mathrm{glo}} = \sum_{k=1}^{A} w_{u, i, k} \cdot \mathbf{a}_{i, k}
 
 ---
 
-## Slide 22 — Softmax Normalization
+## Slide 21 — Softmax Normalization
 
 **Normalization**
 
@@ -405,7 +391,7 @@ i_{\mathrm{glo}} = \sum_{k=1}^{A} w_{u, i, k} \cdot \mathbf{a}_{i, k}
 
 ---
 
-## Slide 23 — Fusion Gate Overview
+## Slide 22 — Fusion Gate Overview
 
 **Image**
 
@@ -419,7 +405,7 @@ i_{\mathrm{glo}} = \sum_{k=1}^{A} w_{u, i, k} \cdot \mathbf{a}_{i, k}
 
 ---
 
-## Slide 24 — Fusion Gate Structure
+## Slide 23 — Fusion Gate Structure
 
 **圖片**
 
@@ -444,7 +430,7 @@ u_final = alpha_u * u_loc + (1 - alpha_u) * u_glo
 
 ---
 
-## Slide 25 — Gate Bias and Graceful Degradation
+## Slide 24 — Gate Bias and Graceful Degradation
 
 **Bias initialization**
 
@@ -465,7 +451,7 @@ alpha_0 = sigmoid(+5) ~= 0.993
 
 ---
 
-## Slide 26 — Training Objective
+## Slide 25 — Training Objective
 
 **BPR**
 
@@ -481,7 +467,7 @@ L_BPR = -log sigma(y(u, i+) - y(u, i-))
 
 ---
 
-## Slide 27 — Total Objective
+## Slide 26 — Total Objective
 
 **Total objective**
 
@@ -501,7 +487,7 @@ L = L_BPR + lambda_CL * (L_aCL + L_uCL)
 
 ---
 
-## Slide 28 — Dataset
+## Slide 27 — Dataset
 
 **Amazon Books review subset**
 
@@ -516,7 +502,7 @@ L = L_BPR + lambda_CL * (L_aCL + L_uCL)
 
 ---
 
-## Slide 29 — Experimental Setup
+## Slide 28 — Experimental Setup
 
 **Training Setup**
 
@@ -530,7 +516,7 @@ L = L_BPR + lambda_CL * (L_aCL + L_uCL)
 | Optimizer | Adam |
 ---
 
-## Slide 30 — Main Results I
+## Slide 29 — Main Results I
 
 **Top-20**
 
@@ -543,7 +529,7 @@ L = L_BPR + lambda_CL * (L_aCL + L_uCL)
 | LightGCN | 0.1179 | 0.4917 | 0.1937 | 0.0555 |
 | **RA-GARK** | **0.1243** | **0.4972** | **0.2020** | **0.0594** |
 
-## Slide 31 — Main Results II
+## Slide 30 — Main Results II
 
 **Top-10**
 
@@ -556,7 +542,7 @@ L = L_BPR + lambda_CL * (L_aCL + L_uCL)
 | LightGCN | 0.0908 | 0.3436 | 0.1201 | 0.0483 |
 | **RA-GARK** | **0.0966** | **0.3558** | **0.1265** | **0.0520** |
 
-## Slide 32 — Ablation Results I
+## Slide 31 — Ablation Results I
 
 | Model | NDCG@20 | MAP@20 |
 |---|---|---|
@@ -566,7 +552,7 @@ L = L_BPR + lambda_CL * (L_aCL + L_uCL)
 | w/o fusion-gate bias | 0.1194 | 0.0555 |
 | w/o MLP gate | 0.1180 | 0.0552 |
 
-## Slide 33 — Ablation Results II
+## Slide 32 — Ablation Results II
 
 | Model | NDCG@20 | MAP@20 |
 |---|---|---|
@@ -575,7 +561,7 @@ L = L_BPR + lambda_CL * (L_aCL + L_uCL)
 | w/o rationale-enabled selection | 0.1213 | 0.0568 |
 | w/o global view | 0.1219 | 0.0575 |
 
-## Slide 34 — Case Study
+## Slide 33 — Case Study
 
 **圖片**
 
@@ -583,7 +569,7 @@ L = L_BPR + lambda_CL * (L_aCL + L_uCL)
 
 ---
 
-## Slide 35 — Conclusion & Future Work
+## Slide 34 — Conclusion & Future Work
 
 **Conclusion**
 
@@ -602,6 +588,6 @@ Future work will test on denser KG benchmarks and study when user-level rational
 
 ---
 
-## Slide 36 — Thank You
+## Slide 35 — Thank You
 
 **Thank you for listening**
