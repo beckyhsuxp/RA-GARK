@@ -258,7 +258,7 @@ KG-SVD 是我們用來初始化 item aspect slots 的方法。
 
 ## Slide 35 — Case Study
 
-這張 heatmap 的橫軸是 item，縱軸是 aspect slot，顏色越深代表權重越高。你可以看到有些 item 會明顯偏向某一個 slot，表示不同 item 真的會用到不同的 slot。
+這張圖每個小圖是一個 item，橫軸是 4 個 aspect slot，縱軸是不同 user。顏色越深代表權重越高；你可以看到同一個 item 會有一個比較明顯的主 slot，但不同 user 對同一個 item 的分布又很接近，表示它主要是在做 item-level 的 slot 選擇。
 
 ## Slide 36 — Conclusion
 
