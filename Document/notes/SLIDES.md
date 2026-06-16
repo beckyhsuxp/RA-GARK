@@ -10,8 +10,7 @@
 | `thesis/img/architecture.png` | Slide 12 / 25 |
 | `thesis/img/kg_svd.png` | Slide 20 |
 | `thesis/img/gate.png` | Slide 26 |
-| `thesis/img/sensitivity_2x2.png` | Slide 32 |
-| `thesis/img/case_study_heatmap.png` | Slide 34 |
+| `thesis/img/case_study_heatmap.png` | Slide 36 |
 
 ---
 
@@ -574,7 +573,7 @@ L = L_BPR + lambda_CL * (L_aCL + L_uCL)
 | LightGCN | 0.0908 | 0.3436 | 0.1201 | 0.0483 |
 | **RA-GARK** | **0.0966** | **0.3558** | **0.1265** | **0.0520** |
 
-## Slide 34 — Ablation Results
+## Slide 34 — Ablation Results I
 
 | Model | NDCG@20 | MAP@20 |
 |---|---|---|
@@ -583,12 +582,17 @@ L = L_BPR + lambda_CL * (L_aCL + L_uCL)
 | w/o KG-SVD init | 0.1171 | 0.0545 |
 | w/o fusion-gate bias | 0.1194 | 0.0555 |
 | w/o MLP gate | 0.1180 | 0.0552 |
+
+## Slide 35 — Ablation Results II
+
+| Model | NDCG@20 | MAP@20 |
+|---|---|---|
 | w/o user CL | 0.1192 | 0.0563 |
 | w/o aspect CL | 0.1200 | 0.0570 |
 | w/o rationale-enabled selection | 0.1213 | 0.0568 |
 | w/o global view | 0.1219 | 0.0575 |
 
-## Slide 35 — Case Study
+## Slide 36 — Case Study
 
 **圖片**
 
@@ -596,7 +600,7 @@ L = L_BPR + lambda_CL * (L_aCL + L_uCL)
 
 ---
 
-## Slide 36 — Conclusion
+## Slide 37 — Conclusion
 
 **Conclusion**
 
@@ -611,7 +615,7 @@ When the KG is unreliable, what the architecture needs is not a better KG aggreg
 
 ---
 
-## Slide 37 — Future Work
+## Slide 38 — Future Work
 
 **Future work**
 
