@@ -588,17 +588,11 @@ L = L_BPR + lambda_CL * (L_aCL + L_uCL)
 | w/o rationale-enabled selection | 0.1213 | 0.0568 |
 | w/o global view | 0.1219 | 0.0575 |
 
-## Slide 35 — Case Study and Takeaways
+## Slide 35 — Case Study
 
 **圖片**
 
 `thesis/img/case_study_heatmap.png`
-
-**Takeaways**
-
-- different items activate different aspect slots
-- rationale masking gives interpretability
-- the model shows which slot is used for a prediction
 
 ---
 
