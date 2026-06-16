@@ -119,7 +119,7 @@ KG should be a gateable side channel.
 
 ---
 
-## Slide 7 — Collaborative Filtering and Direct KG Fusion
+## Slide 7 — Related Work I
 
 **1. Collaborative Filtering**
 
@@ -143,7 +143,7 @@ KG should be a gateable side channel.
 
 ---
 
-## Slide 8 — Contrastive KG Learning and Gating
+## Slide 8 — Related Work II
 
 **1. Contrastive KG Learning**
 
