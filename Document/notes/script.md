@@ -65,6 +65,8 @@ Writing rule:
 
 ## Slide 7 — Related Work I
 
+接下來看 related work。
+
 首先是 collaborative filtering 和 direct KG fusion。簡單說，LightGCN 只用 user-item interaction 做推薦，KGAT 和 KGRec 則是把 KG 關係一起放進推薦模型裡。LightGCN 是我們 local view 的直接前身，也是最重要的 non-KG reference；KGAT 和 KGRec 則代表直接融合 KG 的方法，前提是 KG 本身值得信任。
 
 ## Slide 8 — Related Work II
