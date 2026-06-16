@@ -21,13 +21,15 @@ Writing rule:
 
 先講動機。
 
-推薦系統近年很主流的一條線是用 GNN 做協同過濾，最代表性的就是 LightGCN。LightGCN 的重點是把 GNN 裡比較複雜的非線性轉換拿掉，只保留線性的鄰居聚合，結果反而在很多資料集上表現很好。這告訴我們，在推薦裡面，乾淨的協同訊號其實非常重要。
+在推薦系統裡，最核心的訊號其實還是 user 和 item 之間的互動。像 LightGCN 這類 GNN-based collaborative filtering 方法，就是直接在 user-item graph 上傳播訊息。它把 GNN 裡比較複雜的非線性轉換拿掉，只保留線性的鄰居聚合，結果反而在很多資料集上表現很好。這代表一件事：乾淨的 collaborative signal 本身就很強，而且很穩定。
 
-另一條線是 KG-aware recommendation。這類方法的想法是，如果能把 item 的語意資訊，像是題材、風格、主題，從知識圖譜引進來，理論上應該可以讓推薦更準，也更可解釋。KGAT、KGCL、MCCLK、KGRec 都是這一線的代表，在 KG 比較豐富的資料集上也確實有很好的表現。
+但是只看互動也有一個限制，就是它比較難知道 item 為什麼被推薦。所以另一條線是 KG-aware recommendation，把 item 的語意資訊，像是題材、風格、主題，透過 knowledge graph 引進模型裡。直覺上，KG 應該可以補上 collaborative filtering 看不到的內容訊號，讓推薦更準，也更可解釋。
 
-但是我們在自己的設定裡看到一個很反直覺的現象。我們用的是 Amazon Books 的子集，而且 knowledge graph 是從書評抽出的 aspect，所以本來就很稀疏。過濾後平均每本書只有 2.4 條 KG 邊。在這個設定下，我們把幾個主流 KG-aware 方法都跑了一遍，結果全部都輸給純 LightGCN。LightGCN 的 NDCG@20 是 0.1179，反而高於 KGAT、KGCL、MCCLK 和 KGRec。
+問題是，這個直覺有一個前提：KG 本身要夠完整、夠可靠。可是我們的 setting 剛好相反。我們用的是 Amazon Books 的子集，而且 knowledge graph 是從書評抽出的 aspect，所以 KG 天生就很稀疏。過濾後平均每本書只有 2.4 條 KG 邊。
 
-這個結果不是說那些方法不好，而是說當 KG 稀疏又不穩定的時候，把 KG 直接融進 scoring pipeline，很可能會把雜訊一起帶進去，最後拖累原本乾淨的協同訊號。
+在這個 setting 下，我們看到一個很反直覺的現象：幾個主流 KG-aware 方法全部都輸給純 LightGCN。LightGCN 的 NDCG@20 是 0.1179，反而高於 KGAT、KGCL、MCCLK 和 KGRec。
+
+所以這裡的動機不是說 KG 沒有用，而是說當 KG 稀疏又不穩定時，如果把 KG 直接融進 scoring pipeline，它很可能不是補充訊號，而是把雜訊帶進來，最後拖累原本乾淨的 collaborative signal。
 
 ## Slide 4 — Why Sparse KG
 
