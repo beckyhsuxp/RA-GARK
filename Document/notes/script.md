@@ -17,8 +17,6 @@ Writing rule:
 
 今天的報告我會先講動機，再講相關研究，接著進入方法細節，最後看實驗結果和結論。
 
-第一部分是導論，我會先說明為什麼稀疏 KG 會讓現有 KG-aware recommendation 失效。第二部分是相關研究，我會快速定位幾個代表性的基線，包括純 CF、KG-aware recommendation，以及 gate 相關方法。第三部分是方法章，這會是整份報告最重要的部分，我會詳細說 local view、KG-SVD、softmax rationale masking，以及 fusion gate。第四部分是實驗，會看主結果和 ablation。最後是結論與未來工作，整理貢獻、限制和後續方向。
-
 ## Slide 3 — Motivation
 
 先講動機。
