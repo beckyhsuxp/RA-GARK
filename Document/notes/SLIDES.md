@@ -483,7 +483,22 @@ alpha_0 = sigmoid(+5) ~= 0.993
 
 ---
 
-## Slide 28 — Contrastive Regularization
+## Slide 28 — Training Objective
+
+**BPR**
+
+```text
+L_BPR = -log sigma(y(u, i+) - y(u, i-))
+```
+
+**Sampling**
+
+- positive pairs come from observed interactions
+- negatives are sampled from items the user has not interacted with
+
+---
+
+## Slide 29 — Contrastive Regularization
 
 **Main objective**
 
@@ -502,21 +517,6 @@ L = L_BPR + lambda_CL * (L_aCL + L_uCL)
 
 - stop-gradient on the KG side
 - projection head only on the local side
-
----
-
-## Slide 29 — Training Objective
-
-**BPR**
-
-```text
-L_BPR = -log sigma(y(u, i+) - y(u, i-))
-```
-
-**Sampling**
-
-- positive pairs come from observed interactions
-- negatives are sampled from items the user has not interacted with
 
 **What it optimizes**
 
