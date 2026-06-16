@@ -489,14 +489,14 @@ alpha_0 = sigmoid(+5) ~= 0.993
 
 ```text
 L = L_BPR + lambda_CL * (L_aCL + L_uCL)
-lambda_CL = 0.005
-tau_CL = 0.2
 ```
 
 **Role**
 
 - auxiliary geometric alignment
 - not the main integration path
+- lambda_CL controls the strength
+- tau_CL is the contrastive temperature
 
 **Stability**
 
