@@ -574,7 +574,7 @@ L = L_BPR + lambda_CL * (L_aCL + L_uCL)
 | LightGCN | 0.0908 | 0.3436 | 0.1201 | 0.0483 |
 | **RA-GARK** | **0.0966** | **0.3558** | **0.1265** | **0.0520** |
 
-## Slide 34 — Ablation Summary
+## Slide 34 — Ablation Results
 
 | Model | NDCG@20 | MAP@20 |
 |---|---|---|
