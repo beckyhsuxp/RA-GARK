@@ -7,10 +7,10 @@
 
 | 圖檔 | 頁面 |
 |---|---|
-| `thesis/img/architecture.png` | Slide 10 / 22 |
+| `thesis/img/architecture.png` | Slide 10 / 21 |
 | `thesis/img/kg_svd.png` | Slide 17 |
-| `thesis/img/gate.png` | Slide 23 |
-| `thesis/img/case_study_heatmap.png` | Slide 33 |
+| `thesis/img/gate.png` | Slide 22 |
+| `thesis/img/case_study_heatmap.png` | Slide 32 |
 
 ---
 
@@ -359,23 +359,7 @@ choose the slot for each user-item pair
 
 ---
 
-## Slide 20 — Softmax Masking Computation
-
-**Computation**
-
-```text
-\ell_{u, i, k} = \mathrm{MLP}\!\left( [u_{\mathrm{glo}} \,\Vert\, \mathbf{a}_{i,k}] \right)
-w_{u, i, k} = \frac{\exp(\ell_{u, i, k} / \tau)}{\sum_{k' = 1}^{A} \exp(\ell_{u, i, k'} / \tau)}
-i_{\mathrm{glo}} = \sum_{k=1}^{A} w_{u, i, k} \cdot \mathbf{a}_{i, k}
-```
-
-**Result**
-
-- the item global vector is a weighted sum of slots
-
----
-
-## Slide 21 — Softmax Normalization
+## Slide 20 — Softmax Normalization
 
 **Normalization**
 
@@ -392,7 +376,7 @@ i_{\mathrm{glo}} = \sum_{k=1}^{A} w_{u, i, k} \cdot \mathbf{a}_{i, k}
 
 ---
 
-## Slide 22 — Fusion Gate Overview
+## Slide 21 — Fusion Gate Overview
 
 **Image**
 
@@ -406,7 +390,7 @@ i_{\mathrm{glo}} = \sum_{k=1}^{A} w_{u, i, k} \cdot \mathbf{a}_{i, k}
 
 ---
 
-## Slide 23 — Fusion Gate Structure
+## Slide 22 — Fusion Gate Structure
 
 **圖片**
 
@@ -431,7 +415,7 @@ u_final = alpha_u * u_loc + (1 - alpha_u) * u_glo
 
 ---
 
-## Slide 24 — Gate Bias and Graceful Degradation
+## Slide 23 — Gate Bias and Graceful Degradation
 
 **Bias initialization**
 
@@ -452,7 +436,7 @@ alpha_0 = sigmoid(+5) ~= 0.993
 
 ---
 
-## Slide 25 — Training Objective
+## Slide 24 — Training Objective
 
 **BPR**
 
@@ -468,7 +452,7 @@ L_BPR = -log sigma(y(u, i+) - y(u, i-))
 
 ---
 
-## Slide 26 — Total Objective
+## Slide 25 — Total Objective
 
 **Total objective**
 
@@ -488,7 +472,7 @@ L = L_BPR + lambda_CL * (L_aCL + L_uCL)
 
 ---
 
-## Slide 27 — Dataset
+## Slide 26 — Dataset
 
 **Amazon Books review subset**
 
@@ -503,7 +487,7 @@ L = L_BPR + lambda_CL * (L_aCL + L_uCL)
 
 ---
 
-## Slide 28 — Experimental Setup
+## Slide 27 — Experimental Setup
 
 **Training Setup**
 
@@ -517,7 +501,7 @@ L = L_BPR + lambda_CL * (L_aCL + L_uCL)
 | Optimizer | Adam |
 ---
 
-## Slide 29 — Main Results I
+## Slide 28 — Main Results I
 
 **Top-20**
 
@@ -530,7 +514,7 @@ L = L_BPR + lambda_CL * (L_aCL + L_uCL)
 | LightGCN | 0.1179 | 0.4917 | 0.1937 | 0.0555 |
 | **RA-GARK** | **0.1243** | **0.4972** | **0.2020** | **0.0594** |
 
-## Slide 30 — Main Results II
+## Slide 29 — Main Results II
 
 **Top-10**
 
@@ -543,7 +527,7 @@ L = L_BPR + lambda_CL * (L_aCL + L_uCL)
 | LightGCN | 0.0908 | 0.3436 | 0.1201 | 0.0483 |
 | **RA-GARK** | **0.0966** | **0.3558** | **0.1265** | **0.0520** |
 
-## Slide 31 — Ablation Results I
+## Slide 30 — Ablation Results I
 
 | Model | NDCG@20 | MAP@20 |
 |---|---|---|
@@ -553,7 +537,7 @@ L = L_BPR + lambda_CL * (L_aCL + L_uCL)
 | w/o fusion-gate bias | 0.1194 | 0.0555 |
 | w/o MLP gate | 0.1180 | 0.0552 |
 
-## Slide 32 — Ablation Results II
+## Slide 31 — Ablation Results II
 
 | Model | NDCG@20 | MAP@20 |
 |---|---|---|
@@ -562,7 +546,7 @@ L = L_BPR + lambda_CL * (L_aCL + L_uCL)
 | w/o rationale-enabled selection | 0.1213 | 0.0568 |
 | w/o global view | 0.1219 | 0.0575 |
 
-## Slide 33 — Case Study
+## Slide 32 — Case Study
 
 **圖片**
 
@@ -570,7 +554,7 @@ L = L_BPR + lambda_CL * (L_aCL + L_uCL)
 
 ---
 
-## Slide 34 — Conclusion & Future Work
+## Slide 33 — Conclusion & Future Work
 
 **Conclusion**
 
@@ -589,6 +573,6 @@ When the KG is unreliable, what the architecture needs is not a better KG aggreg
 
 ---
 
-## Slide 35 — Thank You
+## Slide 34 — Thank You
 
 **Thank you for listening**
