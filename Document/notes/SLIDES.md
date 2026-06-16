@@ -552,17 +552,25 @@ L = L_BPR + lambda_CL * (L_aCL + L_uCL)
 
 **Top-20**
 
-- RA-GARK: NDCG@20 0.1243, HR@20 0.4972, Recall@20 0.2020, MAP@20 0.0594
-- best across all reported metrics
-- beats pure LightGCN by 5.4% on NDCG@20
-- beats KGRec by 13.5% on NDCG@20
+| Model | NDCG@20 | HR@20 | Recall@20 | MAP@20 |
+|---|---|---|---|---|
+| MCCLK | 0.1067 | 0.4530 | 0.1720 | 0.0497 |
+| KGCL | 0.1073 | 0.4696 | 0.1827 | 0.0479 |
+| KGAT | 0.1079 | 0.4773 | 0.1807 | 0.0491 |
+| KGRec | 0.1095 | 0.4729 | 0.1834 | 0.0500 |
+| LightGCN | 0.1179 | 0.4917 | 0.1937 | 0.0555 |
+| **RA-GARK** | **0.1243** | **0.4972** | **0.2020** | **0.0594** |
 
 **Top-10**
 
-- RA-GARK: NDCG@10 0.0966, HR@10 0.3558, Recall@10 0.1265, MAP@10 0.0520
-- best across all reported metrics
-- beats pure LightGCN by 6.4% on NDCG@10
-- beats KGRec by 10.5% on NDCG@10
+| Model | NDCG@10 | HR@10 | Recall@10 | MAP@10 |
+|---|---|---|---|---|
+| MCCLK | 0.0804 | 0.3182 | 0.1047 | 0.0416 |
+| KGCL | 0.0809 | 0.3260 | 0.1096 | 0.0410 |
+| KGAT | 0.0786 | 0.3215 | 0.1102 | 0.0388 |
+| KGRec | 0.0874 | 0.3249 | 0.1155 | 0.0465 |
+| LightGCN | 0.0908 | 0.3436 | 0.1201 | 0.0483 |
+| **RA-GARK** | **0.0966** | **0.3558** | **0.1265** | **0.0520** |
 
 ## Slide 33 — Ablation Summary
 
