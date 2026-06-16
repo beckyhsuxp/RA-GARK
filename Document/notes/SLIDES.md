@@ -525,14 +525,17 @@ L = L_BPR + lambda_CL * (L_aCL + L_uCL)
 
 **Dataset**
 
-| Item | Value |
+| Statistic | Value |
 |---|---|
-| Dataset | 905 users / 1,399 items / 22,265 interactions |
-| KG | 3,370 KG edges / 2,098 aspects |
+| Users | 905 |
+| Items | 1,399 |
+| Interactions | 22,265 |
+| KG edges | 3,370 |
+| Aspects | 2,098 |
 
 **Optimization**
 
-| Item | Value |
+| Setting | Value |
 |---|---|
 | Optimizer | Adam |
 | Learning rate | 1e-3 |
