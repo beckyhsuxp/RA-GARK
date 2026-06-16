@@ -540,11 +540,19 @@ L = L_BPR + lambda_CL * (L_aCL + L_uCL)
 
 | Hyperparameter | Value |
 |---|---|
+| Embedding dimension | 128 |
+| LightGCN layers | 2 |
+| Aspect slots | 4 |
+| Rationale temperature | 0.5 |
+| Fusion-gate bias | +5 |
+| Contrastive weight | 0.005 |
+| InfoNCE temperature | 0.2 |
 | Optimizer | Adam |
 | Learning rate | 1e-3 |
 | Batch size | 128 |
 | Max epochs | 80 |
-| Early stopping | validation NDCG@20 |
+| Early-stopping patience | 10 |
+| Random seed | 42 |
 
 **Why it matters**
 
