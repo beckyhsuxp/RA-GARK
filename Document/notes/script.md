@@ -230,7 +230,7 @@ KG-SVD 是我們用來初始化 item aspect slots 的方法。
 
 模型最後的 score 是 user 和 item 的 final representation 做內積。BPR 是用正負樣本做排序學習的 loss；`i+` 是使用者真的互動過的 item，`i-` 是抽樣出來、使用者沒互動過的 item。對每個已觀察互動，我們會再抽一個沒互動過的 item，讓模型把正樣本排在負樣本前面。BPR 負責把排序學好，gate 則是先把 local 和 global 的融合控制住。我的總 loss 除了 BPR，還會再加上一個很小的對比正則，讓兩個表示更靠近。
 
-## Slide 29 — Contrastive Regularization
+## Slide 29 — Total Objective
 
 沿著上一頁的 BPR，這一頁就是剛剛提到的那個很小的對比正則。也就是說，我的總 loss 除了 BPR，還會再加上這一項。它的作用很簡單，就是幫 local 和 global 的表示稍微對齊，但不取代 BPR。`lambda_CL` 控制這個輔助項的強度，`tau_CL` 則是對比學習的 temperature；這裡不用特別把數字唸出來。
 
