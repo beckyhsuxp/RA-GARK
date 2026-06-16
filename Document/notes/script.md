@@ -65,11 +65,11 @@ Writing rule:
 
 ## Slide 7 — Related Work I
 
-首先是 collaborative filtering 和 direct KG fusion。LightGCN 是我們 local view 的直接前身，也是最重要的 non-KG reference；它的優點是乾淨、穩定，但完全不看 KG。KGAT 和 KGRec 則是把 KG 直接帶進 propagation 或 edge selection，前提是 KG 本身值得信任。
+首先是 collaborative filtering 和 direct KG fusion。簡單說，LightGCN 只用 user-item interaction 做推薦，KGAT 和 KGRec 則是把 KG 關係一起放進推薦模型裡。LightGCN 是我們 local view 的直接前身，也是最重要的 non-KG reference；KGAT 和 KGRec 則代表直接融合 KG 的方法，前提是 KG 本身值得信任。
 
 ## Slide 8 — Related Work II
 
-接著是 contrastive KG learning 和 gating。
+接著是 contrastive KG learning 和 gating。簡單說，KGCL 和 MCCLK 會用對比學習強化 KG 表示，gating 方法則是學習不同訊號要怎麼分配權重。
 
 KGCL、MCCLK 依賴 KG 結構本身夠有資訊，對比學習才會穩；Highway Networks、MMoE、PLE 則證明 gate 可以控制資訊流，但它們不是為 unreliable KG 設計，也沒有安全初始化。
 
