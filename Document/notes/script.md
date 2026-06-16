@@ -27,7 +27,7 @@ Writing rule:
 
 問題是，這個直覺有一個前提：KG 本身要夠完整、夠可靠。但在 sparse KG 的情況下，這個前提不一定成立。
 
-也因此，我們看到一個很反直覺的現象：幾個主流 KG-aware 方法全部都輸給純 LightGCN。LightGCN 的 NDCG@20 是 0.1179，反而高於 KGAT、KGCL、MCCLK 和 KGRec。
+也因此，我們看到一個很反直覺的現象：幾個主流 KG-aware 方法全部都輸給純 LightGCN。
 
 所以這裡的動機不是說 KG 沒有用，而是說當 KG 稀疏又不穩定時，如果把 KG 直接融進 scoring pipeline，它很可能不是補充訊號，而是把雜訊帶進來，最後拖累原本乾淨的互動訊號。
 
