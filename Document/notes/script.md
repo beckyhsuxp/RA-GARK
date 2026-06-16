@@ -228,7 +228,7 @@ KG-SVD 是我們用來初始化 item aspect slots 的方法。
 
 前一頁 gate 初始化完之後，這一頁回到訓練目標。
 
-BPR 是用正負樣本做排序學習的 loss。對每個 observed pair，我們再抽一個 sampled unseen item 當負樣本，目標是讓真正互動過的 item 分數高於未互動 item。這樣 BPR 就提供主要的 ranking signal，gate 則是負責先把表示維持在比較穩定的狀態。
+模型最後的 score 是 `score = <u_final, i_final>`，也就是 user 和 item 的 final representation 做內積。BPR 是用正負樣本做排序學習的 loss。對每個 observed pair，我們再抽一個 sampled unseen item 當負樣本，目標是讓真正互動過的 item 分數高於未互動 item。這樣 BPR 就提供主要的 ranking signal，gate 則是負責先把表示維持在比較穩定的狀態。
 
 ## Slide 29 — Contrastive Regularization
 
