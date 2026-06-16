@@ -450,6 +450,9 @@ i_{\mathrm{glo}} = \sum_{k=1}^{A} w_{u, i, k} \cdot \mathbf{a}_{i, k}
 \mathrm{Gate}(\mathbf{z}) = \sigma\!\left(\mathbf{w}^{\top} \tanh\!\left(\mathbf{W}\mathbf{z}\right) + b\right)
 ```
 
+- 先做一層 `tanh(Wz)` 的隱層變換
+- 再接 `w^T` 和 `sigmoid`，輸出 0 到 1 的 gate 權重
+
 **Fusion**
 
 ```text
