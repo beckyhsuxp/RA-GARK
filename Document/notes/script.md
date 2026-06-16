@@ -129,9 +129,9 @@ local propagation 的部分就是標準 LightGCN。
 
 ## Slide 15 — Global View
 
-global view 的重點是 latent aspect slots。先把每個 item 壓成四個固定的 semantic slots，這樣就能保留 KG 的語意，但不會直接把整張 KG 拿去傳播。
+global view 的重點是 latent aspect slots。它不是直接把整張 KG 拿去傳播，而是先把每個 item 的語意整理成四個固定的 semantic slots。
 
-KG 很稀疏，所以如果直接傳播，訊號很容易被缺失邊或噪音邊影響。改成這種固定 semantic slots 之後，模型不是被動地吃整張 KG，而是先把 item 的語意拆成幾個固定的 slot，再在這些 slot 裡挑比較有用的 aspect。這樣做的好處是，global view 還是保留 KG 的語意資訊，但傳播的時候不會把雜訊直接灌進來。
+這樣做的好處是，模型還是可以保留 KG 的語意資訊，但後面只需要在這些 slots 裡挑比較有用的 aspect，不用被動地吃進整張 sparse KG。
 
 這裡的表示寫成 a_i，大小是 A x d，也就是四個 slot、每個 slot 維度是 d；R 就是實數空間。
 
