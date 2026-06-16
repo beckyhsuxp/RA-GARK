@@ -101,7 +101,7 @@ Writing rule:
 
 這裡的 u 代表 user，i 代表 item；u_final 和 i_final 則是模型最後得到的 user 向量和 item 向量。
 
-最終分數是 y_hat(u, i)，也就是 u_final 跟 i_final 的內積。y_hat(u, i) 表示模型對 user u 和 item i 的預測分數，分數越高代表越推薦。這裡先把分數定義清楚，u_final 和 i_final 的構成放到下一頁。
+最終分數由 u_final 跟 i_final 的內積得到。y_hat(u, i) 表示模型對 user u 和 item i 的預測分數，分數越高代表越推薦。這裡先把分數定義清楚，u_final 和 i_final 的構成放到下一頁。
 
 ## Slide 12 — Problem Setup II
 
