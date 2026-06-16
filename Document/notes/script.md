@@ -161,15 +161,13 @@ KG-SVD 是我們用來初始化 item aspect slots 的方法。
 
 接著把 `E_KG` reshape 成 `A_KG_0`，也就是把每個 item 表成 A 個 aspect slot，維度是 d。這裡的 zero 表示初始化後的第一版；整個 `A_KG_0` 可以想成一個三維張量，也就是 item 數乘 A 乘 d 的大小，裡面的值都來自實數空間。reshape 就是把這些數值排回 A 個 slot。接著會用這個初始化結果交給 graph recommender，也就是 GNN-based recommender 往下做。整體來說，這一步先把加權後的矩陣壓成幾個比較重要的方向，再把分解出來的 item 表示整理成四個 slot。
 
-## Slide 19 — Softmax Masking Motivation
+## Slide 20 — Softmax Masking Motivation
 
-KG-SVD 初始化完之後，下一步是看怎麼根據 user 來挑哪個 slot 比較重要。
+KG-SVD 初始化完之後，下一步就是看怎麼根據 user 來挑比較重要的 slot。
 
-重點是：同一個 item 對不同 user 可能有不同的推薦理由，所以 slot 的選擇必須跟 user 綁在一起，而不是固定用同一個 slot。
+重點是，同一個 item 對不同 user 可能有不同的推薦理由，所以 slot 的選擇不能固定不變，而是要跟 user 綁在一起。
 
-## Slide 20 — Softmax Masking Computation
-
-這一頁就是具體計算。
+有了這個動機，這一頁再看具體怎麼算。
 
 先看公式。`\ell_{u,i,k}` 是第 k 個 slot 的分數，來自把 `u_global` 和 `a_i,k` 串接後丟進 MLP。MLP 是一個小型前饋網路。接著把 `\ell_{u,i,k}` 除以 `tau` 再做 softmax，就得到 `w_{u,i,k}` 這個權重；`tau` 是 softmax temperature，控制分佈有多尖銳。最後，`i_global` 就是把四個 slot 依照這些權重加權求和。這樣就完成從 slot 打分到 global 向量的組合。
 
