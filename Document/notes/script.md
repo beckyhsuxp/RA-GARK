@@ -236,7 +236,7 @@ KG-SVD 是我們用來初始化 item aspect slots 的方法。
 
 這兩個對比項分別是物品面向和使用者跨視角的對齊，作用都是把兩個 view 的表示距離縮小一點，不是主融合機制。
 
-## Slide 30 — Setup
+## Slide 30 — Experimental Setup
 
 這一頁分成兩塊看，左邊是資料集，右邊是訓練設定。資料集這裡就照表看，重點是 905 個 user、1,399 個 item、22,265 筆互動、3,370 條 KG 邊，以及 2,098 個 aspect。訓練設定這張表也很簡單，Optimizer 是 Adam，learning rate 0.001，batch size 128，最多 80 個 epoch，並且用 validation NDCG@20 做 early stopping。
 
