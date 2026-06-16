@@ -21,7 +21,7 @@ Writing rule:
 
 先講動機。
 
-在推薦系統裡，最核心的訊號其實還是 user 和 item 之間的互動。像 LightGCN 這類 GNN-based collaborative filtering 方法，就是直接在 user-item graph 上傳播訊息。它把 GNN 裡比較複雜的非線性轉換拿掉，只保留線性的鄰居聚合，結果反而在很多資料集上表現很好。這代表一件事：乾淨的 collaborative signal 本身就很強，而且很穩定。
+在推薦系統裡，最核心的訊號其實還是 user 和 item 之間的互動。像 LightGCN 這類 GNN-based collaborative filtering 方法，就是直接在 user-item graph 上傳播訊息。LightGCN 把 GNN 簡化成線性鄰居聚合，但仍然很有效。這代表一件事：乾淨的 collaborative signal 本身就很強，而且很穩定。
 
 但是只看互動也有一個限制，就是它比較難知道 item 為什麼被推薦。所以另一條線是 KG-aware recommendation，把 item 的語意資訊，像是題材、風格、主題，透過 knowledge graph 引進模型裡。直覺上，KG 應該可以補上 collaborative filtering 看不到的內容訊號，讓推薦更準，也更可解釋。
 
