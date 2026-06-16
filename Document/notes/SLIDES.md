@@ -609,12 +609,6 @@ When the KG is unreliable, what the architecture needs is not a better KG aggreg
 - softmax rationale masking
 - local-biased fusion gate
 
-**Limitations**
-
-- one sparse review-aspect KG dataset
-- KG construction pipeline is adopted rather than proposed
-- dense-KG settings may still favor deep fusion
-
 ---
 
 ## Slide 37 — Future Work
