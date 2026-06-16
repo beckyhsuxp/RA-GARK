@@ -210,7 +210,7 @@ KG-SVD 是我們用來初始化 item aspect slots 的方法。
 
 這裡先以 user-side 為例，圖從左往右看，先把 `u_loc` 和 `u_glo` 串起來，得到 gate 的輸入。
 
-接下來是中間的 MLP。`Gate(z)` 就是那個帶 `tanh` 的小型 MLP，再接上一個 sigmoid head；其中 `w^T tanh(W z) + b` 可以理解成 MLP 的最後一層，前面先做隱層變換，最後再加上 bias `b`。
+接下來是中間的 MLP。`Gate(z)` 就是那個帶 `tanh` 的小型 MLP，再接上一個 sigmoid head；前面先做一層隱層變換，最後再加上 bias `b`，把結果壓到 0 到 1 之間。
 
 經過這個 gate 之後，就得到 `alpha_u`。它是一個 0 到 1 之間的權重，用來控制 `u_final` 裡 local 和 global 的比例。
 
