@@ -61,39 +61,31 @@ Writing rule:
 
 ## Slide 7 — Related Work I
 
-先講最基礎的兩個方法。
+先講 collaborative filtering 這條線。
 
-LightGCN 是我們 local view 的直接前身。它的重點是把 GCN 裡比較複雜的特徵轉換拿掉，只保留線性的鄰居聚合和 layer-wise average，所以在 sparse review KG 上，它是最強的 non-KG 基準。
+LightGCN 是我們 local view 的直接前身，也是這裡最重要的 reference。它的優點是乾淨、穩定，能把 non-KG 的協同訊號守住；但它的限制也很清楚，就是完全不看 KG。
 
-KGAT 則代表典型的 deep fusion。它把 user-item graph 和 KG 合併成一張 collaborative knowledge graph，KG entities 會直接參與 propagation，這在 KG dense 且高品質時通常有效。
-
-所以我們的做法是直接把 LightGCN 原封不動地拿來當 local view，然後把 KG signal 隔離到另一條 global view。
+所以我們的做法是把 LightGCN 直接當 local view，保留這條安全路徑。
 
 ## Slide 8 — Related Work II
 
-接下來是對比式 KG 方法。
+這一頁是 direct KG fusion。
 
-KGCL 會對 KG 結構做擾動，然後對 original view 和 perturbed view 做對比學習。MCCLK 則建立 collaborative、semantic、structural 三個視角，彼此做多重對齊。這些方法在 KG 比較豐富時都很強，但它們仍然假設 KG 結構本身夠有資訊。
-
-所以我們也有用對比學習，但它只是輔助，權重很小，目的是幫 local 和 global 的幾何空間做輕量對齊，而不是主導融合。
+KGAT 和 KGRec 都是很重要的 reference。它們的共同點是會把 KG 直接帶進 propagation 或 edge selection 裡；問題是，這等於先假設 KG 本身值得信任。當 KG 很稀疏時，這條路就容易把雜訊一起帶進來。
 
 ## Slide 9 — Related Work III
 
-KGRec 是跟我們最直接相關的工作。
+接下來是 contrastive KG learning。
 
-這頁我用一張表直接把 KGRec 和 RA-GARK 對照起來。KGRec 的 rationale 是 edge-level 的，它用 Bernoulli dropout，也就是隨機把一部分邊丟掉，再加 contrastive learning 來挑比較重要的邊；RA-GARK 則把 rationale 放在 latent aspect-slot level，也就是先把 item 的 KG 語意壓成幾個 semantic slots，再用 softmax attention 直接控制 global 側通道的輸出。
-
-所以兩者最大的差別是：KGRec 還是預設 KG 裡面至少有一些有用的 edges 可以挑出來；RA-GARK 的前提更保守，直接把整條 KG channel 當成可能不可靠的側通道來處理。
+KGCL 和 MCCLK 都屬於這一類，重點是用對比學習去對齊不同 view。這在 KG 夠強的時候很有效，但它還是依賴 KG 結構本身有足夠資訊；如果 KG 太弱，對比訊號也會跟著變得不穩。
 
 ## Slide 10 — Related Work IV
 
-這裡我想補充 gating 的脈絡。
+最後是 gating 這條線。
 
-Highway Networks 很早就提出一個很重要的概念：用 gate 把變換路徑和 identity path 做加權，而且 gate 的 bias 可以初始化成偏向安全路徑，讓模型一開始接近 identity，再慢慢學要不要打開變換。MMoE 和 PLE 則是在多任務推薦裡，用 gate 在多個 expert 分支之間做選擇。
+Highway Networks、MMoE 和 PLE 都是重要 reference。它們證明 gate 可以用來控制資訊流，但它們主要是在混同質的 path 或 expert，不是專門為 unreliable KG 設計，也沒有像我們一樣做安全初始化。
 
-但這些方法和我們不一樣的地方有兩個。第一，它們的 expert 多半是同質候選，不是像我們這樣把 CF 和 KG 當成兩條異質訊號管線。第二，它們沒有特別針對「某條管線可能不可信」這件事做安全初始化。
-
-所以在 KG-aware recommendation 領域裡，還是缺少一個偏置初始化的 fusion gate，也缺少一個在稀疏或不可靠 KG 下能提供平滑退化的架構。
+所以我們把這個想法改成：KG 不是必經路徑，而是一個可以被 gate 掉的 side channel。
 
 ## Slide 11 — Design Principle
 

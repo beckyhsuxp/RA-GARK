@@ -119,71 +119,67 @@ KG should be a gateable side channel.
 
 ---
 
-## Slide 7 — Related Work I
+## Slide 7 — Collaborative Filtering
 
-**LightGCN**
+**Reference**
 
-- immediate predecessor of our local view
-- strong non-KG anchor on sparse review KG
+- LightGCN
 
-**KGAT**
+**Challenge**
 
-- canonical deep-fusion approach
-- KG entities participate directly in propagation
+- strong non-KG anchor
+- but no semantic KG signal
 
 **Position of RA-GARK**
 
-- adopt LightGCN verbatim as local view
-- isolate KG signal into a separate global view
+- adopt LightGCN as the local view
+- keep it separate from KG
 
 ---
 
-## Slide 8 — Related Work II
+## Slide 8 — Direct KG Fusion
 
-**Contrastive KG methods**
+**References**
+
+- KGAT
+- KGRec
+
+**Challenge**
+
+- KG is fused directly into propagation or edge selection
+- assumes the KG is useful enough to trust
+- sparse KG can contaminate the CF path
+
+---
+
+## Slide 9 — Contrastive KG Learning
+
+**References**
 
 - KGCL
 - MCCLK
 
-**Assumption**
+**Challenge**
 
-- KG structure remains informative under perturbation
-- collaborative, semantic, and structural views can be aligned
-
-**Sparse-KG issue**
-
-- sparse or perturbed KG gives weak supervision
-- contrastive alignment may become noise-dominated
+- relies on informative KG structure for alignment
+- weak KG makes contrastive supervision fragile
+- alignment can become noise-dominated
 
 ---
 
-## Slide 9 — Related Work III
+## Slide 10 — Gating for Fusion
 
-| KGRec | RA-GARK |
-|---|---|
-| edge-level rationale | latent aspect-slot rationale |
-| Bernoulli dropout + CL | softmax attention |
-| stays inside KGAT propagation | separate global side channel |
-| cannot fully disengage KG | can suppress the whole KG |
+**References**
 
-**Main difference**
+- Highway Networks
+- MMoE
+- PLE
 
-KGRec assumes useful edges exist; RA-GARK assumes the whole KG channel may be unreliable.
+**Challenge**
 
----
-
-## Slide 10 — Related Work IV
-
-**Gating gap**
-
-- Highway Networks: bias toward a safe identity path
-- MMoE / PLE: gate over expert towers
-- SGL / DCCF: alignment over views from the same graph
-
-**Gap in KG-aware recommendation**
-
-- no bias-initialized fusion gate
-- no architectural graceful degradation under sparse or unreliable KG
+- gates are used for mixing paths or experts
+- not designed for unreliable KG
+- no explicit safe initialization for a KG side channel
 
 ---
 
