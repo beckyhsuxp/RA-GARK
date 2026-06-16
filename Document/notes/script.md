@@ -53,6 +53,8 @@ Writing rule:
 
 基於剛才的現象，我們提出兩個問題。
 
+這篇工作我們把它命名為 RA-GARK，重點就是用 rationale-aware gating 來處理 sparse review-aspect KG。
+
 第一個是 diagnosis，也就是為什麼 KG-aware 模型會在 sparse KG 下輸給純 LightGCN。第二個是 prescription，也就是什麼樣的設計原則，才能讓模型在 KG 有用時利用它，在 KG 不可靠時避免污染協同過濾。
 
 我們的答案是：KG 不應該是 scoring pipeline 裡的必經成分，而應該是一條可以被 gate 控制的側通道。這個想法後面會具體落地在三個設計上，分別是 KG-SVD 初始化、softmax rationale masking 和 local-biased fusion gate。
