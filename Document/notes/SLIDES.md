@@ -546,12 +546,6 @@ L = L_BPR + lambda_CL * (L_aCL + L_uCL)
 | Fusion-gate bias | +5 |
 | Contrastive weight | 0.005 |
 | Optimizer | Adam |
-
-**Why it matters**
-
-- the benchmark is intentionally sparse
-- the method is tested under a strict KG setting
-
 ---
 
 ## Slide 32 — Inference and Complexity
