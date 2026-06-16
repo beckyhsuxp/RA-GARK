@@ -479,7 +479,7 @@ alpha_0 = sigmoid(+5) ~= 0.993
 **Graceful degradation**
 
 - unreliable KG stays mostly closed
-- without this bias, NDCG@20 drops from 0.1243 to 0.1194
+- without this bias, the model starts from a less safe mix
 
 ---
 
