@@ -242,7 +242,7 @@ KG-SVD 是我們用來初始化 item aspect slots 的方法。
 
 ## Slide 31 — Experimental Setup
 
-這一頁看訓練設定。表格裡依序是 Optimizer、learning rate、batch size、max epochs 和 early stopping。這個 benchmark 本身就很稀疏，所以我們才特別在這種 training setup 下測試方法。
+這一頁看訓練設定。表格裡依序是 embedding dimension、LightGCN layers、aspect slots、rationale temperature、fusion-gate bias、contrastive weight、InfoNCE temperature、optimizer、learning rate、batch size、max epochs、early stopping 和 random seed。這個 benchmark 本身就很稀疏，所以我們才特別在這種 training setup 下測試方法。
 
 ## Slide 32 — Inference and Complexity
 
