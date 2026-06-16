@@ -33,7 +33,11 @@ Writing rule:
 
 那為什麼我們要特別討論 sparse KG？
 
-答案是，稀疏 KG 在實務上很常見，不是例外。review-derived KG 本來就只會覆蓋使用者提到過的主題，所以密度自然不均勻。cold-start 和 emerging domains 通常也缺少像 Freebase 或 Wikidata 那樣完整的整理來源。再加上 medical、financial 這類 privacy-constrained domains，能用的關聯訊號也會被刻意限制。最後，KG completion 也不是無痛解法，因為它會引入新的噪音，而且通常還需要 seed signal。
+答案是，稀疏 KG 在實務上很常見，不是例外。像 review-derived KG，只會記錄使用者真的提到過的主題，所以 coverage 本來就不平均。
+
+在 cold-start 或新領域裡，也常常沒有完整的外部知識來源可以用。有些領域還會受到隱私或資料取得限制，能整理出的關聯本來就少。
+
+就算想用 KG completion 把缺的邊補起來，也不一定可靠，因為補出來的關係可能會帶進新的噪音。
 
 所以這篇工作的重點不是去解決「KG 太少」本身，而是去解決「當 KG 不可靠時，模型要怎麼穩健地做推薦」。
 
