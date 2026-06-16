@@ -242,10 +242,6 @@ KG-SVD 是我們用來初始化 item aspect slots 的方法。
 
 ## Slide 31 — Experimental Setup
 
-這一頁看訓練設定。表格裡挑幾個重要的就好，像是 embedding dimension、aspect slots、rationale temperature、fusion-gate bias、contrastive weight 和 optimizer。
-
-從效能來看，我們每個 epoch 大概 1.5 秒，跟 KGRec 差不多，所以這個設計沒有讓成本爆炸。
-
 ## Slide 32 — Main Results I
 
 先看評估方式。我們採 full-ranking，也就是對每個 user 把候選 item 重新完整排序，並排除訓練集裡已經互動過的 item，最後看 HR、Precision、Recall、F1、MAP 和 NDCG，這些都取 @20。接著看 Top-20。這張表先列幾個 baseline，包含 MCCLK、KGCL、KGAT、KGRec 和純 LightGCN，最後是 RA-GARK。ranking metrics 是 NDCG@20、HR@20、Recall@20 和 MAP@20；RA-GARK 在這四個指標都最好，表示在這個 sparse KG 設定下，這個架構真的把 KG 的訊號轉成了正向貢獻。
