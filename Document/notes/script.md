@@ -49,9 +49,7 @@ Writing rule:
 
 這樣做其實假設了一件事：只要 KG 被放進模型，它多半就是有幫助的。但在 sparse KG 下，這個假設很容易失效。
 
-這也是為什麼在我們的設定裡，LightGCN 反而會贏。因為 LightGCN 只看 user-item interaction，不會碰到那條不可靠的 KG branch，所以它保留了一個乾淨又安全的 baseline。
-
-我們的回應不是把 KG 完全拿掉，而是把它改成一條專門的側通道，讓模型可以在 KG 不可靠時把它削弱，甚至完全關掉。
+所以這裡的 challenge 是：如果 KG 本身不可靠，模型要怎麼避免讓它一路影響最後的推薦分數。這個問題會帶到後面的 research question 和 design principle。
 
 ## Slide 6 — Research Question
 
