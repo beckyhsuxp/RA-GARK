@@ -77,8 +77,6 @@ Writing rule:
 
 最後是 gating。Highway Networks、MMoE、PLE 證明 gate 可以控制資訊流，但它們不是為 unreliable KG 設計，也沒有安全初始化。
 
-所以我們的做法是把 KG 改成可閘控的 side channel，而不是必經路徑。
-
 ## Slide 9 — Design Principle
 
 這一頁把設計原則整理成三個部分。
