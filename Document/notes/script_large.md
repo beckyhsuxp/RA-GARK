@@ -1,5 +1,22 @@
 # RA-GARK 口語逐字稿（大字版）
 
+<style>
+body {
+  font-size: 1.12em;
+  line-height: 1.65;
+}
+h1 {
+  font-size: 2.1em;
+}
+h2 {
+  font-size: 1.55em;
+}
+p, li {
+  font-size: 1em;
+  line-height: 1.65;
+}
+</style>
+
 <!--
 Writing rule:
 - Introduce a new term with a plain explanation first; do not drop a new name without context.
