@@ -232,9 +232,9 @@ KG-SVD 是我們用來初始化 item aspect slots 的方法。
 
 ## Slide 29 — Total Objective
 
-這一頁就是總損失。除了 BPR，我們還加上一個很小的對比正則，讓 local 和 global 的表示稍微對齊，但不取代 BPR。`lambda_CL` 控制這個輔助項的強度，`tau_CL` 則是對比學習的 temperature；這裡不用特別把數字唸出來。
+這一頁就是總損失。除了 BPR，我們還加上一個很小的對比正則，讓同一個 user 或 item 在 local view 和 global view 的表示在向量空間裡拉近，但不取代 BPR。`lambda_CL` 控制這個輔助項的強度，`tau_CL` 則是對比學習的 temperature；這裡不用特別把數字唸出來。
 
-這兩個對比項分別是物品面向和使用者跨視角的對齊，作用都只是輔助，不是主融合機制。
+這兩個對比項分別是物品面向和使用者跨視角的對齊，作用都是把兩個 view 的表示距離縮小一點，不是主融合機制。
 
 ## Slide 30 — Dataset and Optimization
 

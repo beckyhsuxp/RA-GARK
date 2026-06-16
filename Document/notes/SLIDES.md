@@ -510,7 +510,7 @@ L = L_BPR + lambda_CL * (L_aCL + L_uCL)
 **Why**
 
 - BPR is the main ranking loss
-- CL is a small auxiliary regularizer
+- CL is a small auxiliary regularizer that pulls local/global views closer
 
 **Design**
 
