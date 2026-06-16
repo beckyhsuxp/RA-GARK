@@ -228,7 +228,7 @@ KG-SVD 是我們用來初始化 item aspect slots 的方法。
 
 gate 的初始化講完之後，接下來就看訓練目標。
 
-BPR 是 pairwise ranking loss。sigma 是 sigmoid function。公式裡的 positive item 是正樣本，也就是使用者真的互動過的 item；negative item 是負樣本，也就是抽樣出來、使用者沒互動過的 item。我們用正樣本和 sampled negative pairs 來訓練，目標是把真正互動過的 item 排在未互動 item 前面。BPR 負責 ranking signal，gate 和 CL 負責把表示調穩定。
+先看 score，這裡是 `score = <u_final, i_final>`。BPR 是 pairwise ranking loss。sigma 是 sigmoid function。公式裡的 observed pair 是正樣本，也就是使用者真的互動過的 item；sampled unseen item 是負樣本，也就是抽樣出來、使用者沒互動過的 item。我們用這些正負 pair 來訓練，目標是把真正互動過的 item 排在未互動 item 前面。BPR 負責 ranking signal，gate 和 CL 負責把表示調穩定。
 
 ## Slide 29 — Contrastive Regularization
 
