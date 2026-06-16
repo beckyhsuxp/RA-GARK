@@ -561,7 +561,7 @@ L = L_BPR + lambda_CL * (L_aCL + L_uCL)
 
 **Conclusion**
 
-When the KG is unreliable, what the architecture needs is not a better KG aggregator but a switch that can turn the KG off when needed.
+When the KG is unreliable, what the architecture needs is not a better KG integrator but a switch that can turn the KG off when needed.
 
 **Contributions**
 
