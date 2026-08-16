@@ -1,10 +1,22 @@
-\documentclass[12pt,a4paper]{ctexart}
+\documentclass[12pt,a4paper,fontset=none]{ctexart}
 
 \usepackage[a4paper,margin=2.5cm]{geometry}
 \usepackage{enumitem}
 \usepackage{hyperref}
 \usepackage{longtable}
 \usepackage{xcolor}
+
+\setCJKmainfont[
+  Path=/System/Library/Fonts/,
+  BoldFont={STHeiti Medium.ttc}
+]{STHeiti Light.ttc}
+\setCJKsansfont[
+  Path=/System/Library/Fonts/,
+  BoldFont={STHeiti Medium.ttc}
+]{STHeiti Light.ttc}
+\setCJKmonofont[
+  Path=/System/Library/Fonts/
+]{STHeiti Light.ttc}
 
 \hypersetup{
   colorlinks=true,
