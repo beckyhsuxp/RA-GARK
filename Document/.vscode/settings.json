@@ -1,5 +1,7 @@
 {
   "latex-workshop.latex.autoBuild.run": "onSave",
+  "latex-workshop.latex.build.enableMagicComments": true,
+  "latex-workshop.latex.rootFile.indicator": "\\begin{document}",
   "latex-workshop.latex.tools": [
     {
       "name": "latexmk",
