@@ -154,5 +154,8 @@ if __name__ == "__main__":
         "cl_weight": best.params["cl_weight"],
         "temp": best.params["temp"],
     }
-    pathlib.Path("best_weights.json").write_text(json.dumps(out, indent=2))
-    log.info("Saved to best_weights.json")
+    results_dir = pathlib.Path("results")
+    results_dir.mkdir(parents=True, exist_ok=True)
+    out_path = results_dir / "best_weights.json"
+    out_path.write_text(json.dumps(out, indent=2))
+    log.info("Saved to %s", out_path)

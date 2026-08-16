@@ -31,8 +31,8 @@ Run:
     python run_ablations.py --mode full          # everything
     python run_ablations.py --mode full --reuse  # skip configs already cached
 
-Output: ablation_results_<mode>.csv (canonical, latest run — read by the §4
-tables) plus a timestamped copy under runs/archive/ that is never overwritten.
+Output: results/ablation_results_<mode>.csv (canonical, latest run -- read by
+the section-4 tables) plus a timestamped copy under runs/archive/ that is never overwritten.
 Results persist so a re-run never loses a good number: the best-ever checkpoint
 per config is kept in runs/best/<tag>.pth and its test metrics in
 runs/best_ledger.json; a worse re-run does not overwrite either. With --reuse,
@@ -62,6 +62,7 @@ from train_ragark import evaluate_ragark, train_ragark
 # runs/archive/*.csv    : timestamped copy of every run's CSV (never clobbered)
 # runs/best_ledger.json : best-ever test metrics per config key
 RUNS_DIR = "runs"
+RESULTS_DIR = "results"
 BEST_DIR = os.path.join(RUNS_DIR, "best")
 WORKING_DIR = os.path.join(RUNS_DIR, "working")
 ARCHIVE_DIR = os.path.join(RUNS_DIR, "archive")
@@ -293,7 +294,7 @@ def main():
     log.info("Device: %s  |  Mode: %s  (%d presets)  |  reuse=%s",
              device, args.mode, len(MODES[args.mode]), args.reuse)
 
-    for d in (BEST_DIR, WORKING_DIR, ARCHIVE_DIR):
+    for d in (RESULTS_DIR, BEST_DIR, WORKING_DIR, ARCHIVE_DIR):
         os.makedirs(d, exist_ok=True)
     ledger = _load_ledger()
 
@@ -378,7 +379,7 @@ def main():
 
     # Canonical latest CSV (back-compat: this is what the §4 tables read from)
     # plus a timestamped archive copy that is never overwritten.
-    out = f"ablation_results_{args.mode}.csv"
+    out = os.path.join(RESULTS_DIR, f"ablation_results_{args.mode}.csv")
     stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     archive = os.path.join(ARCHIVE_DIR, f"ablation_results_{args.mode}_{stamp}.csv")
     fieldnames = list(results[0].keys())

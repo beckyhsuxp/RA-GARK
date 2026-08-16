@@ -34,7 +34,8 @@ logging.basicConfig(
 )
 log = logging.getLogger("main-benchmark")
 
-OUT_CSV = "main_benchmark_results.csv"
+RESULTS_DIR = Path("results")
+OUT_CSV = RESULTS_DIR / "main_benchmark_results.csv"
 ARCHIVE_DIR = Path("runs") / "archive"
 
 
@@ -94,10 +95,11 @@ def main() -> None:
     ]
     fieldnames.extend(metric_order)
 
+    RESULTS_DIR.mkdir(parents=True, exist_ok=True)
     os.makedirs(ARCHIVE_DIR, exist_ok=True)
     stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     archive_path = ARCHIVE_DIR / f"main_benchmark_results_{stamp}.csv"
-    for path in (Path(OUT_CSV), archive_path):
+    for path in (OUT_CSV, archive_path):
         with open(path, "w", newline="") as f:
             writer = csv.DictWriter(f, fieldnames=fieldnames)
             writer.writeheader()
