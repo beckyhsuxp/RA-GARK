@@ -1,0 +1,28 @@
+\chapter{Related Work}
+\label{ch:relatedwork}
+
+\section{Graph Collaborative Filtering}
+\label{sec:rw-lightgcn}
+
+LightGCN~\cite{he2020lightgcn} simplifies graph collaborative filtering by removing feature transformation and nonlinear activation from GCN-style recommendation. It propagates embeddings over the user--item bipartite graph and averages layer outputs, making it efficient and stable. Later methods such as SGL~\cite{wu2021sgl} add self-supervised objectives on top of this collaborative backbone.
+
+RA-GARK adopts LightGCN directly as its local view. This choice is deliberate: in the sparse KG setting studied here, the collaborative signal is the reliable default, so KG information should improve this baseline rather than be mixed into it by force.
+
+\section{KG-Aware Recommendation}
+\label{sec:rw-kg}
+
+KGAT~\cite{wang2019kgat} represents the deep-fusion approach: user--item interactions and KG triples are merged into a collaborative knowledge graph, and entity messages participate in user and item representation learning. KGCL~\cite{yang2022kgcl} and MCCLK~\cite{zou2022mcclk} add contrastive learning between KG and collaborative views, while KGRec~\cite{yang2023kgrec} introduces edge-level rationale learning to identify important KG triples.
+
+These methods assume that the KG is reliable enough to be used inside the main representation path. RA-GARK starts from a weaker assumption. It allows KG evidence to affect the score, but only through a side channel whose contribution is controlled by a learned gate.
+
+\section{Rationale and Gating}
+\label{sec:rw-rationale-gate}
+
+KGRec is the closest related method because it makes rationale selection explicit. The difference is the site and granularity of the rationale. KGRec selects KG edges inside a KGAT-style propagation path. RA-GARK selects among latent item-aspect slots in a separate global view and then decides whether the selected KG signal should enter the final score.
+
+The fusion gate follows the same broad principle as Highway Networks~\cite{srivastava2015highway}: initialize toward a known safe default and let learning open the transformed path only when it helps. In RA-GARK, the safe default is pure LightGCN. The gate bias is initialized to $+5$, making the initial local-view weight approximately $0.993$.
+
+\section{Attention Normalization}
+\label{sec:rw-attention}
+
+Attention normalization is not a cosmetic choice. DIN~\cite{zhou2018din} uses sigmoid-style attention when historical behaviors can contribute independently, whereas NAIS~\cite{he2018nais} and AFM~\cite{xiao2017afm} use softmax when candidates compete. RA-GARK uses softmax over item-aspect slots because the rationale module selects which semantic facet of the item is most relevant to the user. The ablation results in Chapter~\ref{ch:experiments} show that replacing this softmax head with sigmoid is the largest single-component degradation in our setting.

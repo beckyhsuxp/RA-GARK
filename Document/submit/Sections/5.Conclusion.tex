@@ -1,0 +1,19 @@
+\chapter{Conclusion and Future Work}
+\label{ch:conclusion}
+
+\section{Conclusion}
+\label{sec:conclusion-main}
+
+This paper presented RA-GARK, a dual-view KG-aware recommender for sparse review-derived knowledge graphs. The main design principle is that KG should be a controllable side channel rather than a mandatory part of the scoring pipeline. The local view preserves a strong LightGCN collaborative representation, the global view encodes item semantics through SVD-initialized aspect slots and softmax rationale masking, and the fusion gate decides how much KG information enters the final user and item embeddings.
+
+The experimental result shows that RA-GARK improves over both KGRec and pure LightGCN on the sparse Amazon Books benchmark. This is the key finding: the same KG that hurts several mandatory-fusion baselines becomes beneficial when its contribution is regulated by the architecture. The case study further suggests that the KG view helps the model distinguish items by semantic characteristics, not only by collaborative co-occurrence.
+
+\section{Limitations}
+\label{sec:conclusion-limitations}
+
+The main limitation is the sparse KG regime itself. RA-GARK is calibrated for a setting where KG signal is unreliable and should be treated cautiously. On dense and clean KGs, the local-biased gate may be too conservative, and deep-fusion methods may be more appropriate. The quantitative evidence is also based on a single Amazon Books benchmark, so the attention-normalization finding and the gate-bias design should be validated on additional datasets.
+
+\section{Future Work}
+\label{sec:conclusion-future}
+
+Future work should test RA-GARK on both sparse and dense KG benchmarks to identify when a KG side channel is preferable to deep fusion. Another direction is to adapt the gate bias to the data regime: when collaborative interactions are sparse but KG is dense, the safe default may need to shift toward the KG view instead of LightGCN. Finally, the distinction between softmax and sigmoid rationale heads should be replicated in other rationale-aware recommenders, because the present result suggests that attention normalization can be an architectural decision rather than a minor hyperparameter.
