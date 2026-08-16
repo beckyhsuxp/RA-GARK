@@ -343,6 +343,8 @@ Each $\mathrm{Gate}$ is the small MLP with a sigmoid head defined in \Eqref{eq:g
 \end{equation}
 with $\mathbf{W} \in \mathbb{R}^{d \times 2d}$, $\mathbf{w} \in \mathbb{R}^{d}$, scalar bias $b$, and $\sigma$ denoting the logistic function. The hidden width matches the embedding dimension. The first-layer weight $\mathbf{W}$ is Xavier-uniform-initialized and the first-layer bias is zero; the second-layer weight $\mathbf{w}$ is Xavier-uniform-initialized; the second-layer bias $b$ is what we are about to initialize specially.
 
+We choose an MLP rather than a linear gate because the fusion decision is conditional on the joint state of the local and global views, not a static mixture coefficient. A linear gate can only draw an affine boundary over the concatenated vector, whereas the hidden nonlinearity lets the model express interactions such as ``keep the KG channel closed unless the global view is informative for this particular user--item pair.'' In other words, the MLP is not used to increase capacity for its own sake; it is used so that the gate can learn a sample-dependent opening policy while still being constrained by the sigmoid output range.
+
 \subsection{Local-Biased Initialization}
 \label{sec:gate-bias}
 
