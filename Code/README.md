@@ -20,7 +20,6 @@ correctly.
 - `relation_init/` - archived canonical-KG initialization experiment.
 - `results/` - latest machine-readable outputs used by tables and figures.
 - `runs/` - experiment checkpoints, ledgers, and timestamped archives.
-- `notebooks/` - exploratory notebooks.
 
 ## Common Commands
 
