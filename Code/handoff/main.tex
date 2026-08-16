@@ -35,11 +35,12 @@
 \begin{document}
 \maketitle
 
-\section{程式碼架構}
+\section{Environment}
 
-本專案主要程式位於 \texttt{Code/}。所有 Python 指令建議都從
-\texttt{Code/} 目錄執行，避免相對路徑如 \texttt{data/reviews\_30\_20.pkl}
-無法正確解析。
+\subsection{Code Structure}
+
+本專案主要程式位於 \texttt{Code/}。所有 Python 指令建議都從 \texttt{Code/}
+目錄執行，避免相對路徑如 \texttt{data/reviews\_30\_20.pkl} 無法正確解析。
 
 \begin{verbatim}
 Code/
@@ -83,7 +84,7 @@ Code/
 \texttt{runs/} & 實驗 checkpoint、best ledger 與 archive。 \\
 \end{longtable}
 
-\section{Environment Setting}
+\subsection{Environment Check}
 
 此專案沒有在 \texttt{Code/} 內固定提供完整環境檔。交接時建議先在目標機器
 安裝專案所需 Python 套件，再用 smoke test 確認環境是否可用。
@@ -96,9 +97,25 @@ python smoke_test.py
 \texttt{smoke\_test.py} 只用於確認環境與主要程式路徑沒有壞掉，不是正式實驗，
 也不是論文數字的來源。若缺少套件，程式會提示缺少的 Python dependency。
 
-\section{Dataset}
+\subsection{Compile This Handoff Document}
 
-\subsection{主要資料}
+本文件使用 XeLaTeX 編譯：
+
+\begin{verbatim}
+cd Code/handoff
+latexmk -xelatex -interaction=nonstopmode main.tex
+\end{verbatim}
+
+若沒有 \texttt{latexmk}，可使用：
+
+\begin{verbatim}
+xelatex main.tex
+xelatex main.tex
+\end{verbatim}
+
+\section{Datasets}
+
+\subsection{Main Data}
 
 目前實際訓練預設會使用以下兩個檔案：
 
@@ -107,7 +124,7 @@ python smoke_test.py
   \item \texttt{data/df\_edges\_item\_aspect1.csv}：預設 KG，對應 \texttt{Config.kg\_path}。
 \end{itemize}
 
-\subsection{canonical KG 相關資料}
+\subsection{Canonical KG Data}
 
 以下檔案主要用於 canonical KG 實驗、KG 清理流程或 audit：
 
@@ -118,11 +135,11 @@ python smoke_test.py
   \item \texttt{data/kg\_canonical\_report.txt}：canonical KG 清理報告。
 \end{itemize}
 
-\section{執行流程}
+\section{Preprocess}
 
 執行前請先確認目前工作目錄為 \texttt{Code/}。
 
-\subsection{環境與資料快速檢查}
+\subsection{Environment and Data Smoke Test}
 
 正式實驗前建議先執行：
 
@@ -133,7 +150,7 @@ python smoke_test.py
 此步驟會檢查必要 data 檔案、預設 KG 建立、模型 forward/backward，以及一小批
 Top-K evaluation。通過後再執行正式實驗。
 
-\subsection{執行 RA-GARK 主模型}
+\subsection{Run Main RA-GARK Experiment}
 
 \begin{verbatim}
 python train_ragark.py
@@ -142,7 +159,7 @@ python train_ragark.py
 此指令會以 \texttt{config.py} 中的預設設定訓練 RA-GARK，並在 validation
 上選擇 best checkpoint 後進行 test evaluation。
 
-\subsection{執行消融實驗}
+\subsection{Run Ablation Experiments}
 
 最小檢查版：
 
@@ -171,7 +188,7 @@ python run_ablations.py --mode sensitivity --reuse
   \item \texttt{runs/best\_ledger.json}
 \end{itemize}
 
-\subsection{執行 Baseline 模型}
+\subsection{Run Baseline Models}
 
 \begin{verbatim}
 python run_main_benchmark.py
@@ -195,7 +212,7 @@ python run_main_benchmark.py
   \item \texttt{runs/archive/main\_benchmark\_results\_<timestamp>.csv}
 \end{itemize}
 
-\subsection{執行 Case Study}
+\subsection{Run Case Study}
 
 \begin{verbatim}
 python case_study.py
@@ -208,7 +225,7 @@ python case_study.py
   \item \texttt{results/case\_study.csv}
 \end{itemize}
 
-\section{結果檔案對應}
+\subsection{Result Files}
 
 \begin{longtable}{p{0.35\textwidth}p{0.55\textwidth}}
 \textbf{檔案} & \textbf{說明} \\
@@ -221,7 +238,7 @@ python case_study.py
 \texttt{runs/best\_ledger.json} & 各 config 的 best-ever test metrics ledger。 \\
 \end{longtable}
 
-\section{注意事項}
+\subsection{Notes}
 
 \begin{itemize}
   \item 不要任意覆蓋 \texttt{runs/best/} 或 \texttt{runs/best\_ledger.json}，除非明確要重跑並更新 best-run ledger。
@@ -229,21 +246,5 @@ python case_study.py
   \item 若只想確認環境，請執行 \texttt{smoke\_test.py}；若要取得論文正式數字，請使用 \texttt{run\_ablations.py} 或 \texttt{run\_main\_benchmark.py}。
   \item 所有實驗建議從 \texttt{Code/} 目錄執行。
 \end{itemize}
-
-\section{編譯交接文件}
-
-本文件使用 XeLaTeX 編譯：
-
-\begin{verbatim}
-cd Code/handoff
-latexmk -xelatex -interaction=nonstopmode main.tex
-\end{verbatim}
-
-若沒有 \texttt{latexmk}，可使用：
-
-\begin{verbatim}
-xelatex main.tex
-xelatex main.tex
-\end{verbatim}
 
 \end{document}
