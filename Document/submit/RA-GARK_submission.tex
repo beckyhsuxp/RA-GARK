@@ -1,0 +1,88 @@
+\documentclass[10pt]{article}
+
+% Submission draft for a 30-page-style paper version of RA-GARK.
+% This file is self-contained and does not depend on the thesis template.
+
+\usepackage[margin=1in]{geometry}
+\usepackage{enumitem}
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{array}
+\usepackage{float}
+\usepackage{placeins}
+\usepackage{titlesec}
+\usepackage{microtype}
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage{hyperref}
+
+\titleformat{\section}{\large\bfseries}{\thesection}{0.6em}{}
+\titleformat{\subsection}{\normalsize\bfseries}{\thesubsection}{0.6em}{}
+
+\newcommand{\RAARKTitle}{Product Recommendation via Rationale-Aware Gating over Sparse Review-Aspect Knowledge Graphs}
+\newcommand{\RAARKShort}{RA-GARK}
+
+\title{\RAARKTitle}
+\author{Pei-Chih Hsu \and Duen-Ren Liu}
+\date{June 2026}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+RA-GARK is a dual-view knowledge-graph-aware recommender for sparse review-derived KG settings. The local view uses LightGCN on the user--item graph, while the global view encodes item aspect semantics with KG-SVD initialization and softmax rationale masking. A local-biased fusion gate lets the model default to collaborative filtering and open the KG channel only when training signal supports it. On Amazon Books, RA-GARK outperforms the strongest KG-aware baseline and the pure LightGCN anchor in this sparse setting. This submission draft keeps the thesis's core method, experiment summary, and qualitative case study in a compact article format.
+\end{abstract}
+
+\section{Introduction}
+LightGCN is a strong collaborative anchor, but on the sparse review-derived KG used in this work, four representative KG-aware recommenders are all outperformed by pure LightGCN. This suggests that mandatory KG fusion can be harmful when the KG is noisy or too sparse to carry stable semantic signal.
+
+RA-GARK addresses this by separating collaborative and KG semantics into two views and fusing them only at the end through a learned gate. The gate is initialized toward the safe default, so the model begins close to pure LightGCN and only opens the KG channel when it helps ranking.
+
+\section{Related Work}
+This paper sits at the intersection of LightGCN-style collaborative filtering, KG-aware recommendation, dual-view recommender design, and rationale-aware learning. Compared with KGAT, KGCL, MCCLK, and KGRec, RA-GARK is intentionally conservative: KG is treated as a side channel rather than a mandatory component of the propagation pipeline.
+
+\section{Proposed Method}
+\subsection{Overview}
+RA-GARK has four parts: a local LightGCN view, a global item-aspect KG view, a local-biased fusion gate, and a BPR objective augmented with small-weight cross-view contrastive regularization.
+
+\subsection{Local View}
+The local view is standard LightGCN on the user--item bipartite graph. It uses linear propagation and layer-wise averaging, with no feature transformation or nonlinearity.
+
+\subsection{Global View}
+Each item is represented by $A=4$ latent aspect slots. The item-aspect matrix is IDF-weighted and initialized with truncated SVD so the semantic geometry is preserved before training. A user-conditioned MLP scores each aspect slot, and softmax attention selects the aspect mixture used in the global embedding.
+
+\subsection{Fusion Gate}
+The user-side and item-side fusion gates are small MLPs with sigmoid outputs. Their bias is initialized to $+5$, making the initial gate output about $0.993$ so the model begins effectively as LightGCN. This gives RA-GARK graceful degradation: if the KG is unhelpful, the model can stay close to the collaborative baseline.
+
+\subsection{Training Objective}
+The total loss is BPR plus a small contrastive regularizer:
+\[
+\mathcal{L} = \mathcal{L}_{\mathrm{BPR}} + \lambda_{\mathrm{CL}}(\mathcal{L}_{\mathrm{aCL}} + \mathcal{L}_{\mathrm{uCL}}),
+\]
+with $\lambda_{\mathrm{CL}}$ set small enough that contrastive learning only aligns the two views rather than dominating the score learning.
+
+\section{Experiments}
+\subsection{Dataset}
+We use a filtered Amazon Books subset with 905 users, 1,399 items, 22,265 interactions, and 3,370 KG edges over 2,098 aspects. Interactions are split user-stratified 70/15/15 with seed 42.
+
+\subsection{Main Result Summary}
+On this sparse KG benchmark, RA-GARK reaches NDCG@20 = 0.1242, beating KGRec by 13.4\% and pure LightGCN by 5.3\%. The result supports the central claim that the KG can help when it is structurally optional rather than mandatory.
+
+\subsection{Ablation Takeaways}
+The largest ablation is replacing softmax rationale masking with sigmoid, which substantially degrades ranking. Removing KG-SVD initialization and removing the local-biased gate bias also hurt performance, but less severely. These results indicate that the KG channel is useful only when its magnitude and initialization are carefully controlled.
+
+\subsection{Qualitative Case Study}
+The case study shows that RA-GARK does not treat the KG as a passive side feature. Instead, the rationale module conditions recommendation on item semantics encoded in the KG, so a recommendation can be interpreted in terms of aspect-level content as well as collaborative history.
+
+\section{Discussion and Limitations}
+RA-GARK is designed for sparse review-derived KGs. In denser and cleaner KG regimes, the safe default of ``KG off'' may be too conservative, and deep-fusion or KG-first designs may be more appropriate. The main methodological takeaway is that attention normalization and fusion bias should be treated as architectural choices, not minor tuning details, when KG quality is uncertain.
+
+\section{Conclusion}
+RA-GARK shows that a noisy KG can become useful once its role is made optional and its contribution is controlled by a learned gate. The model improves ranking in the sparse KG setting studied here and provides qualitative evidence that KG semantics can change how the recommender distinguishes items.
+
+\bibliographystyle{elsarticle-num}
+\bibliography{../thesis/ref}
+
+\end{document}
