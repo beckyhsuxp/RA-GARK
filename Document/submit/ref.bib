@@ -1,0 +1,196 @@
+% RA-GARK references
+% TODO 標記表示該欄位尚未核對；引用前請以 Google Scholar / DBLP 比對
+
+% ============================================================
+% Graph-based Collaborative Filtering
+% ============================================================
+
+@inproceedings{he2020lightgcn,
+  title     = {{LightGCN}: Simplifying and Powering Graph Convolution Network for Recommendation},
+  author    = {He, Xiangnan and Deng, Kuan and Wang, Xiang and Li, Yan and Zhang, Yongdong and Wang, Meng},
+  booktitle = {Proc.\ ACM SIGIR},
+  pages     = {639--648},
+  year      = {2020}
+}
+
+@inproceedings{wang2019ngcf,
+  title     = {Neural Graph Collaborative Filtering},
+  author    = {Wang, Xiang and He, Xiangnan and Wang, Meng and Feng, Fuli and Chua, Tat-Seng},
+  booktitle = {Proc.\ ACM SIGIR},
+  pages     = {165--174},
+  year      = {2019}
+}
+
+@inproceedings{wu2021sgl,
+  title     = {Self-Supervised Graph Learning for Recommendation},
+  author    = {Wu, Jiancan and Wang, Xiang and Feng, Fuli and He, Xiangnan and Chen, Liang and Lian, Jianxun and Xie, Xing},
+  booktitle = {Proc.\ ACM SIGIR},
+  pages     = {726--735},
+  year      = {2021}
+}
+
+@inproceedings{ren2023dccf,
+  title     = {Disentangled Contrastive Collaborative Filtering},
+  author    = {Ren, Xubin and Xia, Lianghao and Zhao, Jiashu and Yin, Dawei and Huang, Chao},
+  booktitle = {Proc.\ ACM SIGIR},
+  pages     = {1137--1146}, 
+  year      = {2023}
+}
+
+% ============================================================
+% KG-aware Recommendation — main baselines
+% ============================================================
+
+@inproceedings{wang2019kgat,
+  title     = {{KGAT}: Knowledge Graph Attention Network for Recommendation},
+  author    = {Wang, Xiang and He, Xiangnan and Cao, Yixin and Liu, Meng and Chua, Tat-Seng},
+  booktitle = {Proc.\ ACM SIGKDD},
+  pages     = {950--958},
+  year      = {2019}
+}
+
+@inproceedings{yang2022kgcl,
+  title     = {Knowledge Graph Contrastive Learning for Recommendation},
+  author    = {Yang, Yuhao and Huang, Chao and Xia, Lianghao and Li, Chenliang},
+  booktitle = {Proc.\ ACM SIGIR},
+  pages     = {1434--1443}, 
+  year      = {2022}
+}
+
+@inproceedings{zou2022mcclk,
+  title     = {Multi-level Cross-view Contrastive Learning for Knowledge-aware Recommender System},
+  author    = {Zou, Ding and Wei, Wei and Mao, Xian-Ling and Wang, Ziyang and Qiu, Minghui and Zhu, Feida and Cao, Xin},
+  booktitle = {Proc.\ ACM SIGIR},
+  pages     = {1358--1368}, 
+  year      = {2022}
+}
+
+@inproceedings{yang2023kgrec,
+  title     = {Knowledge Graph Self-Supervised Rationalization for Recommendation},
+  author    = {Yang, Yuhao and Huang, Chao and Xia, Lianghao and Huang, Chunzhen}, 
+  booktitle = {Proc.\ ACM SIGKDD},
+  pages     = {3046--3056}, 
+  year      = {2023}
+}
+
+% ============================================================
+% KG-aware Recommendation — discussed but not benchmarked
+% ============================================================
+
+@inproceedings{wang2020ckan,
+  title     = {{CKAN}: Collaborative Knowledge-aware Attentive Network for Recommender Systems},
+  author    = {Wang, Ze and Lin, Guangyan and Tan, Huobin and Chen, Qinghong and Liu, Xiyang},
+  booktitle = {Proc.\ ACM SIGIR},
+  pages     = {219--228}, 
+  year      = {2020}
+}
+
+@inproceedings{wang2019mkr,
+  title     = {Multi-Task Feature Learning for Knowledge Graph Enhanced Recommendation},
+  author    = {Wang, Hongwei and Zhang, Fuzheng and Zhao, Miao and Li, Wenjie and Xie, Xing and Guo, Minyi},
+  booktitle = {Proc.\ The Web Conference (WWW)},
+  pages     = {2000--2010},
+  year      = {2019}
+}
+
+@inproceedings{wang2021kgin,
+  title     = {Learning Intents Behind Interactions with Knowledge Graph for Recommendation},
+  author    = {Wang, Xiang and Huang, Tinglin and Wang, Dingxian and Yuan, Yancheng and Liu, Zhenguang and He, Xiangnan and Chua, Tat-Seng},
+  booktitle = {Proc.\ The Web Conference (WWW)},
+  pages     = {878--887},
+  year      = {2021}
+}
+
+% ============================================================
+% Gating mechanisms (precedents to fusion gate)
+% ============================================================
+
+@article{srivastava2015highway,
+  title   = {Highway Networks},
+  author  = {Srivastava, Rupesh Kumar and Greff, Klaus and Schmidhuber, J{\"u}rgen},
+  journal = {arXiv preprint arXiv:1505.00387},
+  year    = {2015}
+}
+
+@inproceedings{ma2018mmoe,
+  title     = {Modeling Task Relationships in Multi-task Learning with Multi-gate Mixture-of-Experts},
+  author    = {Ma, Jiaqi and Zhao, Zhe and Yi, Xinyang and Chen, Jilin and Hong, Lichan and Chi, Ed H.},
+  booktitle = {Proc.\ ACM SIGKDD},
+  pages     = {1930--1939},
+  year      = {2018}
+}
+
+@inproceedings{tang2020ple,
+  title     = {Progressive Layered Extraction ({PLE}): A Novel Multi-Task Learning ({MTL}) Model for Personalized Recommendations},
+  author    = {Tang, Hongyan and Liu, Junning and Zhao, Ming and Gong, Xudong},
+  booktitle = {Proc.\ ACM RecSys},
+  pages     = {269--278}, 
+  year      = {2020}
+}
+
+% ============================================================
+% Attention mechanisms (DIN / NAIS / AFM)
+% ============================================================
+
+@inproceedings{zhou2018din,
+  title     = {Deep Interest Network for Click-Through Rate Prediction},
+  author    = {Zhou, Guorui and Zhu, Xiaoqiang and Song, Chenru and Fan, Ying and Zhu, Han and Ma, Xiao and Yan, Yanghui and Jin, Junqi and Li, Han and Gai, Kun},
+  booktitle = {Proc.\ ACM SIGKDD},
+  pages     = {1059--1068},
+  year      = {2018}
+}
+
+@article{he2018nais,
+  title   = {{NAIS}: Neural Attentive Item Similarity Model for Recommendation},
+  author  = {He, Xiangnan and He, Zhankui and Song, Jingkuan and Liu, Zhenguang and Jiang, Yu-Gang and Chua, Tat-Seng},
+  journal = {IEEE Transactions on Knowledge and Data Engineering},
+  volume  = {30},
+  number  = {12},
+  pages   = {2354 --2366},
+  year    = {2018}
+}
+
+@inproceedings{xiao2017afm,
+  title     = {Attentional Factorization Machines: Learning the Weight of Feature Interactions via Attention Networks},
+  author    = {Xiao, Jun and Ye, Hao and He, Xiangnan and Zhang, Hanwang and Wu, Fei and Chua, Tat-Seng},
+  booktitle = {Proc.\ International Joint Conference on Artificial Intelligence (IJCAI)},
+  pages     = {3119--3125},
+  year      = {2017}
+}
+
+% ============================================================
+% Foundational losses / training tools
+% ============================================================
+
+@inproceedings{rendle2009bpr,
+  title     = {{BPR}: {B}ayesian Personalized Ranking from Implicit Feedback},
+  author    = {Rendle, Steffen and Freudenthaler, Christoph and Gantner, Zeno and Schmidt-Thieme, Lars},
+  booktitle = {Proc.\ Conference on Uncertainty in Artificial Intelligence (UAI)},
+  pages     = {452--461},
+  year      = {2009}
+}
+
+@article{oord2018infonce,
+  title   = {Representation Learning with Contrastive Predictive Coding},
+  author  = {van den Oord, A{\"a}ron and Li, Yazhe and Vinyals, Oriol},
+  journal = {arXiv preprint arXiv:1807.03748},
+  year    = {2018}
+}
+
+% ============================================================
+% KG construction pipeline (沿用自學姊工作)
+% ============================================================
+
+@mastersthesis{ho2024reviewkg,
+  title  = {LLM-Enhanced Multimodal Product Recommendation with Review Aspect-Specific Knowledge Graphs},
+  author = {Ho, I-Ni},
+  school = {Institute of Information Management, National Yang Ming Chiao Tung University},
+  year   = {2024}
+}
+
+% ============================================================
+% Verification checklist (引用前最好核對)
+% - 所有 pages 欄位
+% - KGRec 的 author 列表全名
+% - ho2024reviewkg 的正式資訊（題目 / 系所 / 全名）
+% ============================================================
