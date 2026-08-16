@@ -172,8 +172,9 @@ def plot_case_heatmap(rows: list[dict[str, str]]) -> None:
 
 
 def main() -> None:
-    ablation_rows = by_preset(load_rows(CODE_DIR / "ablation_results_full.csv"))
-    case_rows = load_rows(CODE_DIR / "case_study.csv")
+    results_dir = CODE_DIR / "results"
+    ablation_rows = by_preset(load_rows(results_dir / "ablation_results_full.csv"))
+    case_rows = load_rows(results_dir / "case_study.csv")
     plot_sensitivity_2x2(ablation_rows)
     plot_case_heatmap(case_rows)
 

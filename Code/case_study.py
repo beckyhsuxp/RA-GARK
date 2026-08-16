@@ -15,8 +15,8 @@ Run:
     python case_study.py --checkpoint PATH   # specify checkpoint
     python case_study.py --num_items 8 --users_per_item 4
 Outputs:
-    case_study.txt        (human-readable, also printed to stdout)
-    case_study.csv        (machine-readable; item, user, top_aspects, w1..wA)
+    results/case_study.txt        (human-readable, also printed to stdout)
+    results/case_study.csv        (machine-readable; item, user, top_aspects, w1..wA)
 """
 
 from __future__ import annotations
@@ -43,6 +43,8 @@ from utils import set_seed, user_stratified_split
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 log = logging.getLogger("case")
+
+RESULTS_DIR = Path("results")
 
 
 def find_winner_checkpoint() -> str | None:
@@ -203,9 +205,12 @@ def main():
 
     rendered = "\n".join(out_txt)
     print(rendered)
-    Path("case_study.txt").write_text(rendered)
+    RESULTS_DIR.mkdir(parents=True, exist_ok=True)
+    txt_path = RESULTS_DIR / "case_study.txt"
+    csv_path = RESULTS_DIR / "case_study.csv"
+    txt_path.write_text(rendered)
 
-    with open("case_study.csv", "w", newline="") as f:
+    with open(csv_path, "w", newline="") as f:
         fieldnames = (
             ["item_idx", "asin", "user_idx", "top_kg_aspects"]
             + [f"w{a}" for a in range(cfg.num_aspects)]
@@ -215,7 +220,7 @@ def main():
         w.writeheader()
         w.writerows(csv_rows)
 
-    log.info("Wrote case_study.txt and case_study.csv (%d rows)", len(csv_rows))
+    log.info("Wrote %s and %s (%d rows)", txt_path, csv_path, len(csv_rows))
 
 
 if __name__ == "__main__":
