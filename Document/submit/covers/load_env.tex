@@ -2,21 +2,11 @@
 \documentclass[12pt,a4paper,oneside]{book}
 \usepackage[ top=2.5cm,bottom=2.5cm,left=3cm,right=2cm ]{ geometry }
 
-\usepackage[no-math]{fontspec}   %加這個就可以設定字體 
-
-\usepackage{xeCJK}       %讓中英文字體分開設置 
-\usepackage[UTF8,fontset=none,scheme=plain]{ctex}
-\setCJKmainfont[
-  Path = /System/Library/AssetsV2/com_apple_MobileAsset_Font8/5f4c23e4a0c7b70597730d79e252955e973ead7d.asset/AssetData/,
-  Index = 1,
-  AutoFakeBold={4},
-  AutoFakeSlant=0.2
-]{BiauKai.ttc}
+\usepackage[no-math]{fontspec}
 %\setmainfont{Times New Roman}
 
 \usepackage[T1]{fontenc}
 \usepackage{times}
-\usepackage{CJKnumb}
 
 \usepackage{subcaption}
 \usepackage{caption}
@@ -100,20 +90,15 @@ Style2*=\tiny$\blacksquare$ ,Style3*=$\circ$ ,Style4*=-- )
 
 \usepackage{pdfpages}
 
-% 浮水印套件 + 語法
 \usepackage{eso-pic}
 \newcommand\MyAtPageCenter[1]{\AtPageUpperLeft{%
 \put(\LenToUnit{.42\paperwidth},\LenToUnit{-.5\paperheight}){#1}}%
 }
-% 浮水印套件 + 語法 end
 
-% 調整標題格式
 \usepackage{titlesec}
 \usepackage{titletoc}
 
-% 自訂語法
 \usepackage{etoolbox}
-\newtoggle{toc-use-cn}
 \newtoggle{iamphd}
 \newtoggle{EnableDynTitle}
 
@@ -121,7 +106,6 @@ Style2*=\tiny$\blacksquare$ ,Style3*=$\circ$ ,Style4*=-- )
 \usepackage{xstring}
 \usepackage{anyfontsize}
 
-% book table語法
 \usepackage{booktabs}
 \usepackage{float}
 \usepackage{placeins}
@@ -130,12 +114,8 @@ Style2*=\tiny$\blacksquare$ ,Style3*=$\circ$ ,Style4*=-- )
 \usepackage{tikz}
 \usetikzlibrary{positioning, arrows.meta, fit, calc, matrix, decorations.pathreplacing}
 
-% 設定目錄的最大深度到 subsection 層級
 \setcounter{tocdepth}{2}
 
-% 控制編號的深度到 subsection 層級
 \setcounter{secnumdepth}{2}
 
-% PDF 內部超連結：目錄、引用、參考文獻可點擊跳轉
-% 須最後載入，避免與其他套件衝突
 \usepackage[hidelinks,linktoc=all,bookmarksnumbered=true,bookmarksopen=true]{hyperref}
