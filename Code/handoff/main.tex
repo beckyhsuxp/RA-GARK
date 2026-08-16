@@ -3,7 +3,7 @@
 \usepackage[a4paper,margin=2.5cm]{geometry}
 \usepackage{enumitem}
 \usepackage{hyperref}
-\usepackage{longtable}
+\usepackage{tabularx}
 \usepackage{xcolor}
 
 \setCJKmainfont[
@@ -24,14 +24,18 @@
   urlcolor=blue
 }
 
-\setlist[itemize]{leftmargin=2em}
-\setlist[enumerate]{leftmargin=2em}
-\renewcommand{\arraystretch}{1.25}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{6pt}
+\setlist[itemize]{leftmargin=2em,itemsep=2pt,topsep=2pt}
+\setlist[enumerate]{leftmargin=2em,itemsep=2pt,topsep=2pt}
+\renewcommand{\arraystretch}{1.22}
+
+\newcommand{\cmd}[1]{\texttt{#1}}
 
 \title{LLM-Enhanced Multimodal Product Recommendation\\
 with Review Aspect-Specific Knowledge Graphs}
-\author{RA-GARK 專案交接文件}
-\date{\today}
+\author{RA-GARK 交接文件}
+\date{}
 
 \begin{document}
 \maketitle
@@ -39,191 +43,130 @@ with Review Aspect-Specific Knowledge Graphs}
 \section{Environment}
 
 \begin{itemize}
-  \item 建議環境：\texttt{py311\_cuda126}。
-  \item 所有 Python 指令皆從 \texttt{Code/} 目錄執行。
-  \item 目前 repo 沒有固定提供完整 environment file；若在新機器接手，請先安裝 Python 依賴，再執行 smoke test 確認環境與資料路徑。
+  \item 建議環境：\cmd{py311\_cuda126}
+  \item 執行位置：所有指令都從 \cmd{Code/} 目錄執行
+  \item 主要語言：Python
+  \item 交接文件位置：\cmd{Code/handoff/}
 \end{itemize}
 
-\subsection*{程式碼架構}
+\textbf{環境檢查}
 
-\begin{verbatim}
-Code/
-    config.py
-    data.py
-    kg_loader.py
-    model.py
-    losses.py
-    evaluate.py
-    utils.py
-    train_ragark.py
-    run_ablations.py
-    run_main_benchmark.py
-    case_study.py
-    smoke_test.py
-    baselines/
-    data/
-    handoff/
-    relation_init/
-    results/
-    runs/
-\end{verbatim}
-
-\begin{longtable}{p{0.30\textwidth}p{0.60\textwidth}}
-\textbf{檔案或資料夾} & \textbf{說明} \\
-\hline
-\texttt{config.py} & 實驗設定檔，包含 data path、模型參數、訓練參數與 ablation flags。 \\
-\texttt{data.py} & 載入 review interaction、建立 KG index、建立 LightGCN adjacency。 \\
-\texttt{kg\_loader.py} & canonical KG loader；只有 canonical KG branch 或檢查工具會用到。 \\
-\texttt{model.py} & RA-GARK 模型架構。 \\
-\texttt{losses.py} & BPR loss、aspect-level contrastive loss、user cross-view contrastive loss。 \\
-\texttt{evaluate.py} & Top-K recommendation evaluation。 \\
-\texttt{train\_ragark.py} & RA-GARK 主模型訓練與測試。 \\
-\texttt{run\_ablations.py} & 消融實驗與 sensitivity 實驗。 \\
-\texttt{run\_main\_benchmark.py} & baseline 與 RA-GARK 主比較實驗。 \\
-\texttt{case\_study.py} & rationale attention case study。 \\
-\texttt{smoke\_test.py} & 快速檢查 data、KG、model forward/backward、evaluation 是否能跑通。 \\
-\texttt{baselines/} & KGAT、KGCL、KGRec、MCCLK baseline。 \\
-\texttt{relation\_init/} & canonical KG initialization 的 archived experiment。 \\
-\texttt{results/} & 最新輸出結果，例如 main benchmark、ablation、case study。 \\
-\texttt{runs/} & checkpoint、best ledger、archive CSV。 \\
-\end{longtable}
-
-\subsection*{Smoke Test}
-
-使用方式：
+在正式跑實驗前，先執行：
 
 \begin{verbatim}
 cd Code
 python smoke_test.py
 \end{verbatim}
 
-\texttt{smoke\_test.py} 的目的只是確認環境與主要 code path 可正常執行。它不是正式實驗，也不是論文數字來源。
+\cmd{smoke\_test.py} 不是正式實驗，只是確認 code path 沒壞。若缺少套件，程式會提示缺少的 Python dependency。
 
 \section{Datasets}
 
 \begin{itemize}
-  \item 主要資料來源：Amazon Reviews 2023。
-  \item 使用類別：Books。
-  \item 原始 review 來源：\url{https://amazon-reviews-2023.github.io/}
-  \item 目前主實驗使用的是已 preprocess 完成的檔案，位於 \texttt{Code/data/}。
+  \item 資料來源：Amazon Reviews 2023
+  \item 使用類別：Books
+  \item 原始資料網站：\url{https://amazon-reviews-2023.github.io/}
+  \item 目前 repo 使用的是已 preprocess 完成的資料，放在 \cmd{Code/data/}
 \end{itemize}
 
-\subsection*{目前實際使用的 data}
+\textbf{實際會用到的 data}
 
-\begin{longtable}{p{0.38\textwidth}p{0.52\textwidth}}
+\begin{tabularx}{\textwidth}{p{0.42\textwidth}X}
 \textbf{檔案} & \textbf{用途} \\
 \hline
-\texttt{data/reviews\_30\_20.pkl} & 主要 interaction data。所有 RA-GARK、baseline、case study 預設都會讀這個檔案。 \\
-\texttt{data/df\_edges\_item\_aspect1.csv} & 預設 item-aspect KG，對應 \texttt{Config.kg\_path}。 \\
-\texttt{data/df\_edges\_all\_aspect1.csv} & raw KG input，供 \texttt{kg\_clean.py} 產生 canonical KG。 \\
-\texttt{data/kg\_canonical.csv} & canonical KG；只有 \texttt{use\_canonical\_kg=True} 或 \texttt{relation\_init/} 會使用。 \\
-\texttt{data/kg\_relation\_map.json} & raw relation 到 canonical relation 的 mapping，用於 audit。 \\
-\texttt{data/kg\_canonical\_report.txt} & canonical KG 清理報告。 \\
-\end{longtable}
+\cmd{data/reviews\_30\_20.pkl} & 主要 interaction data；RA-GARK、baseline、case study 都會用。 \\
+\cmd{data/df\_edges\_item\_aspect1.csv} & 預設 item-aspect KG。 \\
+\cmd{data/df\_edges\_all\_aspect1.csv} & raw KG；給 \cmd{kg\_clean.py} 產生 canonical KG。 \\
+\cmd{data/kg\_canonical.csv} & canonical KG；只有 \cmd{use\_canonical\_kg=True} 或 \cmd{relation\_init/} 會用。 \\
+\cmd{data/kg\_relation\_map.json} & canonical KG 的 relation mapping。 \\
+\cmd{data/kg\_canonical\_report.txt} & canonical KG 清理報告。 \\
+\end{tabularx}
 
-\subsection*{主要 config 參數}
+\textbf{主要 config 參數}
 
-\begin{longtable}{p{0.30\textwidth}p{0.42\textwidth}p{0.18\textwidth}}
-\textbf{參數名稱} & \textbf{說明} & \textbf{值範例} \\
-\hline
-\texttt{interaction\_path} & preprocess 後的 review interaction 檔案。 & \texttt{data/reviews\_30\_20.pkl} \\
-\texttt{kg\_path} & 預設 item-aspect KG。 & \texttt{data/df\_edges\_item\_aspect1.csv} \\
-\texttt{canonical\_kg\_path} & canonical KG 檔案。 & \texttt{data/kg\_canonical.csv} \\
-\texttt{use\_canonical\_kg} & 是否改用 canonical KG。預設為 \texttt{False}。 & \texttt{False} \\
-\texttt{kg\_top\_freq\_pct} & legacy KG 中要剪掉的高頻 aspect 比例。 & \texttt{0.02} \\
-\texttt{num\_aspects} & RA-GARK aspect slots 數量。 & \texttt{4} \\
-\texttt{embedding\_dim} & embedding 維度。 & \texttt{128} \\
-\texttt{eval\_k} & evaluation 的主要 Top-K。 & \texttt{20} \\
-\end{longtable}
+\begin{itemize}
+  \item \cmd{interaction\_path}：preprocess 後的 review interaction。預設為 \cmd{data/reviews\_30\_20.pkl}。
+  \item \cmd{kg\_path}：預設 item-aspect KG。預設為 \cmd{data/df\_edges\_item\_aspect1.csv}。
+  \item \cmd{use\_canonical\_kg}：是否改用 canonical KG。預設為 \cmd{False}。
+  \item \cmd{canonical\_kg\_path}：canonical KG path。預設為 \cmd{data/kg\_canonical.csv}。
+  \item \cmd{num\_aspects}：aspect slots 數量。預設為 \cmd{4}。
+  \item \cmd{embedding\_dim}：embedding 維度。預設為 \cmd{128}。
+  \item \cmd{eval\_k}：Top-K evaluation 的 K。預設為 \cmd{20}。
+\end{itemize}
 
 \section{Preprocess}
 
-目前 repo 內保留的是已 preprocess 完成、可直接訓練的資料。正式接手時請先確認 \texttt{Code/data/} 內上述資料皆已準備完成，再依照以下順序執行。
+目前 repo 裡的主資料已經 preprocess 完成，可直接訓練。接手時先確認 \cmd{Code/data/} 內資料都存在，再依照以下順序執行。
 
-\subsection*{Preprocess 做的事情}
-
-目前主訓練資料 \texttt{reviews\_30\_20.pkl} 已完成以下處理：
+\textbf{Preprocess 做的事情}
 
 \begin{itemize}
-  \item 過濾 review interaction，只保留可用欄位。
-  \item 依照 like 欄位保留 positive interactions 作為推薦訓練資料。
-  \item 對 user 與 item 重新 label encoding，產生 \texttt{user\_idx} 與 \texttt{item\_idx}。
-  \item 使用 user-stratified split 產生 train、validation、test。
-  \item 訓練時使用 \texttt{data/df\_edges\_item\_aspect1.csv} 建立 item-aspect KG index。
-  \item KG 會剪掉高頻 noisy aspects 與 \texttt{Config.kg\_stopwords} 中的 stopwords。
+  \item 過濾 review interaction，只保留可用資料。
+  \item 依照 \cmd{like} 欄位保留 positive interactions 作為推薦訓練資料。
+  \item 重新 label encode user 與 item，產生 \cmd{user\_idx}、\cmd{item\_idx}。
+  \item 使用 user-stratified split 切分 train、validation、test。
+  \item 使用 \cmd{data/df\_edges\_item\_aspect1.csv} 建立 item-aspect KG。
+  \item KG 會移除高頻 noisy aspects 與 \cmd{Config.kg\_stopwords}。
 \end{itemize}
 
-如果要重新整理 canonical KG，可執行：
+\textbf{如果要重建 canonical KG}
 
 \begin{verbatim}
 python kg_clean.py
 \end{verbatim}
 
-此步驟會以 \texttt{data/df\_edges\_all\_aspect1.csv} 為 input，輸出：
+輸出：
 
 \begin{itemize}
-  \item \texttt{data/kg\_canonical.csv}
-  \item \texttt{data/kg\_relation\_map.json}
-  \item \texttt{data/kg\_canonical\_report.txt}
+  \item \cmd{data/kg\_canonical.csv}
+  \item \cmd{data/kg\_relation\_map.json}
+  \item \cmd{data/kg\_canonical\_report.txt}
 \end{itemize}
 
 \subsection*{1. 執行 RA-GARK}
-
-執行主模型：
 
 \begin{verbatim}
 python train_ragark.py
 \end{verbatim}
 
-此指令會使用 \texttt{config.py} 中的預設設定進行訓練與 test evaluation。預設流程包含：
-
-\begin{itemize}
-  \item 載入 \texttt{reviews\_30\_20.pkl}
-  \item 建立 item-aspect KG index
-  \item 建立 LightGCN adjacency
-  \item 使用 RA-GARK 訓練推薦模型
-  \item 以 validation NDCG 選擇 best checkpoint
-  \item 載入 best checkpoint 並輸出 test metrics
-\end{itemize}
+輸出結果為 RA-GARK 的主模型實驗結果。
 
 \subsection*{2. 執行消融實驗}
 
-快速檢查版：
+快速版：
 
 \begin{verbatim}
 python run_ablations.py --mode minimal --reuse
 \end{verbatim}
 
-論文表格版本：
+論文表格版：
 
 \begin{verbatim}
 python run_ablations.py --mode paper --reuse
 \end{verbatim}
 
-sensitivity 實驗：
+sensitivity：
 
 \begin{verbatim}
 python run_ablations.py --mode sensitivity --reuse
 \end{verbatim}
 
-主要輸出：
+輸出：
 
 \begin{itemize}
-  \item \texttt{results/ablation\_results\_<mode>.csv}
-  \item \texttt{runs/archive/ablation\_results\_<mode>\_<timestamp>.csv}
-  \item \texttt{runs/best/}
-  \item \texttt{runs/best\_ledger.json}
+  \item \cmd{results/ablation\_results\_<mode>.csv}
+  \item \cmd{runs/archive/}
+  \item \cmd{runs/best/}
+  \item \cmd{runs/best\_ledger.json}
 \end{itemize}
 
 \subsection*{3. 執行 Baseline 模型}
-
-各 baseline 由 \texttt{run\_main\_benchmark.py} 統一執行：
 
 \begin{verbatim}
 python run_main_benchmark.py
 \end{verbatim}
 
-包含模型：
+會執行：
 
 \begin{itemize}
   \item MCCLK
@@ -234,51 +177,38 @@ python run_main_benchmark.py
   \item RA-GARK
 \end{itemize}
 
-主要輸出：
+輸出：
 
 \begin{itemize}
-  \item \texttt{results/main\_benchmark\_results.csv}
-  \item \texttt{runs/archive/main\_benchmark\_results\_<timestamp>.csv}
+  \item \cmd{results/main\_benchmark\_results.csv}
+  \item \cmd{runs/archive/main\_benchmark\_results\_<timestamp>.csv}
 \end{itemize}
 
 \subsection*{4. Case Study}
-
-執行：
 
 \begin{verbatim}
 python case_study.py
 \end{verbatim}
 
-用途：輸出 RA-GARK softmax rationale attention 的案例，觀察同一商品在不同 user 下的 aspect attention 是否不同。
+用途：觀察同一商品在不同 user 下的 rationale aspect attention 是否不同。
 
-主要輸出：
-
-\begin{itemize}
-  \item \texttt{results/case\_study.txt}
-  \item \texttt{results/case\_study.csv}
-\end{itemize}
-
-\subsection*{5. 結果檔案對應}
-
-\begin{longtable}{p{0.38\textwidth}p{0.52\textwidth}}
-\textbf{檔案} & \textbf{說明} \\
-\hline
-\texttt{results/main\_benchmark\_results.csv} & 主模型與 baseline 的比較結果。 \\
-\texttt{results/ablation\_results\_paper.csv} & 論文消融實驗表格主要來源。 \\
-\texttt{results/ablation\_results\_full.csv} & 較完整的消融結果。 \\
-\texttt{results/case\_study.txt} & human-readable case study。 \\
-\texttt{results/case\_study.csv} & machine-readable case study attention weights。 \\
-\texttt{runs/best\_ledger.json} & 各 config 的 best-ever metrics ledger。 \\
-\end{longtable}
-
-\subsection*{注意事項}
+輸出：
 
 \begin{itemize}
-  \item 不要任意覆蓋 \texttt{runs/best/} 或 \texttt{runs/best\_ledger.json}，除非明確要重新更新 best-run ledger。
-  \item \texttt{relation\_init/} 是 archived experiment，除非要重訪 canonical KG initialization branch，否則不建議修改。
-  \item 若只想確認環境，請執行 \texttt{smoke\_test.py}；若要取得正式實驗數字，請執行 \texttt{run\_ablations.py} 或 \texttt{run\_main\_benchmark.py}。
-  \item 編譯本交接文件：
+  \item \cmd{results/case\_study.txt}
+  \item \cmd{results/case\_study.csv}
 \end{itemize}
+
+\subsection*{5. 注意事項}
+
+\begin{itemize}
+  \item 不要任意覆蓋 \cmd{runs/best/} 或 \cmd{runs/best\_ledger.json}。
+  \item \cmd{relation\_init/} 是 archived experiment，除非要重訪 canonical KG initialization branch，否則不建議修改。
+  \item 若只想確認環境，跑 \cmd{smoke\_test.py}。
+  \item 若要正式實驗數字，跑 \cmd{run\_ablations.py} 或 \cmd{run\_main\_benchmark.py}。
+\end{itemize}
+
+\textbf{編譯本交接文件}
 
 \begin{verbatim}
 cd Code/handoff
