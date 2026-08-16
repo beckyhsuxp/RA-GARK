@@ -28,5 +28,4 @@ python train_ragark.py
 python run_ablations.py --mode minimal --reuse
 python run_ablations.py --mode paper --reuse
 python case_study.py
-python plot_thesis_figures.py
 ```
