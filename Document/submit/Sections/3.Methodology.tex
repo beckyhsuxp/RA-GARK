@@ -1,0 +1,84 @@
+\chapter{Proposed Method}
+\label{ch:methodology}
+
+\section{Overview}
+\label{sec:method-overview}
+
+RA-GARK consists of a local collaborative view, a global KG view, a local-biased fusion gate, and a BPR training objective with small cross-view contrastive regularization. Figure~\ref{fig:architecture-submit} summarizes the data flow. The local view is a standard LightGCN branch over the user--item graph. The global view represents each item by $A=4$ latent aspect slots initialized from the review-derived KG. The two views are fused only at the final representation stage.
+
+\begin{figure}[ht]
+\centering
+\includegraphics[width=\textwidth]{img/architecture.png}
+\caption{RA-GARK architecture.}
+\label{fig:architecture-submit}
+\end{figure}
+
+\section{Local View}
+\label{sec:method-local}
+
+Let $\mathbf{R}$ be the user--item interaction matrix and
+\[
+\mathbf{A} =
+\begin{bmatrix}
+\mathbf{0} & \mathbf{R} \\
+\mathbf{R}^{\top} & \mathbf{0}
+\end{bmatrix}.
+\]
+The normalized adjacency is $\tilde{\mathbf{A}}=\mathbf{D}^{-1/2}\mathbf{A}\mathbf{D}^{-1/2}$. Starting from trainable user and item embeddings $\mathbf{E}^{(0)}$, LightGCN propagates
+\[
+\mathbf{E}^{(\ell+1)}=\tilde{\mathbf{A}}\mathbf{E}^{(\ell)}, \qquad \ell=0,\dots,K-1,
+\]
+and averages the layers:
+\[
+\bar{\mathbf{E}}=\frac{1}{K+1}\sum_{\ell=0}^{K}\mathbf{E}^{(\ell)}.
+\]
+The corresponding rows give $u_{\mathrm{loc}}$ and $i_{\mathrm{loc}}$. No KG signal enters this branch.
+
+\section{Global View}
+\label{sec:method-global}
+
+The global item representation is built from the item--aspect KG. We first form a binary item--aspect matrix $\mathbf{M}$ and apply IDF weighting to reduce the dominance of generic aspects. A rank-$A d$ truncated SVD is then computed, and the resulting item embeddings are reshaped into $\mathbf{a}_i \in \mathbb{R}^{A \times d}$, where $A=4$ is the number of latent aspect slots and $d=128$ is the embedding dimension.
+
+For a user--item pair, the global user embedding $u_{\mathrm{glo}}$ is a direct lookup. The item-side rationale module scores each slot conditioned on the user and normalizes the scores with softmax:
+\[
+w_{u,i,k} =
+\frac{\exp(s_{u,i,k}/\tau)}
+{\sum_{k'=1}^{A}\exp(s_{u,i,k'}/\tau)}.
+\]
+The global item embedding is the weighted aspect mixture:
+\[
+i_{\mathrm{glo}}=\sum_{k=1}^{A} w_{u,i,k}\mathbf{a}_{i,k}.
+\]
+The rationale therefore answers which latent item aspect is most relevant to the user for this recommendation.
+
+\section{Local-Biased Fusion Gate}
+\label{sec:method-gate}
+
+RA-GARK uses separate user-side and item-side gates:
+\[
+u_{\mathrm{final}}=\alpha_u u_{\mathrm{loc}}+(1-\alpha_u)u_{\mathrm{glo}},
+\qquad
+i_{\mathrm{final}}=\alpha_i i_{\mathrm{loc}}+(1-\alpha_i)i_{\mathrm{glo}}.
+\]
+Both $\alpha_u$ and $\alpha_i$ are produced by small MLPs with sigmoid outputs. Their final-layer bias is initialized to $+5$, so $\sigma(5)\approx0.993$. At the beginning of training, the model is therefore almost pure LightGCN; the KG channel opens only if gradients indicate that it improves ranking.
+
+\section{Training Objective}
+\label{sec:method-loss}
+
+The prediction score is the inner product
+\[
+\hat{y}(u,i)=\langle u_{\mathrm{final}},i_{\mathrm{final}}\rangle.
+\]
+Training uses Bayesian Personalized Ranking~\cite{rendle2009bpr}:
+\[
+\mathcal{L}_{\mathrm{BPR}}
+=-\log\sigma(\hat{y}(u,i^+)-\hat{y}(u,i^-)).
+\]
+Two small InfoNCE-style regularizers align the local and global views for users and items. The total objective is
+\[
+\mathcal{L}
+=\mathcal{L}_{\mathrm{BPR}}
++\lambda_{\mathrm{CL}}
+(\mathcal{L}_{\mathrm{aCL}}+\mathcal{L}_{\mathrm{uCL}}),
+\]
+with $\lambda_{\mathrm{CL}}=0.005$, so contrastive learning supports the geometry without becoming the main fusion mechanism.

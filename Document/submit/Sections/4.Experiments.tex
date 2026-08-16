@@ -1,0 +1,89 @@
+\chapter{Experiments and Results}
+\label{ch:experiments}
+
+\section{Dataset and Setup}
+\label{sec:exp-data}
+
+The experiments use a filtered Amazon Books subset with $905$ users, $1{,}399$ items, and $22{,}265$ positive interactions. The review-derived item--aspect KG contains $3{,}370$ edges over $2{,}098$ unique aspects after filtering, giving only $2.4$ aspect edges per item on average. Interactions are split by user into $70/15/15$ train, validation, and test sets with seed $42$.
+
+\begin{table}[H]
+\centering
+\caption{Dataset statistics after preprocessing.}
+\label{tab:dataset-stats-submit}
+\begin{tabular}{lr}
+\toprule
+Statistic & Value \\
+\midrule
+\#Users                      & $905$ \\
+\#Items                      & $1{,}399$ \\
+\#Interactions               & $22{,}265$ \\
+\#KG edges                   & $3{,}370$ \\
+\#Unique aspects             & $2{,}098$ \\
+Avg.\ edges per item         & $2.4$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+\FloatBarrier
+
+We compare RA-GARK with pure LightGCN and four KG-aware baselines: KGAT, KGCL, MCCLK, and KGRec. Evaluation uses full ranking, not sampled negatives. NDCG@20 is the primary metric, with HR, Recall, and MAP as secondary metrics.
+
+\section{Main Results}
+\label{sec:exp-main}
+
+Table~\ref{tab:main-submit} reports the Top-20 result. RA-GARK achieves the best score on all four metrics. The most important comparison is against pure LightGCN: the four KG-aware baselines are below the no-KG anchor, while RA-GARK moves above it. This supports the claim that the same sparse KG can become useful when the model can control whether and how KG signal enters the score.
+
+\begin{table}[H]
+\centering
+\caption{Top-20 recommendation performance.}
+\label{tab:main-submit}
+\begin{tabular}{lcccc}
+\toprule
+Model & NDCG@20 & HR@20 & Recall@20 & MAP@20 \\
+\midrule
+MCCLK~\cite{zou2022mcclk}        & $0.1067$ & $0.4530$ & $0.1720$ & $0.0497$ \\
+KGCL~\cite{yang2022kgcl}         & $0.1073$ & $0.4696$ & $0.1827$ & $0.0479$ \\
+KGAT~\cite{wang2019kgat}         & $0.1079$ & $0.4773$ & $0.1807$ & $0.0491$ \\
+KGRec~\cite{yang2023kgrec}       & $0.1095$ & $0.4729$ & $0.1834$ & $0.0500$ \\
+LightGCN~\cite{he2020lightgcn}   & $0.1179$ & $0.4917$ & $0.1937$ & $0.0555$ \\
+\midrule
+\textbf{RA-GARK}                 & $\mathbf{0.1243}$ & $\mathbf{0.4972}$ & $\mathbf{0.2020}$ & $\mathbf{0.0594}$ \\
+\midrule
+$\Delta$ vs KGRec                & $+13.5\%$ & $+5.1\%$ & $+10.1\%$ & $+18.8\%$ \\
+$\Delta$ vs LightGCN             & $+5.4\%$  & $+1.1\%$ & $+4.3\%$  & $+7.0\%$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+\FloatBarrier
+
+\section{Ablation Study}
+\label{sec:exp-ablation}
+
+The ablation study removes one design component at a time. The largest drop comes from replacing softmax rationale masking, showing that attention normalization is a load-bearing design choice in this architecture. Removing KG-SVD initialization and removing the local-biased gate also reduce performance, which confirms that the KG channel must be both well initialized and carefully admitted.
+
+\begin{table}[H]
+\centering
+\caption{Ablation results under Top-20 evaluation.}
+\label{tab:ablation-submit}
+\begin{tabular}{lcc}
+\toprule
+Model & NDCG@20 & MAP@20 \\
+\midrule
+\textbf{RA-GARK (full)}              & $\mathbf{0.1243}$ & $\mathbf{0.0594}$ \\
+\midrule
+w/o softmax head                     & $0.1005$ & $0.0451$ \\
+w/o KG-SVD init                      & $0.1171$ & $0.0545$ \\
+w/o fusion-gate bias                 & $0.1194$ & $0.0555$ \\
+w/o MLP gate                         & $0.1180$ & $0.0552$ \\
+w/o user CL                          & $0.1192$ & $0.0563$ \\
+w/o aspect CL                        & $0.1200$ & $0.0570$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+\FloatBarrier
+
+\section{Case Study and Cost}
+\label{sec:exp-case}
+
+The qualitative case study shows why KG is not merely an auxiliary feature in RA-GARK. Because the global view selects item aspects conditioned on the user, the model can expose which semantic facets contribute to a recommendation. This supports the contribution that KG-based recommendation can reveal product characteristics beyond collaborative co-occurrence.
+
+The additional computation is small. On the reported hardware, RA-GARK trains at approximately $1.5$ seconds per epoch, comparable to LightGCN and KGRec at the same embedding dimension. The dominant cost remains LightGCN propagation; the aspect slots, rationale masking, and fusion gates add only small batch-level operations.

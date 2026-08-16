@@ -1,0 +1,40 @@
+\chapter{Introduction}
+\label{ch:intro}
+
+\section{Background and Motivation}
+\label{sec:intro-background}
+
+Graph neural networks have become a central modeling tool for collaborative filtering. Among them, LightGCN~\cite{he2020lightgcn} shows that a recommender can perform strongly with only normalized neighborhood propagation and layer-wise averaging, without nonlinear transformations or feature matrices. This simplicity makes LightGCN a strong collaborative baseline and a useful reference point for evaluating whether side information is truly beneficial.
+
+Knowledge-graph-aware recommendation extends this setting by adding item-side semantics. Methods such as KGAT~\cite{wang2019kgat}, KGCL~\cite{yang2022kgcl}, MCCLK~\cite{zou2022mcclk}, and KGRec~\cite{yang2023kgrec} integrate KG structure through entity propagation, contrastive alignment, or rationale selection. These designs are effective when the KG is dense and reliable. However, real recommendation settings often rely on review-derived or domain-specific KGs whose coverage is sparse and uneven.
+
+\section{Sparse-KG Observation}
+\label{sec:intro-observation}
+
+This work begins from a simple empirical observation. On the Amazon Books review-derived KG used in this study, each item has only $2.4$ aspect edges on average after filtering. Under the same split and evaluation protocol, all four KG-aware baselines fall below pure LightGCN on NDCG@20, as shown in Table~\ref{tab:intro-baseline}. The result does not imply that these baselines are weak in general; rather, it indicates that mandatory KG integration can become harmful when the KG is too sparse to provide stable semantic signal.
+
+\begin{table}[H]
+\centering
+\caption{KG-aware baselines and pure LightGCN on the sparse review-derived KG.}
+\label{tab:intro-baseline}
+\begin{tabular}{lc}
+\toprule
+Method & NDCG@20 \\
+\midrule
+MCCLK~\cite{zou2022mcclk}      & 0.1067 \\
+KGCL~\cite{yang2022kgcl}       & 0.1073 \\
+KGAT~\cite{wang2019kgat}       & 0.1079 \\
+KGRec~\cite{yang2023kgrec}     & 0.1095 \\
+\midrule
+Pure LightGCN~\cite{he2020lightgcn} & \textbf{0.1179} \\
+\bottomrule
+\end{tabular}
+\end{table}
+\FloatBarrier
+
+\section{Research Question and Contributions}
+\label{sec:intro-contributions}
+
+The central question is how to use KG signal when it is helpful without letting KG noise contaminate the collaborative representation when it is not. RA-GARK addresses this by treating the KG as a gateable side channel rather than a mandatory component of the scoring path.
+
+The contributions are threefold. First, we report a sparse-KG failure mode in which representative KG-aware methods underperform a no-KG LightGCN anchor. Second, we propose RA-GARK, a dual-view architecture with KG-SVD initialization, softmax rationale masking, and a local-biased fusion gate. Third, we show through main results, ablations, and a qualitative case study that KG semantics can improve ranking and reveal item characteristics when the architecture can regulate their influence.
