@@ -87,23 +87,9 @@
 \input{covers/front_var.tex}        % 論文的封面
 
 % 2. 第二頁的書名頁, 系所&日期使用變數代入
-% 目前的浮水印剛好可以把校名&相關資訊包在裡面
 \input{covers/inside_var.tex}       % 論文的書名頁
 
 \restoregeometry
-% ====================================================
-% 書名頁起至最後一頁皆須加入浮水印
-% 目前語法不知道怎麼設定透明度, 就直接放刷淡的圖片放在頁面中央
-\AddToShipoutPicture{
-    \put(-5,-15){
-        \parbox[b][\paperheight]{\paperwidth}{%
-            \vfill
-            \centering
-            \begin{tikzpicture}\node[opacity=0.3]{\includegraphics[scale=0.65]{covers/logo2.pdf}};\end{tikzpicture}%
-            \vfill
-        }
-    }
-}
 % ====================================================
 
 % [補充] 圖書館有說: 授權書(3)&審定書(5)要裝訂於紙本論文中，不用放在PDF電子檔裡面，要記得請口委簽名。
