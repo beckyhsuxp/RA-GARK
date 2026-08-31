@@ -155,9 +155,11 @@
 
 
 \iftoggle{toc-use-cn} % 使用中文
-{\addcontentsline{toc}{chapter}{參考文獻}
+{\phantomsection
+\addcontentsline{toc}{chapter}{參考文獻}
 \renewcommand{\bibname}{參考文獻}} 
-{\addcontentsline{toc}{chapter}{References}
+{\phantomsection
+\addcontentsline{toc}{chapter}{References}
 \renewcommand{\bibname}{References}
 } 
 

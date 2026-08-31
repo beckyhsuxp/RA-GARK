@@ -17,13 +17,16 @@
 \titlecontents{subsubsection}[4.5em]{}{\thecontentslabel \hspace{1em}}{}{\titlerule*{.}\contentspage}[\addvspace{0.5em}]
 
 % 7 中文摘要 chinese abstract
+\phantomsection
 \addcontentsline{toc}{chapter}{中文摘要} \input{Sections/0.2.Abstract_chinese} \newpage
 
 % 8. 英文摘要
+\phantomsection
 \addcontentsline{toc}{chapter}{英文摘要} \input{Sections/0.3.Abstract} \newpage
 
 % 9. 目錄 中文版
 \renewcommand{\contentsname}{目錄} % 使用中文目錄
+\phantomsection
 \addcontentsline{toc}{chapter}{目錄}
 \tableofcontents \newpage
 
@@ -31,12 +34,14 @@
 \renewcommand{\figurename}{圖} % 把caption的Figure改成"圖"
 \renewcommand{\listfigurename}{圖目錄}
 \renewcommand{\numberline}[1]{圖~#1\hspace*{1em}}
+\phantomsection
 \addcontentsline{toc}{chapter}{圖目錄\vspace{0em}} \listoffigures \newpage
 
 % 11. 表格目錄 中文版, 有需要再打開
 \renewcommand{\tablename}{表} % 把caption的Table改成"表"
 \renewcommand{\listtablename}{表目錄}
 \renewcommand{\numberline}[1]{表~#1\hspace*{1em}}
+\phantomsection
 \addcontentsline{toc}{chapter}{表目錄\vspace{0em}} \listoftables \newpage
 
 % 章節標題使用「章號 標題」格式，例如：2 Related Work
@@ -58,23 +63,28 @@
 \titlecontents{subsubsection}[4.5em]{}{\thecontentslabel \hspace{1em}}{}{\titlerule*{.}\contentspage}[\addvspace{0.5em}]
 
 % 7 中文摘要 chinese abstract
+\phantomsection
 \addcontentsline{toc}{chapter}{Chinese Abstract} \input{Sections/0.2.Abstract_chinese} \newpage
 
 % 8. english abstract
+\phantomsection
 \addcontentsline{toc}{chapter}{English Abstract} \input{Sections/0.3.Abstract} \newpage
 
 % 9. 目錄 English version
 \renewcommand{\contentsname}{Contents}
+\phantomsection
 \addcontentsline{toc}{chapter}{Contents} \tableofcontents \newpage
 
 % 10. 圖片目錄 English version
 \renewcommand{\listfigurename}{List of Figures}
 \renewcommand{\numberline}[1]{Figure~#1\hspace*{1em}}
+\phantomsection
 \addcontentsline{toc}{chapter}{List of Figures} \listoffigures \newpage
 
 % 11. 表格目錄 English version, 有需要再打開
 \renewcommand{\listtablename}{List of Tables}
 \renewcommand{\numberline}[1]{Table~#1\hspace*{1em}}
+\phantomsection
 \addcontentsline{toc}{chapter}{List of Tables} \listoftables \newpage
 
 % 調整內文的chapter, section, subection的顯示方式, 改成靠左對齊+沒有換行
