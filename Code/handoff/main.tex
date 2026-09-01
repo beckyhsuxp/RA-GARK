@@ -40,7 +40,7 @@ with Review Aspect-Specific Knowledge Graphs}
 \begin{document}
 \maketitle
 
-\section{Environment}
+\section{環境與執行位置}
 
 \begin{itemize}
   \item 建議環境：\cmd{py311\_cuda126}
@@ -49,7 +49,7 @@ with Review Aspect-Specific Knowledge Graphs}
   \item 交接文件位置：\cmd{Code/handoff/}
 \end{itemize}
 
-\textbf{環境檢查}
+\subsection{環境檢查}
 
 在正式跑實驗前，先執行：
 
@@ -60,7 +60,7 @@ python smoke_test.py
 
 \cmd{smoke\_test.py} 不是正式實驗，只是確認 code path 沒壞。若缺少套件，程式會提示缺少的 Python dependency。
 
-\section{Datasets}
+\section{資料集與主要檔案}
 
 \begin{itemize}
   \item 資料來源：Amazon Reviews 2023
@@ -69,7 +69,7 @@ python smoke_test.py
   \item 目前 repo 使用的是已 preprocess 完成的資料，放在 \cmd{Code/data/}
 \end{itemize}
 
-\textbf{實際會用到的 data}
+\subsection{實際會用到的資料}
 
 \begin{tabularx}{\textwidth}{p{0.42\textwidth}X}
 \textbf{檔案} & \textbf{用途} \\
@@ -82,10 +82,12 @@ python smoke_test.py
 \cmd{data/kg\_canonical\_report.txt} & canonical KG 清理報告。 \\
 \end{tabularx}
 
-\textbf{主要 config 參數}
+\subsection{主要 config 參數}
 
 \begin{itemize}
-  \item \cmd{interaction\_path}：preprocess 後的 review interaction。預設為 \cmd{data/reviews\_30\_20.pkl}。
+  \item \cmd{interaction\_path}：preprocess 後的 review interaction。\\
+  預設為
+  \cmd{data/reviews\_30\_20.pkl}。
   \item \cmd{kg\_path}：預設 item-aspect KG。預設為 \cmd{data/df\_edges\_item\_aspect1.csv}。
   \item \cmd{use\_canonical\_kg}：是否改用 canonical KG。預設為 \cmd{False}。
   \item \cmd{canonical\_kg\_path}：canonical KG path。預設為 \cmd{data/kg\_canonical.csv}。
@@ -94,11 +96,11 @@ python smoke_test.py
   \item \cmd{eval\_k}：Top-K evaluation 的 K。預設為 \cmd{20}。
 \end{itemize}
 
-\section{Preprocess}
+\section{資料前處理}
 
 目前 repo 裡的主資料已經 preprocess 完成，可直接訓練。接手時先確認 \cmd{Code/data/} 內資料都存在，再依照以下順序執行。
 
-\textbf{Preprocess 做的事情}
+\subsection{Preprocess 做的事情}
 
 \begin{itemize}
   \item 過濾 review interaction，只保留可用資料。
@@ -109,7 +111,7 @@ python smoke_test.py
   \item KG 會移除高頻 noisy aspects 與 \cmd{Config.kg\_stopwords}。
 \end{itemize}
 
-\textbf{如果要重建 canonical KG}
+\subsection{如果要重建 canonical KG}
 
 \begin{verbatim}
 python kg_clean.py
@@ -123,7 +125,9 @@ python kg_clean.py
   \item \cmd{data/kg\_canonical\_report.txt}
 \end{itemize}
 
-\subsection*{1. 執行 RA-GARK}
+\section{實驗執行流程}
+
+\subsection{執行 RA-GARK}
 
 \begin{verbatim}
 python train_ragark.py
@@ -131,7 +135,7 @@ python train_ragark.py
 
 輸出結果為 RA-GARK 的主模型實驗結果。
 
-\subsection*{2. 執行消融實驗}
+\subsection{執行消融實驗}
 
 快速版：
 
@@ -160,7 +164,7 @@ python run_ablations.py --mode sensitivity --reuse
   \item \cmd{runs/best\_ledger.json}
 \end{itemize}
 
-\subsection*{3. 執行 Baseline 模型}
+\subsection{執行 Baseline 模型}
 
 \begin{verbatim}
 python run_main_benchmark.py
@@ -184,7 +188,7 @@ python run_main_benchmark.py
   \item \cmd{runs/archive/main\_benchmark\_results\_<timestamp>.csv}
 \end{itemize}
 
-\subsection*{4. Case Study}
+\subsection{Case Study}
 
 \begin{verbatim}
 python case_study.py
@@ -199,7 +203,7 @@ python case_study.py
   \item \cmd{results/case\_study.csv}
 \end{itemize}
 
-\subsection*{5. 注意事項}
+\section{注意事項}
 
 \begin{itemize}
   \item 不要任意覆蓋 \cmd{runs/best/} 或 \cmd{runs/best\_ledger.json}。
