@@ -24,7 +24,6 @@
 
 <p align="center"><em>示意：從評論中抽取的面向知識圖譜片段；模型使用書與面向之間的連結。</em></p>
 
-**技術細節：**
 
 | 項目 | 數值 |
 |---|---|
@@ -63,7 +62,7 @@ RA-GARK 有兩條路。上半部是「看大家買了什麼」的 LightGCN；下
 
 ![RA-GARK 架構圖](Document/thesis/img/architecture.png)
 
-| # | 元件 | 作用 | 技術細節 |
+| # | 元件 | 作用 | 做法 |
 |---|---|---|---|
 | 1 | **KG-SVD 初始化** | 先把每本書零散的面向，整理成 4 個代表性面向 | 書×面向矩陣 → IDF 加權 → Truncated SVD → 切成每本書 A = 4 個潛在面向槽位（latent aspect slots），不是 4 個固定標籤 |
 | 2 | **Softmax 挑選面向**（Rationale-Aware Selection） | 依照這位讀者，挑出這本書最相關的面向 | MLP([讀者; 面向]) → Softmax（溫度 τ = 0.5）→ 4 個權重加總為 1，加權合併 |
